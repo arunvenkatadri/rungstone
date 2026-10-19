@@ -3,9 +3,69 @@
   "displayName": "Rungstone",
   "version": "0.1.0",
   "description": "Offline, read-only toolkit for controls engineers: understand, translate, verify and dependency-map PLC code across Rockwell, Siemens, CODESYS and Beckhoff; extend to HMI/SCADA screens, tags and alarms; troubleshoot stops from exported historian data. Safety-rated logic is always excluded; simulation results are labelled simulated, not hardware-tested.",
-  "author": { "name": "Arun Venkatadri" },
+  "author": {
+    "name": "Arun Venkatadri"
+  },
   "homepage": "https://github.com/arunvenkatadri/rungstone",
   "repository": "https://github.com/arunvenkatadri/rungstone",
   "license": "MIT",
-  "keywords": ["plc", "ladder-logic", "structured-text", "rockwell", "siemens", "tia-portal", "codesys", "twincat", "plcopen", "scada", "hmi", "industrial-automation", "migration", "alarm-management"]
+  "keywords": [
+    "plc",
+    "ladder-logic",
+    "structured-text",
+    "rockwell",
+    "siemens",
+    "tia-portal",
+    "codesys",
+    "twincat",
+    "plcopen",
+    "scada",
+    "hmi",
+    "industrial-automation",
+    "migration",
+    "alarm-management"
+  ],
+  "userConfig": {
+    "historian_config": {
+      "type": "file",
+      "title": "Historian connector config (optional)",
+      "description": "Leave empty to keep the read-only historian connector off. Only set this after plant IT/OT approval: a JSON config with \"enabled\": true and a sqlite, csv_dir, odbc or opcua backend (see mcp/historian/README.md).",
+      "default": ""
+    },
+    "odbc_connection": {
+      "type": "string",
+      "title": "ODBC connection string (optional)",
+      "description": "For the odbc backend only. Use a read-only database account. Stored in your secure credential store and given only to the Rungstone historian connector.",
+      "sensitive": true,
+      "default": ""
+    },
+    "opcua_username": {
+      "type": "string",
+      "title": "OPC UA username (optional)",
+      "description": "For the opcua backend only. Leave empty for an anonymous session. Use an account with read-only rights.",
+      "default": ""
+    },
+    "opcua_password": {
+      "type": "string",
+      "title": "OPC UA password (optional)",
+      "description": "For the opcua backend only. Stored in your secure credential store and given only to the Rungstone historian connector.",
+      "sensitive": true,
+      "default": ""
+    }
+  },
+  "mcpServers": {
+    "rungstone-historian": {
+      "command": "python3",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/mcp/historian/server.py",
+        "--config",
+        "${user_config.historian_config}"
+      ],
+      "env": {
+        "RUNGSTONE_ODBC_CONNECTION": "${user_config.odbc_connection}",
+        "RUNGSTONE_OPCUA_USERNAME": "${user_config.opcua_username}",
+        "RUNGSTONE_OPCUA_PASSWORD": "${user_config.opcua_password}"
+      }
+    }
+  }
 }

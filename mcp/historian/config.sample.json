@@ -30,5 +30,23 @@
     "max_tags": 20,
     "max_rows_scanned": 1000000,
     "max_list": 500
+  },
+  "odbc": {
+    "dsn": "PlantHistorian_ReadOnly",
+    "table": "history",
+    "columns": {
+      "tag": "tagname",
+      "time": "t_stamp",
+      "value": "value"
+    },
+    "time_format": "iso",
+    "_note": "Or leave dsn empty and enter an ODBC connection string in the plugin settings. Never put credentials here."
+  },
+  "opcua": {
+    "endpoint": "opc.tcp://historian.example.local:4840",
+    "nodes": {
+      "Pump1_Run": "ns=2;s=Pump1.Run"
+    },
+    "_note": "Anonymous unless an OPC UA username/password is entered in the plugin settings."
   }
 }

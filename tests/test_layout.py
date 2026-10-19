@@ -24,7 +24,8 @@ class LayoutTests(unittest.TestCase):
         self.assertEqual(m["displayName"], "Rungstone")
         self.assertRegex(m["version"], r"^\d+\.\d+\.\d+$")
         self.assertTrue(m.get("license"))
-        self.assertNotIn("mcpServers", m)  # historian server is opt-in only
+        # historian server is registered but off until the user sets its config in userConfig
+        self.assertEqual(list(m.get("mcpServers", {})), ["rungstone-historian"])
         self.assertFalse(os.path.exists(os.path.join(ROOT, ".mcp.json")))
 
     def test_repo_limits(self):

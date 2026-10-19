@@ -1,16 +1,22 @@
 """
-Rungstone historian MCP server - OPTIONAL, LOCAL, READ-ONLY.
+Rungstone historian MCP server - OPTIONAL, READ-ONLY.
 
-Disabled by default.  It is not registered in the plugin's .mcp.json; a user
-adds it to their own project after plant IT/OT approval (see README.md).  It
-refuses to start unless --config points at a JSON config
-with "enabled": true.
+Registered by the plugin but DISABLED by default: until the user sets the
+"Historian connector config" plugin setting to a JSON config with
+"enabled": true (after plant IT/OT approval), it serves no tools and connects
+to nothing.
 
 Transport: MCP stdio (newline-delimited JSON-RPC 2.0).  Standard library only.
 
 Backends (all read-only):
   sqlite   - file opened with URI mode=ro and PRAGMA query_only=ON
   csv_dir  - folder of exported CSV files (long or wide format)
+  odbc     - SQL historian tables via pyodbc (if installed); readonly=True connection
+  opcua    - OPC UA values/history via asyncua (if installed); reads only
+
+Credentials: only what the user enters in the plugin settings (Claude Code
+userConfig, sensitive values kept in the secure store), passed to this process
+by Claude Code. The config file must not contain credentials.
 
 Tools: list_tags, search_tags, latest, query_range.
 The model never supplies SQL.  Queries are parameterised SELECTs built from
@@ -193,6 +199,78 @@ class SqliteBackend(SqlBackend):
         self.conn.execute("PRAGMA query_only = ON")
 
 
+class OdbcBackend(SqlBackend):
+    """Read-only ODBC (SQL historian tables).
+
+    Connection details come only from what the user chose to share: either a
+    system DSN named in the config file, or the ODBC connection string the user
+    entered in the plugin's settings (Claude Code userConfig, stored in the
+    platform's secure store and handed to this process by Claude Code as
+    RUNGSTONE_ODBC_CONNECTION). Credentials are never put in the config file.
+    """
+
+    def __init__(self, cfg, limits):
+        try:
+            import pyodbc  # noqa: F401
+        except ImportError:
+            raise ToolError("backend not available: odbc needs the pyodbc package")
+        SqlBackend.__init__(self, cfg, limits)
+        reject_credentials(cfg, "odbc")
+        shared = SHARED.get("odbc_connection") or ""
+        dsn = str(cfg.get("dsn") or "")
+        if shared:
+            conn_str = shared
+        elif re.match(r"^[A-Za-z0-9 _.-]{1,64}$", dsn):
+            conn_str = "DSN=%s" % dsn
+        else:
+            raise ToolError("odbc needs a \"dsn\" in the config or a connection string in the plugin settings")
+        self.conn = pyodbc.connect(conn_str, readonly=True, autocommit=False)  # read-only connection
+        # T-SQL has no LIMIT; this backend targets ANSI/Postgres/SQLite-style dialects. Document per site.
+
+
+class OpcUaBackend(object):
+    """Read-only OPC UA: reads current values and raw history. Never writes.
+
+    Anonymous unless the user entered an OPC UA username/password in the plugin
+    settings (Claude Code userConfig). Use an account with read-only rights.
+    """
+
+    def __init__(self, cfg, limits):
+        try:
+            from asyncua.sync import Client  # noqa: F401
+        except ImportError:
+            raise ToolError("backend not available: opcua needs the asyncua package")
+        reject_credentials(cfg, "opcua")
+        self.limits = limits
+        self.nodes = dict(cfg.get("nodes", {}))  # tag name -> NodeId string
+        self.client = Client(cfg["endpoint"])
+        if SHARED.get("opcua_username"):
+            self.client.set_user(SHARED["opcua_username"])
+            self.client.set_password(SHARED.get("opcua_password") or "")
+        self.client.connect()
+
+    def list_tags(self, limit):
+        return [{"tag": t, "node": n} for t, n in sorted(self.nodes.items())[:limit]]
+
+    def search_tags(self, pattern, limit):
+        pat = pattern if any(c in pattern for c in "*?") else "*%s*" % pattern
+        return [{"tag": t, "node": n} for t, n in sorted(self.nodes.items()) if fnmatch.fnmatch(t.lower(), pat.lower())][:limit]
+
+    def _node(self, tag):
+        if tag not in self.nodes:
+            raise ToolError("tag %r is not in the configured node list" % tag)
+        return self.client.get_node(self.nodes[tag])
+
+    def latest(self, tag):
+        dv = self._node(tag).read_data_value()
+        return {"tag": tag, "time": iso(dv.SourceTimestamp or dt.datetime.now(dt.timezone.utc)),
+                "value": num(dv.Value.Value), "quality": str(dv.StatusCode)}
+
+    def query_range(self, tag, start, end):
+        hist = self._node(tag).read_raw_history(start, end, numvalues=self.limits["max_rows_scanned"])
+        return [(iso(h.SourceTimestamp), num(h.Value.Value)) for h in hist]
+
+
 class CsvDirBackend(object):
     """Exported CSV files. Long format: time,tag,value[,quality]. Wide: time + one column per tag."""
 
@@ -264,7 +342,30 @@ class CsvDirBackend(object):
         return out
 
 
-BACKENDS = {"sqlite": SqliteBackend, "csv_dir": CsvDirBackend}
+CREDENTIAL_KEYS = {"uid", "user", "username", "pwd", "password", "passwd", "secret", "token", "connection_string",
+                   "private_key", "certificate"}
+BACKENDS = {"sqlite": SqliteBackend, "csv_dir": CsvDirBackend, "odbc": OdbcBackend, "opcua": OpcUaBackend}
+
+# Values the user chose to share through the plugin settings (Claude Code userConfig).
+# Claude Code substitutes ${user_config.KEY} into this server's environment; nothing
+# else in the environment is read.
+SHARED_VARS = {"odbc_connection": "RUNGSTONE_ODBC_CONNECTION", "opcua_username": "RUNGSTONE_OPCUA_USERNAME",
+               "opcua_password": "RUNGSTONE_OPCUA_PASSWORD"}
+SHARED = {}
+
+
+def load_shared():
+    for key, var in SHARED_VARS.items():
+        v = os.environ.get(var, "")
+        if v and not v.startswith("${"):  # unsubstituted placeholder = not provided
+            SHARED[key] = v
+
+
+def reject_credentials(cfg, where):
+    bad = [k for k in cfg if k.lower() in CREDENTIAL_KEYS]
+    if bad:
+        raise ToolError("%s config must not contain credentials (%s); enter them in the plugin settings instead"
+                        % (where, ", ".join(bad)))
 
 # ---------------------------------------------------------------------------
 # MCP plumbing
@@ -292,7 +393,11 @@ TOOLS = [
 
 
 class Server(object):
-    def __init__(self, cfg):
+    def __init__(self, cfg, disabled_reason=None):
+        self.disabled = disabled_reason
+        if disabled_reason:
+            self.cfg, self.limits, self.backend_name, self._backend = {}, dict(DEFAULT_LIMITS), None, None
+            return
         self.cfg = cfg
         self.limits = dict(DEFAULT_LIMITS, **cfg.get("limits", {}))
         name = cfg.get("backend")
@@ -308,6 +413,8 @@ class Server(object):
         return self._backend
 
     def call(self, name, args):
+        if self.disabled:
+            raise ToolError("historian connector is disabled: %s" % self.disabled)
         args = args or {}
         lim = self.limits
         if name == "list_tags":
@@ -357,12 +464,16 @@ class Server(object):
                 ver = req if req in PROTOCOLS else PROTOCOLS[0]
                 return ok(mid, {"protocolVersion": ver, "capabilities": {"tools": {"listChanged": False}},
                                 "serverInfo": {"name": SERVER_NAME, "version": SERVER_VERSION},
-                                "instructions": "Read-only historian access. No write operations exist. "
-                                                "Use query_range around an event, then explain it with the PLC logic."})
+                                "instructions": (("Rungstone historian connector is DISABLED (%s). It offers no tools. "
+                                                  "To enable it, with plant IT/OT approval, set 'Historian connector config' in "
+                                                  "the Rungstone plugin settings to a config file with \"enabled\": true."
+                                                  % self.disabled) if self.disabled else
+                                                 "Read-only historian access. No write operations exist. "
+                                                 "Use query_range around an event, then explain it with the PLC logic.")})
             if method == "ping":
                 return ok(mid, {})
             if method == "tools/list":
-                return ok(mid, {"tools": TOOLS})
+                return ok(mid, {"tools": [] if self.disabled else TOOLS})
             if method == "tools/call":
                 p = msg.get("params") or {}
                 try:
@@ -385,28 +496,27 @@ def err(mid, code, message):
 
 
 def load_config(argv=None):
+    """Return (config, None) when enabled, or (None, reason) when the connector stays off."""
     argv = sys.argv[1:] if argv is None else argv
-    path = argv[argv.index("--config") + 1] if "--config" in argv and argv.index("--config") + 1 < len(argv) else None
-    if not path:
-        raise SystemExit("rungstone-historian: disabled. Start it with --config PATH pointing at a config file with "
-                         "\"enabled\": true (plant IT/OT approval required first).")
+    path = argv[argv.index("--config") + 1] if "--config" in argv and argv.index("--config") + 1 < len(argv) else ""
+    if not path or path.startswith("${"):
+        return None, "no config file set"
     with open(path, encoding="utf-8") as f:
         cfg = json.load(f)
     if cfg.get("enabled") is not True:
-        raise SystemExit("rungstone-historian: disabled in %s (\"enabled\" is not true). Nothing started." % path)
-    return cfg
+        return None, "\"enabled\" is not true in %s" % os.path.basename(path)
+    return cfg, None
 
 
 def main():
+    load_shared()
     try:
-        cfg = load_config()
-        srv = Server(cfg)
-    except SystemExit as e:
-        sys.stderr.write(str(e) + "\n")
-        return 3
+        cfg, reason = load_config()
+        srv = Server(cfg, reason)
     except (OSError, ValueError, ToolError) as e:
-        sys.stderr.write("rungstone-historian: bad config: %s\n" % e)
-        return 3
+        srv = Server(None, "bad config: %s" % e)
+    if srv.disabled:
+        sys.stderr.write("rungstone-historian: disabled (%s); serving no tools\n" % srv.disabled)
     for line in sys.stdin:
         line = line.strip()
         if not line:

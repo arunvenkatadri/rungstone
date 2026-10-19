@@ -37,7 +37,7 @@ These rules hold in every skill, command and script:
 | `commands/` | `/rungstone:understand` `/rungstone:translate` `/rungstone:verify` `/rungstone:dependencies` `/rungstone:hmi` `/rungstone:alarms` `/rungstone:troubleshoot` `/rungstone:report` `/rungstone:workbench` `/rungstone:export` |
 | `hooks/` | Guardrails: block `/rungstone:export` while high-risk items are open; block device/network write actions; warn when a file read or written looks like safety logic. |
 | `shared/` | Safe XML parsing, `.rungstone/` state, export, workbench UI, JSON schemas. Vendored into each skill's `scripts/_shared/` so every skill also works standalone. |
-| `mcp/historian` | **Optional** local, read-only historian MCP server. **Disabled by default and not registered.** See below. |
+| `mcp/historian` | **Optional** read-only historian connector (SQLite, CSV, ODBC, OPC UA). **Off until you configure it** in the plugin settings. See below. |
 | `evals/`, `fixtures/`, `tests/` | Test cases per skill, small sample files, and the unit tests. |
 
 ## Supported formats
@@ -92,7 +92,9 @@ Typical flow: `/rungstone:understand` → `/rungstone:translate … to siemens-s
 
 - **Everything runs locally.** The skills run the Python scripts in `skills/*/scripts/` on files you
   provide. They read those files, write results to `.rungstone/`, `out/` and `export/` in your project folder, and print JSON.
-- **No network access.** No script opens an outbound connection, sends telemetry, or fetches anything.
+- **No network access**, with one opt-in exception. No script opens an outbound connection, sends telemetry or fetches
+  anything. The exception is the historian connector, and only after you enable it in the plugin settings: it then makes read-only
+  queries to the historian you configured, and to nothing else.
 - **The workbench** (`shared/workbench/server.py`) binds to `127.0.0.1` only (any other address is refused),
   uses a per-session CSRF token, and serves only the local state files.
 - **Hooks** (`hooks/scripts/*.py`) read the hook event JSON and local `.rungstone/review_queue.json`, and
@@ -102,13 +104,18 @@ Typical flow: `/rungstone:understand` → `/rungstone:translate … to siemens-s
   raw sockets and Windows script hosts. It doesn't change permission settings.
 - **Customer files are never executed.** HMI/SCADA scripts are parsed as text.
 
-## Optional historian MCP server (read-only)
+## Optional historian connector (read-only MCP server)
 
-`mcp/historian/` is a small, read-only MCP server for querying a historian or SCADA database that you
-configure: a SQLite file or a folder of CSV exports (live database and OPC UA connections are not part of this version). It is **disabled by default** and **not
-registered** by the plugin. It refuses to start unless you start it with `--config` pointing at a config with
-`"enabled": true`. It has no write capability of any kind: no raw SQL from the model, parameterized
-SELECTs only, and a read-only connection.
+`mcp/historian/` is a small, read-only MCP server for querying historian data: a SQLite file, a folder of CSV
+exports, SQL historian tables over ODBC, or OPC UA values and history. It ships with the plugin but is
+**off by default**. Until you set **Historian connector config** in the plugin settings to a config file with
+`"enabled": true`, it offers no tools and connects to nothing.
+
+- **No write capability of any kind.** There's no raw SQL from the model, only parameterized SELECTs on
+  read-only connections, and OPC UA does reads only.
+- **Credentials only from plugin settings.** ODBC connection strings and OPC UA passwords are entered in the
+  plugin settings (Claude Code `userConfig`, kept in your OS secure credential store) and passed only to this
+  connector. Nothing is read from your environment, and credentials never go in the config file.
 
 > **Get approval from plant IT/OT before you enable it.** Connecting any tool to plant systems must follow your
 > site's OT security policy. See `mcp/historian/README.md`.

@@ -68,17 +68,35 @@ class HistorianTest(unittest.TestCase):
         self.assertEqual(code, 0, err)
         return out
 
-    def test_refuses_without_config(self):
-        code, out, err = self.run_server([{"jsonrpc": "2.0", "id": 1, "method": "initialize"}], None)
-        self.assertEqual(code, 3)
-        self.assertEqual(out, [])
+    def disabled_session(self, cfg_path):
+        msgs = [{"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18"}},
+                {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
+                {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "list_tags", "arguments": {}}}]
+        code, out, err = self.run_server(msgs, cfg_path)
+        self.assertEqual(code, 0, err)
         self.assertIn("disabled", err)
+        by = dict((m["id"], m) for m in out)
+        self.assertIn("DISABLED", by[1]["result"]["instructions"])
+        self.assertEqual(by[2]["result"]["tools"], [])
+        self.assertTrue(by[3]["result"]["isError"])
+        return by
 
-    def test_refuses_when_disabled(self):
-        code, out, err = self.run_server([{"jsonrpc": "2.0", "id": 1, "method": "initialize"}], self.config(enabled=False))
-        self.assertEqual(code, 3)
-        self.assertEqual(out, [])
-        self.assertIn("disabled", err)
+    def test_disabled_without_config(self):
+        self.disabled_session(None)
+
+    def test_disabled_with_unsubstituted_placeholder(self):
+        self.disabled_session("${user_config.historian_config}")
+
+    def test_disabled_when_enabled_false(self):
+        self.disabled_session(self.config(enabled=False))
+
+    def test_credentials_in_config_file_rejected(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("rungstone_historian_server2", SERVER)
+        hs = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(hs)
+        with self.assertRaises(hs.ToolError):
+            hs.reject_credentials({"dsn": "x", "password": "p"}, "odbc")
 
     def test_initialize_and_list(self):
         out = self.session([])
@@ -142,7 +160,7 @@ class HistorianTest(unittest.TestCase):
             b.conn.execute("CREATE TABLE x (a)")
         with open(SERVER) as f:
             src = f.read()
-        for word in ("INSERT", "UPDATE", "DELETE", "DROP", "write_value", "set_value", "call_method"):
+        for word in ("INSERT", "UPDATE", "DELETE", "DROP", "write_value", "set_value", "call_method", "write_attribute"):
             self.assertIsNone(re.search(r'"[^"\n]*\b%s\b' % word, src), word)
         self.assertNotIn("mode=rw", src)
         self.assertEqual(sorted(t["name"] for t in hs.TOOLS), ["latest", "list_tags", "query_range", "search_tags"])
@@ -158,12 +176,17 @@ class HistorianTest(unittest.TestCase):
         self.assertEqual([t["tag"] for t in res[10]["tags"]], ["Pump1_Amps", "Pump1_Run"])
         self.assertEqual(res[11]["value"], 96.0)
 
-    def test_not_registered_in_plugin_mcp_json(self):
-        p = os.path.join(ROOT, ".mcp.json")
-        if os.path.exists(p):
-            with open(p) as f:
-                self.assertNotIn("historian", f.read())
-
+    def test_registered_with_user_config_only(self):
+        with open(os.path.join(ROOT, ".claude-plugin", "plugin.json")) as f:
+            m = json.load(f)
+        srv = m["mcpServers"]["rungstone-historian"]
+        self.assertIn("${user_config.historian_config}", srv["args"])
+        for var, val in srv["env"].items():
+            self.assertRegex(val, r"^\$\{user_config\.[a-z_]+\}$", var)
+        uc = m["userConfig"]
+        self.assertTrue(uc["odbc_connection"]["sensitive"])
+        self.assertTrue(uc["opcua_password"]["sensitive"])
+        self.assertEqual(uc["historian_config"]["default"], "")  # off unless the user sets it
 
 if __name__ == "__main__":
     unittest.main()

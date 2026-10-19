@@ -16,10 +16,13 @@ deliberately, per project, by adding it to your own `.mcp.json`.
 - `query_range` - samples for up to 20 tags between two times. Large results are
   min/max downsampled so trips and spikes stay visible.
 
-Backends: a **SQLite** file (opened `mode=ro` with `PRAGMA query_only=ON`) or a
-folder of **CSV** exports. Point it at a read-only copy or export of your historian
-data. Direct connections to live historian databases or OPC UA servers are not part
-of this version.
+Backends:
+- **sqlite**: a SQLite file, opened `mode=ro` with `PRAGMA query_only=ON`.
+- **csv_dir**: a folder of CSV exports.
+- **odbc**: SQL historian tables through `pyodbc` (install it yourself), connection opened `readonly=True`.
+- **opcua**: OPC UA current values and raw history through `asyncua` (install it yourself); reads only.
+
+ODBC and OPC UA have not been tested against a live system in this release.
 
 ## What it cannot do
 
@@ -30,32 +33,28 @@ of this version.
 - It does not connect to PLCs, controllers or servers. It reads only the files you
   configure.
 - It does not monitor live. Each tool call is a one-off query.
-- It never reads, stores or passes credentials. It opens only the local SQLite
-  file or CSV folder named in your config.
+- It never reads credentials from your machine. The only credentials it uses are the ones
+  you type into the plugin's settings (ODBC connection string, OPC UA username and
+  password). Claude Code keeps the sensitive ones in your OS secure credential store and
+  hands them only to this connector. A config file that contains user, password, token or
+  connection-string fields is refused.
 
 ## Enable it (after approval)
 
-1. Copy `config.sample.json` somewhere outside the repo, fill in the backend
-   section you use, and set `"enabled": true`.
-2. For SQLite, set `time_format` to match the stored timestamps: `iso`
-   (`2026-10-19T08:00:00`), `iso_space` (`2026-10-19 08:00:00`), `epoch_s`, or
-   `epoch_ms`.
-3. Add this to **your project's** `.mcp.json` (not the plugin's):
+The connector ships with the plugin but stays **off**: until you complete these steps it offers
+no tools and connects to nothing.
 
-```json
-{
-  "mcpServers": {
-    "rungstone-historian": {
-      "command": "python3",
-      "args": ["/absolute/path/to/rungstone/mcp/historian/server.py",
-               "--config", "/absolute/path/to/historian-config.json"]
-    }
-  }
-}
-```
+1. Get plant IT/OT approval. Use a read-only database account or OPC UA user.
+2. Copy `config.sample.json` somewhere outside the repo. Keep only the backend you use, set
+   `"backend"`, and set `"enabled": true`. For SQLite and ODBC, set `time_format` to match the
+   stored timestamps (`iso`, `iso_space`, `epoch_s` or `epoch_ms`). Do not put credentials in this file.
+3. In Claude Code, open the Rungstone plugin settings (`/plugin`, select Rungstone, configure) and set:
+   - **Historian connector config**: the path to your config file.
+   - **ODBC connection string** (odbc only, if you don't use a system DSN).
+   - **OPC UA username / password** (opcua only, if the server needs them).
+4. Restart the session. `/mcp` shows `rungstone-historian` with four read-only tools.
 
-If `--config` is missing, or the config does not have
-`"enabled": true`, the server prints why and exits without serving anything.
+Clearing the config setting turns it off again.
 
 ## Limits
 

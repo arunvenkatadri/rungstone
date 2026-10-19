@@ -25,7 +25,7 @@ VERSION : 0.1
 BEGIN
 	// rung 0: master start/stop seal-in
 	#Master_Run := (#Start_PB OR #Master_Run) AND #Stop_PB;
-	// rung 1: scale level (SCP 3277..16384 -> 0..1000 in the source)
+	// rung 1: scale level (source scales raw 3277..16384 to 0..1000)
 	IF #Master_Run THEN
 	    #Level_Norm := NORM_X(MIN := 0, VALUE := #Level_Raw, MAX := 27648);
 	    #Level_Pct := SCALE_X(MIN := 0, VALUE := #Level_Norm, MAX := 1000);

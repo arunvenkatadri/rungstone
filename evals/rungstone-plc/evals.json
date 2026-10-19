@@ -57,7 +57,7 @@
         "Explains tank 1 drains first, then tank 2, tied to rung numbers",
         "Produces S7-1500 SCL with a DRAFT / not-approved header and no claim it is ready to download",
         "Mapping table includes every signal: I:1/14, I:1/15, O:2/15, I:1/0, I:1/1, I:3.0, O:4.0, O:6.0, N7:0, N7:1, N7:2",
-        "Flags the analog scaling (SCP 3277..16384 to 0..1000) for confirmation, stating the S7 raw range 0..27648 and that the module/range must be confirmed",
+        "Flags the analog scaling (the scale-with-parameters instruction on rung 1, raw 3277..16384 scaled to 0..1000) for confirmation, stating the S7 raw range 0..27648 and that the module/range must be confirmed",
         "Raises N7:1 and N7:2 as read but never written (probably HMI/terminal set) as open questions",
         "Raises the retentive-memory difference for N7 registers (Rockwell retains, S7 non-retentive by default) as a review item",
         "Review queue is ranked high/medium/low with a proposed fix for each item and says nothing is final until approved"
