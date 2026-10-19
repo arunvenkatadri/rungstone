@@ -29,7 +29,7 @@ the trip; suction pressure followed it down.
 | Location | Logic | Why it matters |
 |---|---|---|
 | Pumps/P101_Control rung 4 | `[XIC(HMI_Start_PB) ,XIC(P101_Run) ]XIO(HMI_Stop_PB)XIC(P101_Permissive)OTE(P101_Run);` | Run needs `P101_Permissive` = 1 |
-| Pumps/P101_Control rung 0 | `...XIO(P101_LowSuct_Trip)OTE(P101_Permissive);` | Permissive drops when the low-suction trip is set |
+| Pumps/P101_Control rung 0 | `...XIO(P101_LowSuct_Trip)OTE(P101_Permissive);` | Permissive drops when the low-suction trip bit turns on |
 | Pumps/P101_Control rungs 1-2 | `XIC(P101_Run)XIO(PSL_101)TON(PSL_Debounce,...)` then `XIC(PSL_Debounce.DN)OTL(P101_LowSuct_Trip)` | 5 s of lost PSL-101 while running latches the trip |
 
 ## Ruled out (no change in the window)

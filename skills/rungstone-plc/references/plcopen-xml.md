@@ -18,7 +18,7 @@ e!COCKPIT, ifm, Festo, Eaton…), Beckhoff TwinCAT, or plain IEC ST.
 | Have | Ask for |
 |---|---|
 | `.project` (CODESYS) | Project > Export PLCopenXML (select application/POUs) |
-| TwinCAT solution | The `.TcPOU`/`.TcGVL`/`.TcDUT` files from the PLC project folder (plain XML), or PLCopenXML export |
+| TwinCAT solution | The `.TcPOU`/`.TcGVL`/`.TcDUT` files from the PLC project folder (plain XML), or a PLCopenXML export file |
 | TwinSAFE (`.sal`, `.splcProj`) | Do not request — safety project, excluded |
 | Text `.st`/`.exp` exports | Fine; parser reads PROGRAM/FUNCTION_BLOCK/FUNCTION/TYPE blocks |
 

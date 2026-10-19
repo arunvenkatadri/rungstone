@@ -7,9 +7,9 @@ V7/V8 (classic SCADA).
 
 | Platform | Tags | Alarms | Screens | Scripts |
 |---|---|---|---|---|
-| TIA WinCC Comfort/Advanced | HMI tags > Export (xlsx; sheet "Hmi Tags") | Discrete/Analog alarms > Export (xlsx sheets "DiscreteAlarms", "AnalogAlarms") | Openness XML export | VBScript in the project (copy text / Openness) |
-| TIA WinCC Unified | Tag export (xlsx/Openness) | Alarm export (xlsx/Openness) | Openness / screen export | JavaScript (`HMIRuntime.Tags("x").Read()`, `.Write(v)`) |
-| WinCC V7/V8 | Tag Management export (CSV/xlsx) or WinCC Configuration Studio | Alarm Logging export | Graphics Designer (PDL, binary - ask for screenshots + object property lists) | VBS (`HMIRuntime.Tags("x").Write`) and C (`SetTagDWord`, `GetTagBit`) |
+| TIA WinCC Comfort/Advanced | HMI tags > Export (xlsx; sheet "Hmi Tags") | Discrete/Analog alarms > Export (xlsx sheets "DiscreteAlarms", "AnalogAlarms") | exported via Openness XML | VBScript in the project (copy text / Openness) |
+| TIA WinCC Unified | Tag export (xlsx/Openness) | Alarm export (xlsx/Openness) | Openness or screen export (XML) | JavaScript (`HMIRuntime.Tags("x").Read()`, `.Write(v)`) |
+| WinCC V7/V8 | Tag Management export (CSV/xlsx) or WinCC Configuration Studio | exported from Alarm Logging | Graphics Designer (PDL, binary - ask for screenshots + object property lists) | VBS (`HMIRuntime.Tags("x").Write`) and C (`SetTagDWord`, `GetTagBit`) |
 
 `.xlsx` exports are read with openpyxl when it is installed; otherwise ask the user to save each sheet as CSV.
 CSV exports are usually `;`-separated.

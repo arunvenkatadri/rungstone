@@ -62,6 +62,10 @@ HISTORY_TIME_HINTS = ("eventtime", "event time", "timestamp", "time", "date/time
 HISTORY_STATE_HINTS = ("state", "event", "eventtype", "transition", "status")
 
 
+# FactoryTalk command verbs on button actions (word list, not a regex alternation)
+ACTION_VERBS = ("set", "toggle", "display", "abort", "invoke")
+ACTION_RE = re.compile(r"^\s*([A-Za-z]+)\s+(.*)$")
+
 def ref_dicts(text, access):
     out = []
     for r in hc.find_refs(text or ""):
@@ -158,7 +162,9 @@ def ft_display(path, root, warnings):
                     bindings.append({"property": hc.lname(conn), "expression": expr, "refs": ref_dicts(expr, "read")})
             for k, v in c.attrib.items():
                 if k in ("pressAction", "releaseAction", "repeatAction", "pressCommand", "releaseCommand"):
-                    m = re.match(r"(?i)^\s*(set|toggle|display|abort|invoke)\s+(.*)$", v)
+                    m = ACTION_RE.match(v)
+                    if m and m.group(1).lower() not in ACTION_VERBS:
+                        m = None
                     bindings.append({"property": k, "expression": v,
                                      "refs": ref_dicts(v, "write" if m and m.group(1).lower() in ("set", "toggle") else "read")})
             if bindings:

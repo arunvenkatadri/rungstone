@@ -171,7 +171,7 @@ Pitfalls:
 
 | Platform | Default on power cycle |
 |---|---|
-| Logix | **All tag values retained**; prescan clears OTE outputs, resets TON/ONS states; OTL bits stay set |
+| Logix | **All tag values retained**; prescan clears OTE outputs, resets TON/ONS states; OTL bits stay latched |
 | SLC/PLC-5 | Data table retained (battery/capacitor); OTE outputs non-retentive; OTL retained |
 | S7-1500 | **Non-retentive by default**; only members marked Retain (DB/FB/tag table %M range) keep values |
 | CODESYS/TwinCAT | `VAR` reinitialized; `VAR RETAIN`/`PERSISTENT` keep values (hardware/runtime dependent) |
