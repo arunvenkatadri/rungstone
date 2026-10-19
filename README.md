@@ -128,12 +128,8 @@ Live monitoring isn't part of this version. The ops skill works on exported data
 
 ## Development
 
-```
-python3 -m unittest discover -s tests -p 'test_*.py'    # unit tests
-python3 tools/sync_shared.py [--check]                  # vendor shared/ into each skill
-python3 tools/build_skills.py                           # standalone .skill packages into dist/
-claude plugin validate . --strict
-```
+Tests, the shared-code sync, the standalone `.skill` build and plugin validation are described in
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### Fixtures and rights
 

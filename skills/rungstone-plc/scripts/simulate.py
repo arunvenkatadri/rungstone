@@ -872,7 +872,7 @@ class Program(object):
                     raise NotRun("%s (%s line %s)" % (e.reason, r["id"], ln), "%s line %s" % (r["id"], ln))
                 c = ("st", body, [l["number"] for l in lines], r["id"])
             elif r.get("networks"):
-                raise NotRun("%s: graphical (LAD/FBD) network summaries are not executable; export SCL/ST or ladder text" % r["id"])
+                raise NotRun("%s: graphical (LAD/FBD) network summaries are not executable; provide SCL/ST source or ladder text instead" % r["id"])
             else:
                 c = ("ladder", [])
         except NotRun as e:
