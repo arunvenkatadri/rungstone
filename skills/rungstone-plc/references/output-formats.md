@@ -53,7 +53,7 @@ statements in narrative text.
 1. <question> — why it matters — where (location).
 ```
 Order open questions by impact. Always include: signals read but never written
-(from `dependency_map.py`), unknown meanings, ambiguous NC/NO wiring, analog ranges,
+(from `dependency_map.py`), unknown meanings, ambiguous normally-open / normally-closed wiring, analog ranges,
 anything you inferred that changes behavior if wrong.
 
 ## 2. Translate

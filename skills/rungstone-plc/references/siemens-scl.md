@@ -205,7 +205,7 @@ FUNCTION_BLOCK "FB_TwoTank"
 VERSION : 0.1
    VAR_INPUT
       Start_PB : Bool;    // was I:1/14 (NO pushbutton) - from comment
-      Stop_PB  : Bool;    // was I:1/15 (NC pushbutton, TRUE = not pressed) - inferred from XIC use
+      Stop_PB  : Bool;    // was I:1/15 (normally-closed pushbutton, TRUE = not pressed) - inferred from XIC use
    END_VAR
    VAR_OUTPUT
       Master_Run : Bool;  // was O:2/15

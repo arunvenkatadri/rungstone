@@ -52,7 +52,7 @@ Goal: the engineer can explain the machine to someone else after reading your an
 1. Run the dependency map on what you have (`dependency_map.py --plc ... --md`) — it gives readers/writers per tag and the read-but-never-written list for open questions.
 2. Walk the logic in execution order (task → program → main routine → JSR calls; OB1 → FB calls; PROGRAM/task order). For each routine, identify its job before its details.
 3. Build the **machine sequence** tied to rung/line numbers: what starts it, each step, what ends or aborts it, interlocks and permissives.
-4. Build the **signal table**: every signal used, its meaning, how you know (basis + quote or reason), where it's used. NC/NO wiring is a classic trap: an XIC on a stop button means the input is TRUE when *not* pressed — say "inferred NC" and ask.
+4. Build the **signal table**: every signal used, its meaning, how you know (basis + quote or reason), where it's used. Normally-open vs normally-closed wiring is a classic trap: an XIC on a stop button means the input is TRUE when *not* pressed — say "inferred normally closed" and ask.
 5. **Open questions**: read-but-never-written signals, unknown meanings, analog ranges, ambiguous wiring, setpoints with no writer (probably HMI), anything where a wrong guess changes behavior.
 6. Save confirmed meanings into `tagmap.json` as the engineer answers.
 
@@ -93,7 +93,7 @@ For deeper HMI/SCADA work (screens, scripts, alarms, rebinding), the `rungstone-
 
 ## When the input is small or pasted
 
-A few pasted rungs still get the full treatment, just shorter: parse them from a file, state the safety check result, label meanings, list open questions. Don't skip the mapping table or the review queue on a translation because it is small — the two-tank example has 11 signals and at least four high-risk items (analog scaling, NC stop inference, retentive registers, registers with no writer).
+A few pasted rungs still get the full treatment, just shorter: parse them from a file, state the safety check result, label meanings, list open questions. Don't skip the mapping table or the review queue on a translation because it is small — the two-tank example has 11 signals and at least four high-risk items (analog scaling, normally-closed stop inference, retentive registers, registers with no writer).
 
 ## Limits to state when relevant
 

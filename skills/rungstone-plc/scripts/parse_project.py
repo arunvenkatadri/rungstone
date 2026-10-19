@@ -608,14 +608,14 @@ def sml_flgnet(fn):
     order = []
     for w in kids(wires, "Wire") if wires is not None else []:
         ident = [access.get(c.attrib.get("UId")) for c in kids(w, "IdentCon")]
-        for nc in kids(w, "NameCon"):
-            part = by_uid.get(nc.attrib.get("UId"))
+        for name_con in kids(w, "NameCon"):
+            part = by_uid.get(name_con.attrib.get("UId"))
             if part is None:
                 continue
             if part["uid"] not in order:
                 order.append(part["uid"])
             if ident and ident[0]:
-                part["pins"][nc.attrib.get("Name")] = ident[0]
+                part["pins"][name_con.attrib.get("Name")] = ident[0]
     text, refs = [], []
     for uid in order + [p["uid"] for p in parts if p["uid"] not in order]:
         p = by_uid[uid]

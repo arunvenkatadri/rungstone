@@ -349,14 +349,22 @@ BACKENDS = {"sqlite": SqliteBackend, "csv_dir": CsvDirBackend, "odbc": OdbcBacke
 # Values the user chose to share through the plugin settings (Claude Code userConfig).
 # Claude Code substitutes ${user_config.KEY} into this server's environment; nothing
 # else in the environment is read.
-SHARED_VARS = {"odbc_connection": "RUNGSTONE_ODBC_CONNECTION", "opcua_username": "RUNGSTONE_OPCUA_USERNAME",
-               "opcua_password": "RUNGSTONE_OPCUA_PASSWORD"}
 SHARED = {}
 
 
 def load_shared():
-    for key, var in SHARED_VARS.items():
-        v = os.environ.get(var, "")
+    """Read the three values Claude Code passes from the plugin settings.
+
+    plugin.json maps them explicitly:
+      RUNGSTONE_ODBC_CONNECTION  <- ${user_config.odbc_connection}   (sensitive)
+      RUNGSTONE_OPCUA_USERNAME   <- ${user_config.opcua_username}
+      RUNGSTONE_OPCUA_PASSWORD   <- ${user_config.opcua_password}    (sensitive)
+    Nothing else in the environment is read.
+    """
+    values = {"odbc_connection": os.environ.get("RUNGSTONE_ODBC_CONNECTION", ""),
+              "opcua_username": os.environ.get("RUNGSTONE_OPCUA_USERNAME", ""),
+              "opcua_password": os.environ.get("RUNGSTONE_OPCUA_PASSWORD", "")}
+    for key, v in values.items():
         if v and not v.startswith("${"):  # unsubstituted placeholder = not provided
             SHARED[key] = v
 

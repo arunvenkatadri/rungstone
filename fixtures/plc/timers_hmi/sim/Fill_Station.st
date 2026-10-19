@@ -1,7 +1,7 @@
 PROGRAM Fill_Station
 VAR
     Start_PB AT %IX0.0 : BOOL;     (* was Start_PB -> Local:1:I.Data.0 *)
-    Stop_PB AT %IX0.1 : BOOL;      (* was Stop_PB, NC *)
+    Stop_PB AT %IX0.1 : BOOL;      (* was Stop_PB, normally closed *)
     Tank_Full AT %IX0.2 : BOOL;    (* was Tank_Full, LSH-301 *)
     Fill_Valve AT %QX0.0 : BOOL;   (* was Fill_Valve, XV-301 *)
     HMI_Reset_Count : BOOL;

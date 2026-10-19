@@ -32,7 +32,7 @@
 <Description><![CDATA[Conveyor start PB]]></Description>
 </Tag>
 <Tag Name="Conv_Stop" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
-<Description><![CDATA[Conveyor stop PB (NC)]]></Description>
+<Description><![CDATA[Conveyor stop PB, normally closed]]></Description>
 </Tag>
 <Tag Name="Conv_Run" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
 <Description><![CDATA[Conveyor motor run command]]></Description>

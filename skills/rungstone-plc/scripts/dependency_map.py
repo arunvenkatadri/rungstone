@@ -135,7 +135,7 @@ MEMBER_RULES = {
                     "qu": ("medium", "QU -> .DN"), "qd": ("high", "QD has no single Logix equivalent (use ACC <= 0)")},
 }
 
-STOPWORDS = {"the", "a", "an", "of", "to", "for", "and", "or", "in", "on", "at", "is", "pb", "no", "nc", "-", "1", "2"}
+STOPWORDS = {"the", "a", "an", "of", "to", "for", "and", "or", "in", "on", "at", "is", "pb", "no", "normally", "closed", "open", "-", "1", "2"}
 
 ST_KEYWORDS = set("""IF THEN ELSE ELSIF END_IF CASE OF END_CASE FOR TO BY DO END_FOR WHILE END_WHILE REPEAT UNTIL
 END_REPEAT AND OR XOR NOT MOD TRUE FALSE RETURN EXIT CONTINUE REGION END_REGION GOTO JMP BEGIN VAR END_VAR

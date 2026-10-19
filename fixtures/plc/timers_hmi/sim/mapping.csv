@@ -1,6 +1,6 @@
 old_address,old_symbol,old_description,old_type,new_symbol,new_address,new_type,basis,notes
 Start_PB,Start_PB,Start pushbutton,BOOL,Start_PB,%IX0.0,BOOL,io_map,
-Stop_PB,Stop_PB,Stop pushbutton (NC),BOOL,Stop_PB,%IX0.1,BOOL,io_map,
+Stop_PB,Stop_PB,Stop pushbutton normally closed,BOOL,Stop_PB,%IX0.1,BOOL,io_map,
 Tank_Full,Tank_Full,Tank high level switch,BOOL,Tank_Full,%IX0.2,BOOL,io_map,
 Fill_Valve,Fill_Valve,Fill valve solenoid,BOOL,Fill_Valve,%QX0.0,BOOL,io_map,
 Fill_Active,Fill_Active,Fill cycle in progress,BOOL,Fill_Active,,BOOL,comment,not RETAIN in target - review queue

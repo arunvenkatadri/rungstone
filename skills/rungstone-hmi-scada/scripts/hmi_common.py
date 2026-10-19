@@ -222,7 +222,7 @@ OPPOSITES = [("open", "closed"), ("open", "close"), ("start", "stop"), ("on", "o
              ("up", "down"), ("raise", "lower"), ("enable", "disable"), ("enabled", "disabled"), ("auto", "manual"),
              ("inlet", "outlet"), ("left", "right"), ("min", "max"), ("minimum", "maximum"),
              ("pass", "fail"), ("heat", "cool"), ("extend", "retract"), ("lock", "unlock")]
-STOPWORDS = {"the", "a", "an", "of", "to", "for", "and", "or", "in", "on", "at", "is", "pb", "no", "nc", "ms", "s"}
+STOPWORDS = {"the", "a", "an", "of", "to", "for", "and", "or", "in", "on", "at", "is", "pb", "no", "normally", "closed", "open", "ms", "s"}
 
 
 def contradiction(a, b):

@@ -155,7 +155,7 @@ ignore them.
 **RSLogix 500 ASCII rung format:** `SOR <instr> <operands...> ... EOR`, branches `BST`
 (start) / `NXB` (next leg) / `BND` (end). Operands are space-separated; timers are
 `TON T4:0 1.0 100 0` (timer, time base, preset, accum). Example:
-`SOR BST XIC I:1/14 NXB XIC O:2/15 BND XIC I:1/15 OTE O:2/15 EOR` = start-or-sealed, AND stop-NC, drives master coil.
+`SOR BST XIC I:1/14 NXB XIC O:2/15 BND XIC I:1/15 OTE O:2/15 EOR` = start-or-sealed, AND stop (normally closed), drives master coil.
 
 **SLC analog raw ranges (1746-NI4 / NO4I, typical defaults — confirm module and jumpers):**
 0–10 V → 0..16383; 4–20 mA → 3277..16384 (≈ 819.2 counts/mA); 0–20 mA → 0..16383 (NO4I output:

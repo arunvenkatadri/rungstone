@@ -12,7 +12,7 @@
 <Communications><Connections><Connection Name="InputData" RPI="20000" Type="Input">
 <InputTag ExternalAccess="Read/Write"><Comments>
 <Comment Operand=".DATA.0"><![CDATA[Start pushbutton (NO)]]></Comment>
-<Comment Operand=".DATA.1"><![CDATA[Stop pushbutton (NC)]]></Comment>
+<Comment Operand=".DATA.1"><![CDATA[Stop pushbutton, normally closed]]></Comment>
 <Comment Operand=".DATA.2"><![CDATA[Tank high level switch LSH-301]]></Comment>
 </Comments><Data Format="Decorated"><Structure DataType="AB:1769_DI16:I:0"><DataValueMember Name="Fault" DataType="DINT" Radix="Binary" Value="2#0000_0000_0000_0000_0000_0000_0000_0000"/></Structure></Data></InputTag>
 </Connection></Connections></Communications>
@@ -32,7 +32,7 @@
 <Description><![CDATA[Start pushbutton]]></Description>
 </Tag>
 <Tag Name="Stop_PB" TagType="Alias" AliasFor="Local:1:I.Data.1" Radix="Decimal" ExternalAccess="Read/Write">
-<Description><![CDATA[Stop pushbutton, wired NC]]></Description>
+<Description><![CDATA[Stop pushbutton, wired normally closed]]></Description>
 </Tag>
 <Tag Name="Tank_Full" TagType="Alias" AliasFor="Local:1:I.Data.2" Radix="Decimal" ExternalAccess="Read/Write">
 <Description><![CDATA[Tank high level switch]]></Description>

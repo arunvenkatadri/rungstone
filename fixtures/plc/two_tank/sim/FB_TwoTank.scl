@@ -5,7 +5,7 @@ VERSION : 0.1
 // GENERATED FOR TESTING - DRAFT. Not for direct download to a running controller.
    VAR_INPUT
       Start_PB : Bool;      // was I:1/14 start pushbutton (NO)
-      Stop_PB : Bool;       // was I:1/15 stop pushbutton (NC: TRUE = not pressed)
+      Stop_PB : Bool;       // was I:1/15 stop pushbutton, normally closed: TRUE = not pressed
       Tank1_LLS : Bool;     // was I:1/0 tank 1 low level switch (TRUE = liquid present) INFERRED
       Tank2_LLS : Bool;     // was I:1/1 tank 2 low level switch INFERRED
       Level_Raw : Int;      // was I:3.0 level transmitter raw; S7 AI 4-20 mA nominal 0..27648

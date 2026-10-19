@@ -53,7 +53,7 @@
       "expected_output": "Understand section (summary, sequence by rung, signal table with basis, open questions) and a Translate section with an SCL FB/tag table, a complete mapping table covering all 11 signals, and a ranked review queue whose high items include analog scaling (SLC 1746-NI4 raw 3277..16384 vs S7 0..27648) flagged for confirmation.",
       "files": ["fixtures/plc/two_tank/two_tank_slc.txt"],
       "expectations": [
-        "Explains the master start/stop seal-in on rung 0 and that stop is XIC (likely NC wiring, flagged as inferred)",
+        "Explains the master start/stop seal-in on rung 0 and that stop is XIC (likely normally-closed wiring, flagged as inferred)",
         "Explains tank 1 drains first, then tank 2, tied to rung numbers",
         "Produces S7-1500 SCL with a DRAFT / not-approved header and no claim it is ready to download",
         "Mapping table includes every signal: I:1/14, I:1/15, O:2/15, I:1/0, I:1/1, I:3.0, O:4.0, O:6.0, N7:0, N7:1, N7:2",

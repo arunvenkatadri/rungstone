@@ -1,6 +1,6 @@
 old_address,old_symbol,old_description,old_type,new_symbol,new_address,new_type,basis,notes
 I:1/14,,Start pushbutton,BOOL,Start_PB,#Start_PB,Bool,confirmed,
-I:1/15,,Stop pushbutton (NC),BOOL,Stop_PB,#Stop_PB,Bool,confirmed,
+I:1/15,,Stop pushbutton normally closed,BOOL,Stop_PB,#Stop_PB,Bool,confirmed,
 I:1/0,,Tank 1 low level switch,BOOL,Tank1_LLS,#Tank1_LLS,Bool,confirmed,
 I:1/1,,Tank 2 low level switch,BOOL,Tank2_LLS,#Tank2_LLS,Bool,confirmed,
 N7:0,,Scaled level 0..1000,INT,Level_Pct,#Level_Pct,Int,inferred,
