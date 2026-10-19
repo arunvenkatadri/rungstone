@@ -10,6 +10,11 @@ Scope: plugin hooks run in every session, so only the PLC/fieldbus-specific
 patterns (client libraries, device write calls, plant MCP write tools) are
 enforced everywhere. Generic patterns (ssh, curl POST, raw sockets, script
 hosts) are enforced only inside an Rungstone project (a .rungstone/ folder at or above the working directory).
+
+Files: Write/Edit/MultiEdit content is checked too, so the rule is not side-stepped
+by writing a controller-writing script for the user to run. Everywhere, a file
+that uses a PLC/fieldbus client library together with a write call is denied;
+inside a Rungstone project, any file using such a library is denied.
 """
 import json
 import os
@@ -23,7 +28,9 @@ BASH_PATTERNS = [
     (r"\b(mbpoll|modpoll|modbus-cli|modbus_write|opcua-client|uawrite|ua-write|ads-write)\b", "fieldbus write tool"),
     (r"\.(write_tag|write_register|write_registers|write_coil|write_coils|db_write|write_area|write_by_name|"
      r"set_value|write_value|write_attribute)\s*\(", "device write call"),
-    (r"\b(ssh|scp|sftp|telnet|ftp|tftp|rsh|rlogin|nc|ncat|netcat|socat)\b\s", "remote shell / raw socket tool"),
+    # command position only, lower case: "SCP" and "NC" are PLC terms that appear in notes and file text
+    (r"(?-i:(?:^|[;&|(`]|\$\()\s*(?:sudo\s+)?(ssh|scp|sftp|telnet|ftp|tftp|rsh|rlogin|nc|ncat|netcat|socat)\s)",
+     "remote shell / raw socket tool"),
     (r"\bcurl\b[^|;&]*(-X\s*(POST|PUT|PATCH|DELETE)|--data|-d\s|--upload-file|-T\s|-F\s|--form)", "HTTP write (curl)"),
     (r"\bwget\b[^|;&]*--(post-data|post-file|method=(POST|PUT|PATCH|DELETE))", "HTTP write (wget)"),
     (r"Invoke-(WebRequest|RestMethod)[^|;&]*-Method\s+(Post|Put|Patch|Delete)", "HTTP write (PowerShell)"),
@@ -58,6 +65,31 @@ def in_project(cwd):
         cur = parent
 
 
+FILE_WRITE_CALL = re.compile(r"\.(write|write_tag|write_register|write_registers|write_coil|write_coils|db_write|"
+                             r"write_area|write_by_name|set_value|write_value|write_attribute|download)\s*\(", re.I)
+REFUSAL = ("Rungstone never connects to or writes to controllers, devices or remote hosts, and that includes "
+           "writing scripts or commands for the user to run against live equipment. Do not offer a workaround. "
+           "Tell the user that changes to a running controller are made by the engineer in the vendor IDE "
+           "(Studio 5000, TIA Portal, CODESYS, TwinCAT) under the site's change procedure, and offer offline help "
+           "instead: explain the logic, prepare an importable file, or draft the change for review.")
+
+
+def file_text(tool, ti):
+    if tool == "Write":
+        return ti.get("content") or ""
+    if tool == "Edit":
+        new = ti.get("new_string") or ""
+    elif tool == "MultiEdit":
+        new = "\n".join((e or {}).get("new_string") or "" for e in ti.get("edits") or [])
+    else:
+        return ""
+    try:
+        with open(ti.get("file_path") or "", encoding="utf-8", errors="replace") as fh:
+            return fh.read(2000000) + "\n" + new
+    except (OSError, ValueError):
+        return new
+
+
 def deny(reason):
     print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
                                              "permissionDecisionReason": "Rungstone read-only guard: " + reason}}))
@@ -78,9 +110,13 @@ def main():
             if n > ALWAYS and not scoped:
                 break
             if re.search(pat, cmd, re.I):
-                return deny("%s detected in command. Rungstone never connects to or writes to controllers, devices "
-                            "or remote hosts, and never runs customer scripts. Produce files for the engineer to load "
-                            "instead. If this is genuinely local and harmless, the user can run it themselves." % why)
+                return deny("%s detected in command. %s" % (why, REFUSAL))
+        return 0
+    if tool in ("Write", "Edit", "MultiEdit"):
+        text = file_text(tool, ti)
+        if re.search(BASH_PATTERNS[0][0], text, re.I):
+            if FILE_WRITE_CALL.search(text) or in_project(data.get("cwd")):
+                return deny("file uses a PLC/fieldbus client library to talk to a device. " + REFUSAL)
         return 0
     if tool.startswith("mcp__"):
         parts = tool.split("__")
@@ -88,7 +124,7 @@ def main():
         action = parts[-1]
         if MCP_PLC.search(server + " " + action) and MCP_WRITE.search(action):
             return deny("MCP tool '%s' looks like a write/control action on a plant system. Rungstone is read-only; "
-                        "only read/query tools are allowed." % tool)
+                        "only read/query tools are allowed. %s" % (tool, REFUSAL))
     return 0
 
 

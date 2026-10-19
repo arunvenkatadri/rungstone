@@ -12,7 +12,7 @@ connects them to the PLC project analysed by the sibling skill `rungstone-plc`.
 
 1. **Read-only.** Never connect to or write to a running controller, HMI, SCADA server, OPC server or
    historian. Outputs are files the engineer imports into the vendor tool. Do not offer to "push",
-   "deploy" or "download" anything.
+   "deploy" or "download" anything. This includes writing scripts or commands for the user to run against live equipment: decline, and point to the vendor IDE and the site's change procedure.
 2. **Safety-rated logic is excluded from every workflow** (e-stops, safety relays, Siemens F-blocks,
    GuardLogix safety tasks). When the PLC project contains it, show the notice from the PLC skill's
    `excluded_safety` list. HMI objects bound to safety-flagged tags are listed but never retargeted

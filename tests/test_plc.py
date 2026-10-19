@@ -163,12 +163,35 @@ class HookTests(unittest.TestCase):
         code, out, _ = self.hook("network_guard.py", {"tool_name": "mcp__historian__query_range", "tool_input": {}})
         self.assertEqual(out.strip(), "")
 
+    def test_network_guard_files(self):
+        script = "from pycomm3 import LogixDriver\nwith LogixDriver('10.0.0.1') as plc:\n    plc.write('Run', 1)\n"
+        out = self.hook("network_guard.py", {"tool_name": "Write", "cwd": "/",
+                                             "tool_input": {"file_path": "/x/w.py", "content": script}})[1]
+        self.assertIn('"deny"', out)
+        self.assertNotIn("run it themselves", out)
+        reader = "from pycomm3 import LogixDriver\nprint(LogixDriver)\n"
+        p = {"tool_name": "Write", "tool_input": {"file_path": "/x/r.py", "content": reader}}
+        with tempfile.TemporaryDirectory() as d:
+            p["cwd"] = d
+            self.assertEqual(self.hook("network_guard.py", p)[1].strip(), "")
+            os.mkdir(os.path.join(d, ".rungstone"))
+            self.assertIn('"deny"', self.hook("network_guard.py", p)[1])
+        plain = {"tool_name": "Write", "cwd": "/", "tool_input": {"file_path": "/x/t.L5X", "content": "<RSLogix5000Content/>"}}
+        self.assertEqual(self.hook("network_guard.py", plain)[1].strip(), "")
+
     def test_network_guard_scoped_patterns(self):
         with tempfile.TemporaryDirectory() as d:
             p = {"tool_name": "Bash", "cwd": d, "tool_input": {"command": "ssh user@10.0.0.5 ls"}}
             self.assertEqual(self.hook("network_guard.py", p)[1].strip(), "")
             os.mkdir(os.path.join(d, ".rungstone"))
             self.assertIn('"deny"', self.hook("network_guard.py", p)[1])
+            for cmd in ("ls && scp a.L5X host:/tmp", "echo x | nc 10.0.0.5 502", "sudo ssh plc"):
+                p["tool_input"]["command"] = cmd
+                self.assertIn('"deny"', self.hook("network_guard.py", p)[1], cmd)
+            for cmd in ('state.py queue add --text "SCP instruction on rung 1"', 'state.py log note "stop is NC wired"',
+                        "grep -n 'SCP ' two_tank.txt"):
+                p["tool_input"]["command"] = cmd
+                self.assertEqual(self.hook("network_guard.py", p)[1].strip(), "", cmd)
 
     def test_export_gate_hook(self):
         with tempfile.TemporaryDirectory() as d:

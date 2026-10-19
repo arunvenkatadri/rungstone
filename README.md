@@ -13,7 +13,7 @@ reviews them, approves every flagged change, and loads them.
 These rules hold in every skill, command and script:
 
 1. **Read-only.** Rungstone never connects to or writes to a running controller, device, or network
-   address. Outputs are files for Studio 5000, TIA Portal, CODESYS, TwinCAT or the HMI tool, and the engineer loads them.
+   address. Outputs are files for Studio 5000, TIA Portal, CODESYS, TwinCAT or the HMI tool, and the engineer loads them. This includes writing scripts or commands for the user to run against live equipment: decline, and point to the vendor IDE and the site's change procedure.
 2. **Safety logic is excluded.** Safety-rated logic is detected and excluded from every workflow,
    with a visible notice. That covers e-stops, safety relays, GuardLogix safety tasks and `Class="Safety"`,
    Siemens F-blocks, PLCopen `SF_*` blocks and TwinSAFE. Standard logic that reads a safety status is kept and flagged.

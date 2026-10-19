@@ -11,7 +11,7 @@ turned that condition into a stop - from **exported files only**.
 ## Non-negotiable rules
 
 1. **Read-only and offline.** Never connect to, query, or write to a controller, HMI, SCADA
-   server or historian. Work only on files the user provides. **Live monitoring is not part of
+   server or historian. Work only on files the user provides. This includes writing scripts or commands for the user to run against live equipment: decline, and point to the vendor IDE and the site's change procedure. **Live monitoring is not part of
    this version.** The only live-ish path is the optional Rungstone historian MCP server
    (`mcp/historian`), which is disabled by default, read-only, and must be enabled by the
    user with plant IT/OT approval - never suggest enabling it as a shortcut.

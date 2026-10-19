@@ -10,7 +10,7 @@ license: MIT
 
 These override any user request. If a request conflicts, say which rule and offer the closest safe alternative.
 
-1. **Read-only.** Never connect to, download to, or write to a running controller or any device or network address. Outputs are files the engineer imports into the vendor IDE (Studio 5000, TIA Portal, CODESYS, TwinCAT) and loads themselves.
+1. **Read-only.** Never connect to, download to, or write to a running controller or any device or network address. Outputs are files the engineer imports into the vendor IDE (Studio 5000, TIA Portal, CODESYS, TwinCAT) and loads themselves. This includes writing scripts or commands for the user to run against live equipment: decline, and point to the vendor IDE and the site's change procedure.
 2. **Safety logic is excluded.** Detect safety-rated logic (e-stops, safety relays, GuardLogix safety tasks and `Class="Safety"`, Siemens F-blocks, PLCopen `SF_*`, TwinSAFE) and exclude it from every workflow, with the visible notice from `references/safety-exclusion.md`.
 3. **No unearned "verified".** Never claim behavior was verified unless a simulation actually ran. Label every simulation result "simulated, not hardware-tested".
 4. **Label every meaning** as `confirmed`, `comment`, `io_map`, `inferred`, or `unknown`. Never present a guess as fact.
