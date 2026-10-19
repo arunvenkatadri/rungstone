@@ -5,9 +5,18 @@
   "sqlite": {
     "path": "/path/to/historian_export.db",
     "table": "history",
-    "columns": {"tag": "tagname", "time": "t_stamp", "value": "value", "quality": "quality"},
+    "columns": {
+      "tag": "tagname",
+      "time": "t_stamp",
+      "value": "value",
+      "quality": "quality"
+    },
     "time_format": "iso",
-    "tags_table": {"table": "tags", "name": "tagname", "description": "description"}
+    "tags_table": {
+      "table": "tags",
+      "name": "tagname",
+      "description": "description"
+    }
   },
   "csv_dir": {
     "path": "/path/to/historian_csv_exports",
@@ -16,15 +25,10 @@
     "tag_column": "tag",
     "value_column": "value"
   },
-  "odbc": {
-    "dsn": "PlantHistorian_ReadOnly",
-    "table": "history",
-    "columns": {"tag": "tagname", "time": "t_stamp", "value": "value"},
-    "time_format": "iso"
-  },
-  "opcua": {
-    "endpoint": "opc.tcp://historian.example.local:4840",
-    "nodes": {"Pump1_Run": "ns=2;s=Pump1.Run"}
-  },
-  "limits": {"max_points": 2000, "max_tags": 20, "max_rows_scanned": 1000000, "max_list": 500}
+  "limits": {
+    "max_points": 2000,
+    "max_tags": 20,
+    "max_rows_scanned": 1000000,
+    "max_list": 500
+  }
 }

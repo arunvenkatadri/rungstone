@@ -105,7 +105,7 @@ Typical flow: `/rungstone:understand` → `/rungstone:translate … to siemens-s
 ## Optional historian MCP server (read-only)
 
 `mcp/historian/` is a small, read-only MCP server for querying a historian or SCADA database that you
-configure: SQLite, CSV, and optional ODBC/OPC UA read backends. It is **disabled by default** and **not
+configure: a SQLite file or a folder of CSV exports (live database and OPC UA connections are not part of this version). It is **disabled by default** and **not
 registered** by the plugin. It refuses to start unless you start it with `--config` pointing at a config with
 `"enabled": true`. It has no write capability of any kind: no raw SQL from the model, parameterized
 SELECTs only, and a read-only connection.

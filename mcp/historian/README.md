@@ -16,27 +16,22 @@ deliberately, per project, by adding it to your own `.mcp.json`.
 - `query_range` - samples for up to 20 tags between two times. Large results are
   min/max downsampled so trips and spikes stay visible.
 
-Backends: a **SQLite** file (opened `mode=ro` with `PRAGMA query_only=ON`), a
-folder of **CSV** exports, and, only if you install the driver yourself,
-**ODBC** (`pyodbc`, a system DSN named in the config, connection opened `readonly=True`) or **OPC UA** (`asyncua`,
-value and history reads only). ODBC and OPC UA have not been tested against a
-live system in this release.
+Backends: a **SQLite** file (opened `mode=ro` with `PRAGMA query_only=ON`) or a
+folder of **CSV** exports. Point it at a read-only copy or export of your historian
+data. Direct connections to live historian databases or OPC UA servers are not part
+of this version.
 
 ## What it cannot do
 
-- It cannot write anything: no inserts, updates, deletes, OPC UA writes, or
-  method calls. The code has no write path.
+- It cannot write anything: no inserts, updates or deletes. The code has no write path.
 - It never accepts SQL from the model. Queries are parameterized `SELECT`s built
   from the table and column names in your config, and those names are validated
   as plain identifiers.
-- It does not connect to PLCs or controllers. It talks only to the historian you
+- It does not connect to PLCs, controllers or servers. It reads only the files you
   configure.
 - It does not monitor live. Each tool call is a one-off query.
-- It never reads, stores or passes credentials. ODBC connects to a system DSN by
-  name; any username or password lives in your OS ODBC configuration (prefer
-  Windows integrated auth or a read-only database account). OPC UA uses anonymous
-  read-only sessions. A config containing user, password, token or
-  connection-string fields is refused.
+- It never reads, stores or passes credentials. It opens only the local SQLite
+  file or CSV folder named in your config.
 
 ## Enable it (after approval)
 
@@ -66,4 +61,4 @@ If `--config` is missing, or the config does not have
 
 Defaults are 2000 points per series, 20 tags per query, 1,000,000 rows scanned,
 and 500 tag names per listing. You can lower them under `limits`. The standard
-library is the only requirement; `pyodbc` and `asyncua` are optional.
+library is the only requirement.

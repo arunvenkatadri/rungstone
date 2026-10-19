@@ -12,8 +12,6 @@ Transport: MCP stdio (newline-delimited JSON-RPC 2.0).  Standard library only.
 Backends (all read-only):
   sqlite   - file opened with URI mode=ro and PRAGMA query_only=ON
   csv_dir  - folder of exported CSV files (long or wide format)
-  odbc     - only if pyodbc is installed; system DSN by name, opened readonly=True, no credentials handled
-  opcua    - only if asyncua is installed; anonymous reads of values/history, never writes
 
 Tools: list_tags, search_tags, latest, query_range.
 The model never supplies SQL.  Queries are parameterised SELECTs built from
@@ -196,72 +194,6 @@ class SqliteBackend(SqlBackend):
         self.conn.execute("PRAGMA query_only = ON")
 
 
-class OdbcBackend(SqlBackend):
-    """Read-only ODBC via a system DSN.
-
-    Rungstone never reads, stores or passes credentials: the DSN is configured in
-    the operating system's ODBC manager (ideally with Windows integrated / Kerberos
-    auth or a read-only database account), and the config only names it.
-    """
-
-    def __init__(self, cfg, limits):
-        try:
-            import pyodbc  # noqa: F401
-        except ImportError:
-            raise ToolError("backend not available: odbc needs the pyodbc package")
-        SqlBackend.__init__(self, cfg, limits)
-        bad = [k for k in cfg if k.lower() in CREDENTIAL_KEYS]
-        if bad:
-            raise ToolError("odbc config must not contain credentials (%s); put them in the OS ODBC DSN" % ", ".join(bad))
-        dsn = str(cfg.get("dsn") or "")
-        if not re.match(r"^[A-Za-z0-9 _.-]{1,64}$", dsn):
-            raise ToolError("odbc config needs \"dsn\": the name of a system ODBC data source")
-        self.conn = pyodbc.connect("DSN=%s" % dsn, readonly=True, autocommit=False)  # read-only connection
-        # T-SQL has no LIMIT; this backend targets ANSI/Postgres/SQLite-style dialects. Document per site.
-
-
-class OpcUaBackend(object):
-    """Read-only OPC UA: reads current values and raw history. Never writes.
-
-    Anonymous session only; Rungstone does not handle OPC UA user credentials or
-    certificates. Use a server endpoint/user configured for read-only access.
-    """
-
-    def __init__(self, cfg, limits):
-        try:
-            from asyncua.sync import Client  # noqa: F401
-        except ImportError:
-            raise ToolError("backend not available: opcua needs the asyncua package")
-        bad = [k for k in cfg if k.lower() in CREDENTIAL_KEYS]
-        if bad:
-            raise ToolError("opcua config must not contain credentials (%s)" % ", ".join(bad))
-        self.limits = limits
-        self.nodes = dict(cfg.get("nodes", {}))  # tag name -> NodeId string
-        self.client = Client(cfg["endpoint"])
-        self.client.connect()
-
-    def list_tags(self, limit):
-        return [{"tag": t, "node": n} for t, n in sorted(self.nodes.items())[:limit]]
-
-    def search_tags(self, pattern, limit):
-        pat = pattern if any(c in pattern for c in "*?") else "*%s*" % pattern
-        return [{"tag": t, "node": n} for t, n in sorted(self.nodes.items()) if fnmatch.fnmatch(t.lower(), pat.lower())][:limit]
-
-    def _node(self, tag):
-        if tag not in self.nodes:
-            raise ToolError("tag %r is not in the configured node list" % tag)
-        return self.client.get_node(self.nodes[tag])
-
-    def latest(self, tag):
-        dv = self._node(tag).read_data_value()
-        return {"tag": tag, "time": iso(dv.SourceTimestamp or dt.datetime.now(dt.timezone.utc)),
-                "value": num(dv.Value.Value), "quality": str(dv.StatusCode)}
-
-    def query_range(self, tag, start, end):
-        hist = self._node(tag).read_raw_history(start, end, numvalues=self.limits["max_rows_scanned"])
-        return [(iso(h.SourceTimestamp), num(h.Value.Value)) for h in hist]
-
-
 class CsvDirBackend(object):
     """Exported CSV files. Long format: time,tag,value[,quality]. Wide: time + one column per tag."""
 
@@ -333,9 +265,7 @@ class CsvDirBackend(object):
         return out
 
 
-CREDENTIAL_KEYS = {"uid", "user", "username", "pwd", "password", "passwd", "secret", "token", "connection_string",
-                   "connection_string_env", "private_key", "certificate"}
-BACKENDS = {"sqlite": SqliteBackend, "csv_dir": CsvDirBackend, "odbc": OdbcBackend, "opcua": OpcUaBackend}
+BACKENDS = {"sqlite": SqliteBackend, "csv_dir": CsvDirBackend}
 
 # ---------------------------------------------------------------------------
 # MCP plumbing
