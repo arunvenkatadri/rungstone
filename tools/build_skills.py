@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Build standalone .skill packages (zip) for each skill into dist/.
 
 Each skill is self-contained (scripts/_shared is vendored by sync_shared.py),

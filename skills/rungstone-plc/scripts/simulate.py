@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 simulate.py - pure-Python scan-cycle simulator for Rungstone Verify.
 

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 alarm_analysis.py - alarm history CSV -> ISA-18.2 / EEMUA 191 KPIs, nuisance
 alarm detection and cleanup suggestions.

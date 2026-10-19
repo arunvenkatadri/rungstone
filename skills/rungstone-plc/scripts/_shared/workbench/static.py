@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 static.py - one self-contained workbench HTML page for Cowork / claude.ai.
 

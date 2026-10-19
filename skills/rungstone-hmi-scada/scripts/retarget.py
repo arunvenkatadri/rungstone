@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 retarget.py - rebind HMI/SCADA references to the new PLC tags using the
 mapping.csv produced by the rungstone-plc Translate workflow.

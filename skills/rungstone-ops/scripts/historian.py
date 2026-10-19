@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 historian.py - offline analysis of historian exports (CSV, wide or long).
 

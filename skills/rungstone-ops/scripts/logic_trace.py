@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 logic_trace.py - cite the PLC logic behind a signal.
 

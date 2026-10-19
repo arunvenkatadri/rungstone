@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 migrate_tags.py - migrate an HMI/SCADA tag database, alarms and scripts to a
 target platform as DRAFT files; screens as draft layout descriptions only.

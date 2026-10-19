@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 parse_hmi.py - inventory HMI/SCADA exports into compact JSON.
 

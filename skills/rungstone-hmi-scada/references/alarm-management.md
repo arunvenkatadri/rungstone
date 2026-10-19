@@ -43,7 +43,7 @@ These are the commonly quoted ISA-18.2 values; the site philosophy may set its o
 
 | Consequence severity \ Max time to respond | > 30 min | 10–30 min | 3–10 min | < 3 min |
 |---|---|---|---|---|
-| Minor (no safety/env impact, small loss) | No alarm | Low | Low | Medium |
+| Minor (no safety or environmental impact, small loss) | No alarm | Low | Low | Medium |
 | Major (equipment damage, quality loss, reportable) | Low | Medium | Medium | High |
 | Severe (injury potential, major environmental, large loss) | Medium | High | High | Critical |
 

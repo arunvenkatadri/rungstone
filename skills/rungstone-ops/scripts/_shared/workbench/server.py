@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 server.py - Rungstone workbench: a local, loopback-only web UI over .rungstone/.
 

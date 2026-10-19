@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 state.py - Rungstone project state in .rungstone/ (plain files, git friendly).
 

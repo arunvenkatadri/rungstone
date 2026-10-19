@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 estimate.py - estimate scope, tokens and cost for each Rungstone job
 BEFORE anything runs.

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 dependency_map.py - cross-reference every tag/address across PLC code and
 HMI/SCADA files; report readers, writers and conflicts.

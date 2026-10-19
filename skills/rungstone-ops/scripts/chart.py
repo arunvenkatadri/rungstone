@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 chart.py - trend chart of historian signals with event markers.
 

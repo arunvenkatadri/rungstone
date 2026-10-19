@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Rungstone historian MCP server - OPTIONAL, LOCAL, READ-ONLY.
 

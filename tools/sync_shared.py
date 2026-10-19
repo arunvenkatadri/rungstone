@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Copy shared/py, shared/schemas and shared/workbench into every skill's scripts/_shared/.
 
 Skills must be self-contained so they also work as standalone .skill

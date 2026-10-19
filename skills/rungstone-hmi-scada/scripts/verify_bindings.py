@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 verify_bindings.py - check that every HMI/SCADA binding resolves to a real
 PLC tag, and run the PLC + HMI + SCADA consistency check.

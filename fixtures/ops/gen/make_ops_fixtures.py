@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Regenerate the synthetic ops fixtures (seeded, deterministic).
 
 Writes:

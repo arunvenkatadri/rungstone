@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 parse_project.py - turn PLC project exports into compact, data-free JSON.
 

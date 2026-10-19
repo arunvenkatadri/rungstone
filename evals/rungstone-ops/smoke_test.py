@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Deterministic checks of the rungstone-ops scripts on the ops fixtures.
 
 Run from the repo root: python3 evals/rungstone-ops/smoke_test.py

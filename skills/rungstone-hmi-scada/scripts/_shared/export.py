@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 export.py - package approved Rungstone deliverables for the vendor IDE.
 

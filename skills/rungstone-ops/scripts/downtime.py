@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 downtime.py - stops, causes, MTBF/MTTR and shift breakdown from exported data.
 

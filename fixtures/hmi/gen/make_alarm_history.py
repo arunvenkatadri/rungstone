@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Generate fixtures/hmi/alarms/alarm_history.csv (seeded, reproducible).
 
 Planted patterns (for evals):
