@@ -80,6 +80,14 @@ def main(argv=None):
          "IDE, compile, and test offline. They are not for direct download to a running controller.", "",
          "## Files", "", "| File | sha256 |", "|---|---|"]
     L += ["| %s | `%s` |" % r for r in rows]
+    srcs = proj.get("sources") or []
+    L += ["", "## Based on", ""]
+    L += ["| %s | %s | `%s` |" % (x.get("path"), x.get("format") or "", x.get("sha256")) for x in srcs] if srcs else \
+        ["Source files were not recorded in project.json (state.py source)."]
+    if srcs:
+        L[-len(srcs):-len(srcs)] = ["| Source | Format | sha256 |", "|---|---|---|"]
+    if proj.get("target"):
+        L += ["", "Target: %s" % proj["target"]]
     L += ["", "## Review decisions", "", "| ID | Risk | Status | Location | Issue | Resolution |", "|---|---|---|---|---|---|"]
     for i in q:
         L.append("| %s | %s | %s | %s | %s | %s |" % (i["id"], i["risk"], i["status"], i.get("location", ""),

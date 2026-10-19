@@ -125,6 +125,21 @@ class EstimateStateExportTests(unittest.TestCase):
         self.assertEqual([j["job"] for j in d["jobs"]], ["understand", "translate", "verify", "depmap"])
         self.assertFalse(d["confirm_before_running"])
 
+    def test_state_sources(self):
+        st = os.path.join(SCRIPTS, "_shared", "state.py")
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(run(st, "init", "--name", "t", "--target", "siemens-scl", cwd=d)[0], 0)
+            src = os.path.join(d, "a.L5X")
+            open(src, "w").write("<RSLogix5000Content/>")
+            code, out, _ = run(st, "source", src, "--format", "l5x", cwd=d)
+            self.assertEqual(code, 0, out)
+            run(st, "source", src, "--format", "l5x", cwd=d)  # re-adding replaces, not duplicates
+            proj = json.load(open(os.path.join(d, ".rungstone", "project.json")))
+            self.assertEqual(proj["target"], "siemens-scl")
+            self.assertEqual([(s["path"], s["format"], len(s["sha256"])) for s in proj["sources"]], [("a.L5X", "l5x", 64)])
+            self.assertIn("source.added", open(os.path.join(d, ".rungstone", "decisions.log")).read())
+            self.assertEqual(run(st, "source", os.path.join(d, "missing.xml"), cwd=d)[0], 1)
+
     def test_export_gate(self):
         st = os.path.join(SCRIPTS, "_shared", "state.py")
         ex = os.path.join(SCRIPTS, "_shared", "export.py")

@@ -55,7 +55,7 @@ Shared with the other Rungstone skills in `.rungstone/` in the project folder (p
 judgement; `verify_results.json` gets simulation runs; `decisions.log` is the audit trail.
 `${CLAUDE_SKILL_DIR}/scripts/_shared/state.py` manages it (`state.py status`, `state.py queue list --open`,
 `state.py queue approve R3`). If `.rungstone/` does not exist and the work produces review items, run
-`state.py init` first.
+`state.py init` first, then `state.py source FILE ...` for each HMI/SCADA export you read.
 
 ## Which reference to read
 

@@ -126,7 +126,8 @@ def init(d, name=None):
 
 def add_source(d, path, fmt=None):
     proj = load(d, "project.json")
-    entry = {"path": os.path.relpath(path, os.path.dirname(d)), "sha256": sha256(path), "format": fmt, "added": now()}
+    rel = os.path.relpath(os.path.realpath(path), os.path.realpath(os.path.dirname(d)))
+    entry = {"path": rel, "sha256": sha256(path), "format": fmt, "added": now()}
     proj["sources"] = [s for s in proj["sources"] if s["path"] != entry["path"]] + [entry]
     save(d, "project.json", proj)
 
@@ -198,6 +199,10 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd")
     p = sub.add_parser("init")
     p.add_argument("--name")
+    p.add_argument("--target", help="target platform, e.g. siemens-scl, rockwell-l5x, iec-st")
+    p = sub.add_parser("source", help="record input files (path + sha256) in project.json")
+    p.add_argument("files", nargs="+")
+    p.add_argument("--format", help="format as reported by parse_project.py, e.g. l5x, ladder-text, siemens-scl")
     sub.add_parser("status")
     sub.add_parser("gate-export")
     p = sub.add_parser("log")
@@ -230,7 +235,10 @@ def main(argv=None):
         d = find_dir(args.dir, create=False) if args.dir is None else None
         d = d or find_dir(args.dir or os.getcwd(), create=True)
         proj = init(d, args.name)
-        print(json.dumps({"state_dir": d, "project": proj["name"]}))
+        if args.target:
+            proj["target"] = args.target
+            save(d, "project.json", proj)
+        print(json.dumps({"state_dir": d, "project": proj["name"], "target": proj.get("target")}))
         return 0
     d = find_dir(args.dir)
     if d is None:
@@ -255,6 +263,16 @@ def main(argv=None):
         return 0
     if args.cmd == "log":
         log(d, args.action, args.detail)
+        return 0
+    if args.cmd == "source":
+        missing = [f for f in args.files if not os.path.isfile(f)]
+        if missing:
+            print(json.dumps({"error": "not a file", "files": missing}))
+            return 1
+        for f in args.files:
+            add_source(d, f, args.format)
+            log(d, "source.added", f)
+        print(json.dumps({"sources": load(d, "project.json")["sources"]}))
         return 0
     if args.cmd == "queue":
         if args.qcmd == "list":
