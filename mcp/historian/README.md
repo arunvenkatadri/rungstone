@@ -18,7 +18,7 @@ deliberately, per project, by adding it to your own `.mcp.json`.
 
 Backends: a **SQLite** file (opened `mode=ro` with `PRAGMA query_only=ON`), a
 folder of **CSV** exports, and, only if you install the driver yourself,
-**ODBC** (`pyodbc`, connection opened `readonly=True`) or **OPC UA** (`asyncua`,
+**ODBC** (`pyodbc`, a system DSN named in the config, connection opened `readonly=True`) or **OPC UA** (`asyncua`,
 value and history reads only). ODBC and OPC UA have not been tested against a
 live system in this release.
 
@@ -32,8 +32,11 @@ live system in this release.
 - It does not connect to PLCs or controllers. It talks only to the historian you
   configure.
 - It does not monitor live. Each tool call is a one-off query.
-- It does not store credentials. ODBC connection strings come from an environment
-  variable you name (`connection_string_env`), never from the config file.
+- It never reads, stores or passes credentials. ODBC connects to a system DSN by
+  name; any username or password lives in your OS ODBC configuration (prefer
+  Windows integrated auth or a read-only database account). OPC UA uses anonymous
+  read-only sessions. A config containing user, password, token or
+  connection-string fields is refused.
 
 ## Enable it (after approval)
 

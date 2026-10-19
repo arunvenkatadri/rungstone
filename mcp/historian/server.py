@@ -12,8 +12,8 @@ Transport: MCP stdio (newline-delimited JSON-RPC 2.0).  Standard library only.
 Backends (all read-only):
   sqlite   - file opened with URI mode=ro and PRAGMA query_only=ON
   csv_dir  - folder of exported CSV files (long or wide format)
-  odbc     - only if pyodbc is installed; connection opened readonly=True
-  opcua    - only if asyncua is installed; reads values/history, never writes
+  odbc     - only if pyodbc is installed; system DSN by name, opened readonly=True, no credentials handled
+  opcua    - only if asyncua is installed; anonymous reads of values/history, never writes
 
 Tools: list_tags, search_tags, latest, query_range.
 The model never supplies SQL.  Queries are parameterised SELECTs built from
@@ -197,28 +197,44 @@ class SqliteBackend(SqlBackend):
 
 
 class OdbcBackend(SqlBackend):
+    """Read-only ODBC via a system DSN.
+
+    Rungstone never reads, stores or passes credentials: the DSN is configured in
+    the operating system's ODBC manager (ideally with Windows integrated / Kerberos
+    auth or a read-only database account), and the config only names it.
+    """
+
     def __init__(self, cfg, limits):
         try:
             import pyodbc  # noqa: F401
         except ImportError:
-            raise ToolError("backend not installed: odbc needs the pyodbc package (pip install pyodbc)")
+            raise ToolError("backend not available: odbc needs the pyodbc package")
         SqlBackend.__init__(self, cfg, limits)
-        env = cfg.get("connection_string_env", "RUNGSTONE_HISTORIAN_ODBC")
-        conn_str = os.environ.get(env)
-        if not conn_str:
-            raise ToolError("set the ODBC connection string in environment variable %s (credentials are never stored in the config)" % env)
-        self.conn = pyodbc.connect(conn_str, readonly=True, autocommit=False)  # read-only connection
+        bad = [k for k in cfg if k.lower() in CREDENTIAL_KEYS]
+        if bad:
+            raise ToolError("odbc config must not contain credentials (%s); put them in the OS ODBC DSN" % ", ".join(bad))
+        dsn = str(cfg.get("dsn") or "")
+        if not re.match(r"^[A-Za-z0-9 _.-]{1,64}$", dsn):
+            raise ToolError("odbc config needs \"dsn\": the name of a system ODBC data source")
+        self.conn = pyodbc.connect("DSN=%s" % dsn, readonly=True, autocommit=False)  # read-only connection
         # T-SQL has no LIMIT; this backend targets ANSI/Postgres/SQLite-style dialects. Document per site.
 
 
 class OpcUaBackend(object):
-    """Read-only OPC UA: reads current values and raw history. Never writes."""
+    """Read-only OPC UA: reads current values and raw history. Never writes.
+
+    Anonymous session only; Rungstone does not handle OPC UA user credentials or
+    certificates. Use a server endpoint/user configured for read-only access.
+    """
 
     def __init__(self, cfg, limits):
         try:
             from asyncua.sync import Client  # noqa: F401
         except ImportError:
-            raise ToolError("backend not installed: opcua needs the asyncua package (pip install asyncua)")
+            raise ToolError("backend not available: opcua needs the asyncua package")
+        bad = [k for k in cfg if k.lower() in CREDENTIAL_KEYS]
+        if bad:
+            raise ToolError("opcua config must not contain credentials (%s)" % ", ".join(bad))
         self.limits = limits
         self.nodes = dict(cfg.get("nodes", {}))  # tag name -> NodeId string
         self.client = Client(cfg["endpoint"])
@@ -317,6 +333,8 @@ class CsvDirBackend(object):
         return out
 
 
+CREDENTIAL_KEYS = {"uid", "user", "username", "pwd", "password", "passwd", "secret", "token", "connection_string",
+                   "connection_string_env", "private_key", "certificate"}
 BACKENDS = {"sqlite": SqliteBackend, "csv_dir": CsvDirBackend, "odbc": OdbcBackend, "opcua": OpcUaBackend}
 
 # ---------------------------------------------------------------------------

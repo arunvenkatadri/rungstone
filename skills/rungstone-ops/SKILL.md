@@ -37,21 +37,23 @@ turned that condition into a stop - from **exported files only**.
 All scripts are Python 3.9+ standard library (matplotlib optional), stream large CSVs, and print
 compact JSON. Run them; do not paste raw CSVs into context.
 
-| Script | Purpose |
-|---|---|
-| `python3 ${CLAUDE_SKILL_DIR}/scripts/historian.py summary FILE` | Tags, types (bool/analog/state), time range, sample interval, gaps, quality |
-| `... historian.py trip FILE --signal TAG [--direction falling] [--lookback 15m] [--alarms ALARMS.csv] [--limit "PT_101<100"]` | Every trip of TAG: precursors (first-out candidates), simultaneous changes, consequences, unchanged signals, alarms in window |
-| `... historian.py window FILE --around T --before 10m --after 2m --tags a,b [--points 200]` | Downsampled slice to read numbers from |
-| `... historian.py events FILE [--tags ...] [--limit "TAG<value"]` | Bool transitions, limit crossings, state changes |
-| `python3 ${CLAUDE_SKILL_DIR}/scripts/logic_trace.py --plc PROJECT --tag TAG [--depth 3]` | Rungs/lines that write TAG, what each condition requires (XIC=1, XIO=0), recursively; safety signals marked, not traced |
-| `python3 ${CLAUDE_SKILL_DIR}/scripts/downtime.py --run FILE --run-tag TAG --events EVENTS.csv` | Stops, first-out cause per stop, top causes, recurring issues, MTBF/MTTR, availability, per shift/day |
-| `python3 ${CLAUDE_SKILL_DIR}/scripts/chart.py FILE --tags a,b --around T --before 15m --after 3m [--alarms ALARMS.csv] --out chart.png` | Trend chart with numbered event markers (PNG via matplotlib, else SVG) |
+Run each as `python3 ${CLAUDE_SKILL_DIR}/scripts/<script> ...` (local files only).
 
-`logic_trace.py` uses the sibling PLC skill read-only
-(`${CLAUDE_SKILL_DIR}/../rungstone-plc/scripts/parse_project.py` and `dependency_map.py`). If you
-need the full cross-reference (who reads/writes every tag, PLC + HMI), run
-`python3 ${CLAUDE_SKILL_DIR}/../rungstone-plc/scripts/dependency_map.py --plc PROJECT [--hmi ...]`.
-If the PLC skill is not installed (standalone package), say the logic cannot be cited and
+| Script and arguments | Purpose |
+|---|---|
+| `historian.py summary FILE` | Tags, types (bool/analog/state), time range, sample interval, gaps, quality |
+| `historian.py trip FILE --signal TAG [--direction falling] [--lookback 15m] [--alarms ALARMS.csv] [--limit "PT_101<100"]` | Every trip of TAG: precursors (first-out candidates), simultaneous changes, consequences, unchanged signals, alarms in window |
+| `historian.py window FILE --around T --before 10m --after 2m --tags a,b [--points 200]` | Downsampled slice to read numbers from |
+| `historian.py events FILE [--tags ...] [--limit "TAG<value"]` | Bool transitions, limit crossings, state changes |
+| `logic_trace.py --plc PROJECT --tag TAG [--depth 3]` | Rungs/lines that write TAG, what each condition requires (XIC=1, XIO=0), recursively; safety signals marked, not traced |
+| `downtime.py --run FILE --run-tag TAG --events EVENTS.csv` | Stops, first-out cause per stop, top causes, recurring issues, MTBF/MTTR, availability, per shift/day |
+| `chart.py FILE --tags a,b --around T --before 15m --after 3m [--alarms ALARMS.csv] --out chart.png` | Trend chart with numbered event markers (PNG via matplotlib, else SVG) |
+
+`logic_trace.py` reads the PLC project through the sibling `rungstone-plc` skill's parser and
+dependency map (bundled in the same plugin, used read-only). For the full cross-reference (who
+reads/writes every tag, PLC + HMI), use that skill's `dependency_map.py` the same way, from the
+`rungstone-plc/scripts` folder next to this skill. When this skill is used on its own without
+`rungstone-plc` beside it, say the logic cannot be cited and
 continue with data-only conclusions labelled accordingly.
 
 Accepted inputs: historian CSV (wide `Timestamp, TagA, TagB...` or long `Timestamp, Tag, Value
