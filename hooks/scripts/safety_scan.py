@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """PostToolUse hook: warn when a file read or written looks like it contains safety logic.
 
 Safety-rated logic must go through parse_project.py, which excludes it. If

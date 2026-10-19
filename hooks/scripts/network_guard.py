@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """PreToolUse hook: block anything that would write to a network address or device.
 
 Rungstone is read-only and offline. This denies shell commands and MCP tool
@@ -33,7 +32,7 @@ BASH_PATTERNS = [
     (r"\b(cscript|wscript)(\.exe)?\b", "Windows script host (never run customer HMI/SCADA scripts)"),
     (r"\brsync\b[^|;&]*\s[\w.-]+@?[\w.-]+:", "remote copy (rsync)"),
 ]
-MCP_WRITE = re.compile(r"(?i)^(write|set|put|download|force|program|upload|delete|start|stop|run|execute|toggle)")
+MCP_WRITE = re.compile(r"(?i)^(write|put|download|force|program|upload|delete|start|stop|run|execute|toggle|set(_|[A-Z]|value|point|tag)?)")
 MCP_PLC = re.compile(r"(?i)(plc|opc|modbus|s7|logix|siemens|rockwell|codesys|twincat|ads|historian|scada|ignition|wincc|"
                      r"factorytalk|kepware|profinet|ethernetip|cip)")
 

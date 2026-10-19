@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """UserPromptExpansion hook: block /rungstone:export while high-risk review items are open.
 
 export.py enforces the same gate itself; this hook stops the command before
