@@ -1,0 +1,12 @@
+old_address,old_symbol,old_description,old_type,new_symbol,new_address,new_type,basis,notes
+Start_PB,Start_PB,Start pushbutton,BOOL,Start_PB,%IX0.0,BOOL,io_map,
+Stop_PB,Stop_PB,Stop pushbutton (NC),BOOL,Stop_PB,%IX0.1,BOOL,io_map,
+Tank_Full,Tank_Full,Tank high level switch,BOOL,Tank_Full,%IX0.2,BOOL,io_map,
+Fill_Valve,Fill_Valve,Fill valve solenoid,BOOL,Fill_Valve,%QX0.0,BOOL,io_map,
+Fill_Active,Fill_Active,Fill cycle in progress,BOOL,Fill_Active,,BOOL,comment,not RETAIN in target - review queue
+Cycle_Done,Cycle_Done,One-scan pulse at end of fill,BOOL,Cycle_Done,,BOOL,comment,
+HMI_Reset_Count,HMI_Reset_Count,HMI reset batch counter,BOOL,HMI_Reset_Count,,BOOL,comment,
+Fill_Timer.ACC,Fill_Timer.ACC,Fill time elapsed (ms),DINT,Fill_Timer.ET,,TIME,comment,ACC DINT ms -> ET TIME
+Fill_Timer.DN,Fill_Timer.DN,Fill timer done,BOOL,Fill_Timer.Q,,BOOL,comment,
+Fill_Timer.PRE,Fill_Timer.PRE,Fill time preset (ms),DINT,Fill_Time_PT,,TIME,comment,
+Batch_Count.ACC,Batch_Count.ACC,Batch count,DINT,Batch_Count.CV,,INT,comment,DINT -> INT

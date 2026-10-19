@@ -1,0 +1,7 @@
+old_address,old_symbol,old_description,old_type,new_symbol,new_address,new_type,basis,notes
+Fill_Timer,Fill_Timer,Fill duration timer,TIMER,"""Fill_DB"".Fill_Timer",,IEC_TIMER,comment,TON instance in Fill_DB
+Batch_Count,Batch_Count,Rejected batches,COUNTER,"""Fill_DB"".Batch_Count",,CTU_INT,comment,label conflict open (see dependency map)
+Fill_Valve,Fill_Valve,Fill valve solenoid XV-301,BOOL,"""Fill_Valve_XV301""",%Q0.0,Bool,io_map,
+Tank_Full,Tank_Full,Tank high level switch LSH-301,BOOL,"""Tank_High_LSH301""",%I0.2,Bool,io_map,
+HMI_Reset_Count,HMI_Reset_Count,HMI reset batch counter,BOOL,"""Fill_DB"".HMI_Reset_Count",,Bool,comment,
+Fill_Active,Fill_Active,Fill cycle in progress,BOOL,"""Fill_DB"".Fill_Active",,Bool,comment,

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rungstone/scenario@1",
+  "title": "Rungstone verification scenarios (input to simulate.py)",
+  "description": "Signal names are SOURCE names (old addresses/tags). simulate.py compare renames them for the target through mapping.csv. Results are always labelled 'simulated, not hardware-tested'.",
+  "type": "object",
+  "required": ["scenarios"],
+  "properties": {
+    "scenarios": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "observe"],
+        "properties": {
+          "id": {"type": "string"},
+          "name": {"type": "string"},
+          "category": {"enum": ["normal", "fault", "reset", "power_cycle", "overflow", "missing_input", "edge"]},
+          "scan_ms": {"type": "number", "exclusiveMinimum": 0, "default": 10},
+          "duration_ms": {"type": "number", "minimum": 0},
+          "initial": {"type": "object", "description": "Signal -> value before the first scan. Names ending .PRE/.PT are presets; all others are treated as externally driven inputs (kept through power cycles).",
+                      "additionalProperties": {"type": ["number", "boolean"]}},
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["at_ms"],
+              "properties": {
+                "at_ms": {"type": "number", "minimum": 0},
+                "set": {"type": "object", "additionalProperties": {"type": ["number", "boolean"]}},
+                "power_cycle": {"type": "boolean"}
+              },
+              "additionalProperties": false
+            }
+          },
+          "observe": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+          "expect": {"type": "object", "description": "Optional engineer expectations (signal -> final value); informational."}
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

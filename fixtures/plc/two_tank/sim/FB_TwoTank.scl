@@ -1,0 +1,47 @@
+FUNCTION_BLOCK "FB_TwoTank"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+// Test translation of fixtures/plc/two_tank/two_tank_slc.txt (SLC 5/04 ladder file 2) for simulate.py.
+// GENERATED FOR TESTING - DRAFT. Not for direct download to a running controller.
+   VAR_INPUT
+      Start_PB : Bool;      // was I:1/14 start pushbutton (NO)
+      Stop_PB : Bool;       // was I:1/15 stop pushbutton (NC: TRUE = not pressed)
+      Tank1_LLS : Bool;     // was I:1/0 tank 1 low level switch (TRUE = liquid present) INFERRED
+      Tank2_LLS : Bool;     // was I:1/1 tank 2 low level switch INFERRED
+      Level_Raw : Int;      // was I:3.0 level transmitter raw; S7 AI 4-20 mA nominal 0..27648
+      Level_Cutoff : Int;   // was N7:1 drain cutoff, 0..1000 = 0.0..100.0 % (never written in source)
+      Drain_Cmd : Int;      // was N7:2 drain valve command (never written in source)
+   END_VAR
+   VAR_OUTPUT
+      Master_Run : Bool;    // was O:2/15 master coil
+      Valve1_AO : Int;      // was O:4.0 tank 1 drain valve analog output
+      Valve2_AO : Int;      // was O:6.0 tank 2 drain valve analog output
+   END_VAR
+   VAR
+      Level_Pct : Int;      // was N7:0 scaled level 0..1000
+      Level_Norm : Real;
+   END_VAR
+
+BEGIN
+	// rung 0: master start/stop seal-in
+	#Master_Run := (#Start_PB OR #Master_Run) AND #Stop_PB;
+	// rung 1: scale level (SCP 3277..16384 -> 0..1000 in the source)
+	IF #Master_Run THEN
+	    #Level_Norm := NORM_X(MIN := 0, VALUE := #Level_Raw, MAX := 27648);
+	    #Level_Pct := SCALE_X(MIN := 0, VALUE := #Level_Norm, MAX := 1000);
+	END_IF;
+	// rungs 2-3: drain tank 1
+	IF #Master_Run AND #Tank1_LLS AND #Level_Pct > #Level_Cutoff THEN
+	    #Valve1_AO := #Drain_Cmd;
+	END_IF;
+	IF NOT #Master_Run OR NOT #Tank1_LLS OR #Level_Pct <= #Level_Cutoff THEN
+	    #Valve1_AO := 0;
+	END_IF;
+	// rungs 4-5: then drain tank 2
+	IF #Master_Run AND NOT #Tank1_LLS AND #Tank2_LLS THEN
+	    #Valve2_AO := #Drain_Cmd;
+	END_IF;
+	IF NOT #Master_Run OR NOT #Tank2_LLS OR #Tank1_LLS THEN
+	    #Valve2_AO := 0;
+	END_IF;
+END_FUNCTION_BLOCK

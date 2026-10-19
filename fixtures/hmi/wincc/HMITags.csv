@@ -1,0 +1,6 @@
+Name;Path;Connection;PLC tag;DataType;Access Method;Address;Acquisition cycle;Comment
+Tank1_Level;Default tag table;S7_PLC;"FB_TwoTank_DB".Tank1_Level;Int;Symbolic access;;1 s;Tank 1 level 0-1000 (0.1 %)
+Master_Run;Default tag table;S7_PLC;"Master_Run";Bool;Symbolic access;;500 ms;Master run coil
+Drain_Rate_SP;Default tag table;S7_PLC;"FB_TwoTank_DB".Drain_Rate_SP;Int;Symbolic access;;1 s;Drain valve position setpoint
+Low_Cutoff;Default tag table;S7_PLC;"FB_TwoTank_DB".Low_Cutoff;Int;Symbolic access;;1 s;Tank 1 low level cutoff
+Valve1_Cmd;Default tag table;S7_PLC;;Int;Absolute access;%QW64;1 s;Tank 1 drain valve command

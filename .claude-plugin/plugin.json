@@ -1,0 +1,11 @@
+{
+  "name": "rungstone",
+  "displayName": "Rungstone",
+  "version": "0.1.0",
+  "description": "Offline, read-only toolkit for controls engineers: understand, translate, verify and dependency-map PLC code across Rockwell, Siemens, CODESYS and Beckhoff; extend to HMI/SCADA screens, tags and alarms; troubleshoot stops from exported historian data. Safety-rated logic is always excluded; simulation results are labelled simulated, not hardware-tested.",
+  "author": { "name": "Arun Venkatadri" },
+  "homepage": "https://github.com/arunvenkatadri/rungstone",
+  "repository": "https://github.com/arunvenkatadri/rungstone",
+  "license": "MIT",
+  "keywords": ["plc", "ladder-logic", "structured-text", "rockwell", "siemens", "tia-portal", "codesys", "twincat", "plcopen", "scada", "hmi", "industrial-automation", "migration", "alarm-management"]
+}

@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Review queue (.rungstone/review_queue.json)",
+  "type": "object",
+  "required": [
+    "items"
+  ],
+  "properties": {
+    "schema": {
+      "const": "rungstone/review_queue@1"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "risk",
+          "location",
+          "issue",
+          "proposed_fix",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^R[0-9]+$"
+          },
+          "risk": {
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "workflow": {
+            "enum": [
+              "understand",
+              "translate",
+              "verify",
+              "dependencies",
+              "hmi",
+              "alarms",
+              "ops"
+            ]
+          },
+          "location": {
+            "type": "string"
+          },
+          "issue": {
+            "type": "string"
+          },
+          "proposed_fix": {
+            "type": "string"
+          },
+          "previous_fix": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "open",
+              "approved",
+              "edited",
+              "rejected"
+            ]
+          },
+          "resolution": {
+            "type": "string"
+          },
+          "decided_by": {
+            "type": "string"
+          },
+          "decided_at": {
+            "type": "string"
+          },
+          "created": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

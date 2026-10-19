@@ -1,0 +1,13 @@
+// Two-tank draining system - SLC 5/04, ladder file 2 (exported as ASCII)
+// Rack: slot 1 1746-IB16, slot 2 1746-OB16, slot 3 1746-NI4, slot 4 1746-NO4I, slot 6 1746-NO4I
+RC: Master start / stop. Seal-in on master coil.
+0 SOR BST XIC I:1/14 NXB XIC O:2/15 BND XIC I:1/15 OTE O:2/15 EOR
+RC: Scale tank level transmitter
+1 SOR XIC O:2/15 SCP I:3.0 3277 16384 0 1000 N7:0 EOR
+RC: Drain tank 1 while its low level switch shows liquid and level is above cutoff
+2 SOR XIC O:2/15 XIC I:1/0 GRT N7:0 N7:1 MOV N7:2 O:4.0 EOR
+3 SOR BST XIO O:2/15 NXB XIO I:1/0 NXB LEQ N7:0 N7:1 BND MOV 0 O:4.0 EOR
+RC: Then drain tank 2
+4 SOR XIC O:2/15 XIO I:1/0 XIC I:1/1 MOV N7:2 O:6.0 EOR
+5 SOR BST XIO O:2/15 NXB XIO I:1/1 NXB XIC I:1/0 BND MOV 0 O:6.0 EOR
+6 SOR END EOR

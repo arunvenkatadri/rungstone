@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Rungstone project (.rungstone/project.json)",
+  "type": "object",
+  "required": [
+    "name",
+    "sources"
+  ],
+  "properties": {
+    "schema": {
+      "const": "rungstone/project@1"
+    },
+    "name": {
+      "type": "string"
+    },
+    "created": {
+      "type": "string"
+    },
+    "target": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "siemens-scl",
+        "rockwell",
+        "iec-st",
+        null
+      ]
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "sha256"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "format": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "added": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "string"
+    }
+  }
+}

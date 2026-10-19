@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Dependency map (output of dependency_map.py)",
+  "type": "object",
+  "properties": {
+    "tool": {
+      "const": "rungstone/dependency_map"
+    },
+    "target": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "summary": {
+      "type": "object"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "tag",
+          "key"
+        ],
+        "properties": {
+          "tag": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "data_type": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "descriptions": {
+            "type": "array"
+          },
+          "readers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "writers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "may_write": {
+            "type": "array"
+          },
+          "unknown_access": {
+            "type": "array"
+          },
+          "systems": {
+            "type": "array"
+          },
+          "safety": {
+            "type": "string"
+          },
+          "physical_input": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "type",
+          "severity",
+          "tag",
+          "detail"
+        ],
+        "properties": {
+          "type": {
+            "enum": [
+              "label_mismatch",
+              "competing_writers",
+              "read_never_written",
+              "broken_link",
+              "translation_break",
+              "translation_watch"
+            ]
+          },
+          "severity": {
+            "enum": [
+              "high",
+              "medium",
+              "low",
+              "info"
+            ]
+          },
+          "tag": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "open_questions": {
+      "type": "array"
+    },
+    "excluded_safety": {
+      "type": "array"
+    }
+  }
+}

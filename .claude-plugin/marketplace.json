@@ -1,0 +1,14 @@
+{
+  "name": "rungstone",
+  "description": "Rungstone: read-only PLC, HMI/SCADA and operations toolkit for industrial controls engineers.",
+  "owner": {
+    "name": "Arun Venkatadri"
+  },
+  "plugins": [
+    {
+      "name": "rungstone",
+      "source": "./",
+      "description": "Read-only PLC, HMI/SCADA and operations toolkit for controls engineers (Rockwell, Siemens, CODESYS, Beckhoff)."
+    }
+  ]
+}

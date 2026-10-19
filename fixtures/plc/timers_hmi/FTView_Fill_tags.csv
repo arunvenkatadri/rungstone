@@ -1,0 +1,9 @@
+;###001 - THIS LINE CONTAINS VERSION INFORMATION. DO NOT REMOVE!!!
+;Tag Type,Tag Name,Tag Description,Read Only,Data Source,Address
+"A","Fill\TimeElapsed","Fill time elapsed (ms)","T","D","{[FILL_PLC]Fill_Timer.ACC}"
+"A","Fill\TimePreset","Fill time setpoint (ms)","F","D","{[FILL_PLC]Fill_Timer.PRE}"
+"D","Fill\Timing","Fill timer running","T","D","{[FILL_PLC]Fill_Timer.TT}"
+"D","Fill\ValveOpen","Fill valve open","T","D","{[FILL_PLC]Fill_Valve}"
+"A","Fill\BatchCount","Batches completed today","T","D","{[FILL_PLC]Batch_Count.ACC}"
+"D","Fill\ResetCount","Reset batch counter","F","D","{[FILL_PLC]HMI_Reset_Count}"
+"D","Fill\TankFull","Tank high level","T","D","{[FILL_PLC]Tank_Ful}"

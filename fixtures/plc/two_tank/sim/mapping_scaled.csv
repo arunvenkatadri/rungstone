@@ -1,0 +1,12 @@
+old_address,old_symbol,old_description,old_type,new_symbol,new_address,new_type,basis,notes
+I:1/14,,Start pushbutton,BOOL,Start_PB,#Start_PB,Bool,confirmed,
+I:1/15,,Stop pushbutton (NC),BOOL,Stop_PB,#Stop_PB,Bool,confirmed,
+I:1/0,,Tank 1 low level switch,BOOL,Tank1_LLS,#Tank1_LLS,Bool,confirmed,
+I:1/1,,Tank 2 low level switch,BOOL,Tank2_LLS,#Tank2_LLS,Bool,confirmed,
+N7:0,,Scaled level 0..1000,INT,Level_Pct,#Level_Pct,Int,inferred,
+N7:1,,Drain cutoff,INT,Level_Cutoff,#Level_Cutoff,Int,inferred,
+N7:2,,Drain valve command,INT,Drain_Cmd,#Drain_Cmd,Int,inferred,
+O:2/15,,Master coil,BOOL,Master_Run,#Master_Run,Bool,confirmed,
+O:4.0,,Tank 1 drain valve AO,INT,Valve1_AO,#Valve1_AO,Int,confirmed,output raw range not converted (NO4I 0..32764 vs S7 0..27648) - review queue
+O:6.0,,Tank 2 drain valve AO,INT,Valve2_AO,#Valve2_AO,Int,confirmed,output raw range not converted - review queue
+I:3.0,,Level transmitter raw,INT,Level_Raw,#Level_Raw,Int,confirmed,raw:3277..16384->0..27648 (1746-NI4 4-20 mA counts to S7 AI 4-20 mA counts)

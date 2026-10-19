@@ -1,0 +1,114 @@
+Time,Source,Message,Priority,State
+06/02/2025 06:04:04.000,TT_210,Bearing temperature TT-210 high warning,Low,ACT
+06/02/2025 11:41:33.000,PLANNED,Planned changeover started,Event,EVT
+06/02/2025 11:41:39.000,LINE1,Line 1 stopped,Event,EVT
+06/02/2025 12:23:13.000,LINE1,Line 1 started,Event,EVT
+06/02/2025 21:18:49.000,TT_210,Bearing temperature TT-210 high warning,Low,ACT
+06/02/2025 21:43:35.000,TT_210,Bearing temperature TT-210 high warning,Low,ACT
+06/02/2025 22:27:22.000,P101_FAULT,P-101 tripped: low suction pressure,High,ACT
+06/02/2025 22:27:29.000,LINE1,Line 1 stopped,Event,EVT
+06/02/2025 22:44:19.000,P101_FAULT,P-101 tripped: low suction pressure,High,RTN
+06/02/2025 22:44:49.000,LINE1,Line 1 started,Event,EVT
+06/03/2025 00:07:51.000,TT_210,Bearing temperature TT-210 high warning,Low,ACT
+06/03/2025 01:36:59.000,TT_210,Bearing temperature TT-210 high warning,Low,ACT
+06/03/2025 02:17:27.000,SAFETY_SR1,E-stop pressed at station ES-3 (safety relay SR-1 open),High,ACT
+06/03/2025 02:17:33.000,LINE1,Line 1 stopped,Event,EVT
+06/03/2025 02:23:06.000,SAFETY_SR1,E-stop pressed at station ES-3 (safety relay SR-1 open),High,RTN
+06/03/2025 02:23:36.000,LINE1,Line 1 started,Event,EVT
+06/03/2025 04:34:02.000,P101_FAULT,P-101 tripped: low suction pressure,High,ACT
+06/03/2025 04:34:09.000,LINE1,Line 1 stopped,Event,EVT
+06/03/2025 05:01:04.000,P101_FAULT,P-101 tripped: low suction pressure,High,RTN
+06/03/2025 05:01:34.000,LINE1,Line 1 started,Event,EVT
+06/03/2025 09:31:01.000,PLANNED,Planned changeover started,Event,EVT
+06/03/2025 09:31:06.000,LINE1,Line 1 stopped,Event,EVT
+06/03/2025 10:04:46.000,LINE1,Line 1 started,Event,EVT
+06/03/2025 11:49:12.000,TT_210,Bearing temperature TT-210 high warning,Low,ACT
+06/03/2025 12:09:26.000,TT_210,Bearing temperature TT-210 high warning,Low,ACT
+06/03/2025 14:01:08.000,TT_210,Bearing temperature TT-210 high warning,Low,ACT
+06/03/2025 18:33:07.000,TT_210,Bearing temperature TT-210 high warning,Low,ACT
+06/03/2025 22:35:25.000,P101_FAULT,P-101 tripped: low suction pressure,High,ACT
+06/03/2025 22:35:30.000,LINE1,Line 1 stopped,Event,EVT
+06/03/2025 22:51:58.000,P101_FAULT,P-101 tripped: low suction pressure,High,RTN
+06/03/2025 22:52:28.000,LINE1,Line 1 started,Event,EVT
+06/04/2025 05:16:27.000,TT_210,Bearing temperature TT-210 high warning,Low,ACT
+06/04/2025 13:31:08.000,TT_210,Bearing temperature TT-210 high warning,Low,ACT
+06/04/2025 18:48:24.000,TT_210,Bearing temperature TT-210 high warning,Low,ACT
+06/04/2025 23:25:40.000,P101_FAULT,P-101 tripped: low suction pressure,High,ACT
+06/04/2025 23:25:44.000,LINE1,Line 1 stopped,Event,EVT
+06/04/2025 23:41:49.000,P101_FAULT,P-101 tripped: low suction pressure,High,RTN
+06/04/2025 23:42:19.000,LINE1,Line 1 started,Event,EVT
+06/05/2025 04:52:30.000,LINE1,Line 1 stopped,Event,EVT
+06/05/2025 05:01:08.000,LINE1,Line 1 started,Event,EVT
+06/05/2025 10:29:35.000,RIO2_COMM,Remote I/O rack 2 connection lost,High,ACT
+06/05/2025 10:29:40.000,LINE1,Line 1 stopped,Event,EVT
+06/05/2025 10:38:59.000,RIO2_COMM,Remote I/O rack 2 connection lost,High,RTN
+06/05/2025 10:39:29.000,LINE1,Line 1 started,Event,EVT
+06/05/2025 12:58:58.000,LINE1,Line 1 stopped,Event,EVT
+06/05/2025 13:07:09.000,LINE1,Line 1 started,Event,EVT
+06/06/2025 01:14:00.000,CV2_JAM,Conveyor CV-2 jam at transfer,Medium,ACT
+06/06/2025 01:14:05.000,LINE1,Line 1 stopped,Event,EVT
+06/06/2025 01:26:02.000,CV2_JAM,Conveyor CV-2 jam at transfer,Medium,RTN
+06/06/2025 01:26:32.000,LINE1,Line 1 started,Event,EVT
+06/06/2025 02:48:08.000,TT_210,Bearing temperature TT-210 high warning,Low,ACT
+06/06/2025 06:31:42.000,P101_OL,P-101 motor overload tripped,High,ACT
+06/06/2025 06:31:46.000,LINE1,Line 1 stopped,Event,EVT
+06/06/2025 07:19:21.000,P101_OL,P-101 motor overload tripped,High,RTN
+06/06/2025 07:19:51.000,LINE1,Line 1 started,Event,EVT
+06/06/2025 09:02:52.000,TT_210,Bearing temperature TT-210 high warning,Low,ACT
+06/06/2025 09:33:27.000,RIO2_COMM,Remote I/O rack 2 connection lost,High,ACT
+06/06/2025 09:33:34.000,LINE1,Line 1 stopped,Event,EVT
+06/06/2025 09:42:29.000,RIO2_COMM,Remote I/O rack 2 connection lost,High,RTN
+06/06/2025 09:42:59.000,LINE1,Line 1 started,Event,EVT
+06/06/2025 15:37:45.000,SAFETY_SR1,E-stop pressed at station ES-3 (safety relay SR-1 open),High,ACT
+06/06/2025 15:37:54.000,LINE1,Line 1 stopped,Event,EVT
+06/06/2025 15:50:08.000,SAFETY_SR1,E-stop pressed at station ES-3 (safety relay SR-1 open),High,RTN
+06/06/2025 15:50:38.000,LINE1,Line 1 started,Event,EVT
+06/06/2025 20:12:21.000,P101_OL,P-101 motor overload tripped,High,ACT
+06/06/2025 20:12:26.000,LINE1,Line 1 stopped,Event,EVT
+06/06/2025 20:45:12.000,P101_OL,P-101 motor overload tripped,High,RTN
+06/06/2025 20:45:42.000,LINE1,Line 1 started,Event,EVT
+06/06/2025 22:58:29.000,P101_FAULT,P-101 tripped: low suction pressure,High,ACT
+06/06/2025 22:58:35.000,LINE1,Line 1 stopped,Event,EVT
+06/06/2025 23:20:21.000,P101_FAULT,P-101 tripped: low suction pressure,High,RTN
+06/06/2025 23:20:51.000,LINE1,Line 1 started,Event,EVT
+06/07/2025 00:17:19.000,TT_210,Bearing temperature TT-210 high warning,Low,ACT
+06/07/2025 00:47:44.000,TT_210,Bearing temperature TT-210 high warning,Low,ACT
+06/07/2025 01:56:46.000,TT_210,Bearing temperature TT-210 high warning,Low,ACT
+06/07/2025 02:12:39.000,TT_210,Bearing temperature TT-210 high warning,Low,ACT
+06/07/2025 02:38:14.000,TT_210,Bearing temperature TT-210 high warning,Low,ACT
+06/07/2025 03:36:16.000,CV2_JAM,Conveyor CV-2 jam at transfer,Medium,ACT
+06/07/2025 03:36:22.000,LINE1,Line 1 stopped,Event,EVT
+06/07/2025 03:48:22.000,CV2_JAM,Conveyor CV-2 jam at transfer,Medium,RTN
+06/07/2025 03:48:52.000,LINE1,Line 1 started,Event,EVT
+06/07/2025 11:01:28.000,PLANNED,Planned changeover started,Event,EVT
+06/07/2025 11:01:32.000,LINE1,Line 1 stopped,Event,EVT
+06/07/2025 11:37:32.000,LINE1,Line 1 started,Event,EVT
+06/07/2025 14:20:30.000,TT_210,Bearing temperature TT-210 high warning,Low,ACT
+06/07/2025 18:03:34.000,CV2_JAM,Conveyor CV-2 jam at transfer,Medium,ACT
+06/07/2025 18:03:39.000,LINE1,Line 1 stopped,Event,EVT
+06/07/2025 18:16:05.000,CV2_JAM,Conveyor CV-2 jam at transfer,Medium,RTN
+06/07/2025 18:16:35.000,LINE1,Line 1 started,Event,EVT
+06/07/2025 19:00:25.000,TT_210,Bearing temperature TT-210 high warning,Low,ACT
+06/08/2025 02:15:13.000,TT_210,Bearing temperature TT-210 high warning,Low,ACT
+06/08/2025 10:09:55.000,RIO2_COMM,Remote I/O rack 2 connection lost,High,ACT
+06/08/2025 10:10:02.000,LINE1,Line 1 stopped,Event,EVT
+06/08/2025 10:15:39.000,RIO2_COMM,Remote I/O rack 2 connection lost,High,RTN
+06/08/2025 10:16:09.000,LINE1,Line 1 started,Event,EVT
+06/08/2025 12:08:51.000,TT_210,Bearing temperature TT-210 high warning,Low,ACT
+06/08/2025 13:18:39.000,PLANNED,Planned changeover started,Event,EVT
+06/08/2025 13:18:48.000,LINE1,Line 1 stopped,Event,EVT
+06/08/2025 13:55:20.000,LINE1,Line 1 started,Event,EVT
+06/08/2025 21:11:03.000,CV2_JAM,Conveyor CV-2 jam at transfer,Medium,ACT
+06/08/2025 21:11:09.000,LINE1,Line 1 stopped,Event,EVT
+06/08/2025 21:23:31.000,CV2_JAM,Conveyor CV-2 jam at transfer,Medium,RTN
+06/08/2025 21:24:01.000,LINE1,Line 1 started,Event,EVT
+06/09/2025 00:53:58.000,TT_210,Bearing temperature TT-210 high warning,Low,ACT
+06/09/2025 02:07:08.000,P101_FAULT,P-101 tripped: low suction pressure,High,ACT
+06/09/2025 02:07:17.000,LINE1,Line 1 stopped,Event,EVT
+06/09/2025 02:43:15.000,P101_FAULT,P-101 tripped: low suction pressure,High,RTN
+06/09/2025 02:43:45.000,LINE1,Line 1 started,Event,EVT
+06/09/2025 03:05:15.000,TT_210,Bearing temperature TT-210 high warning,Low,ACT
+06/09/2025 04:18:20.000,CV2_JAM,Conveyor CV-2 jam at transfer,Medium,ACT
+06/09/2025 04:18:29.000,LINE1,Line 1 stopped,Event,EVT
+06/09/2025 04:23:23.000,CV2_JAM,Conveyor CV-2 jam at transfer,Medium,RTN
+06/09/2025 04:23:53.000,LINE1,Line 1 started,Event,EVT

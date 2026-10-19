@@ -1,0 +1,43 @@
+{
+  "name": "",
+  "tagType": "Provider",
+  "tags": [
+    {
+      "name": "Fill",
+      "tagType": "Folder",
+      "tags": [
+        {"name": "TimerAcc", "tagType": "AtomicTag", "valueSource": "opc", "opcServer": "Ignition OPC UA Server",
+         "opcItemPath": "ns=1;s=[FILL_PLC]Fill_Timer.ACC", "dataType": "Int4", "readOnly": true,
+         "documentation": "Fill time elapsed, ms"},
+        {"name": "TimerPreset", "tagType": "AtomicTag", "valueSource": "opc", "opcServer": "Ignition OPC UA Server",
+         "opcItemPath": "ns=1;s=[FILL_PLC]Fill_Timer.PRE", "dataType": "Int4",
+         "documentation": "Fill time setpoint, ms"},
+        {"name": "ValveOpen", "tagType": "AtomicTag", "valueSource": "opc", "opcServer": "Ignition OPC UA Server",
+         "opcItemPath": "ns=1;s=[FILL_PLC]Fill_Valve", "dataType": "Boolean", "readOnly": true,
+         "documentation": "Fill valve open"},
+        {"name": "TankFull", "tagType": "AtomicTag", "valueSource": "opc", "opcServer": "Ignition OPC UA Server",
+         "opcItemPath": "ns=1;s=[FILL_PLC]Tank_Full", "dataType": "Boolean", "readOnly": true,
+         "documentation": "Tank high level switch",
+         "alarms": [
+           {"name": "TankHigh", "mode": "Equality", "setpointA": 1.0, "priority": "High",
+            "label": "Fill tank high level", "notes": "Check fill valve XV-301 closes."}
+         ]},
+        {"name": "BatchCount", "tagType": "AtomicTag", "valueSource": "opc", "opcServer": "Ignition OPC UA Server",
+         "opcItemPath": "ns=1;s=[FILL_PLC]Batch_Count.ACC", "dataType": "Int4", "readOnly": true,
+         "documentation": "Batches completed today"},
+        {"name": "ResetCount", "tagType": "AtomicTag", "valueSource": "opc", "opcServer": "Ignition OPC UA Server",
+         "opcItemPath": "ns=1;s=[FILL_PLC]HMI_Reset_Count", "dataType": "Boolean",
+         "documentation": "Reset batch counter"},
+        {"name": "CycleActive", "tagType": "AtomicTag", "valueSource": "opc", "opcServer": "Ignition OPC UA Server",
+         "opcItemPath": "ns=1;s=[FILL_PLC]Fill_Active", "dataType": "Boolean", "readOnly": true,
+         "documentation": "Fill cycle in progress",
+         "alarms": [
+           {"name": "FillOverrun", "mode": "AboveValue", "setpointA": 0.5, "priority": "Medium",
+            "label": "Fill cycle running", "activePipeline": ""}
+         ]},
+        {"name": "Shift", "tagType": "AtomicTag", "valueSource": "memory", "dataType": "String",
+         "documentation": "Current shift letter (memory tag, not a PLC tag)"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Verification results (.rungstone/verify_results.json)",
+  "type": "object",
+  "required": [
+    "label"
+  ],
+  "properties": {
+    "schema": {
+      "const": "rungstone/verify_results@1"
+    },
+    "label": {
+      "const": "simulated, not hardware-tested"
+    },
+    "approximations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "runs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "verdict"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "verdict": {
+            "enum": [
+              "match",
+              "differs",
+              "not run"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "first_divergence": {
+            "type": "object"
+          },
+          "differing_scans": {
+            "type": "integer"
+          },
+          "label": {
+            "const": "simulated, not hardware-tested"
+          }
+        }
+      }
+    }
+  }
+}

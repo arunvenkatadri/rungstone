@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="33.01" TargetName="Pump_Station" TargetType="Controller" ContainsContext="false" ExportDate="Thu Jun 12 08:15:02 2025" ExportOptions="NoRawData L5KData DecoratedData ForceProtectedEncoding AllProjDocTrans">
+<Controller Use="Target" Name="Pump_Station" ProcessorType="1769-L33ER" MajorRev="33" MinorRev="11">
+<Description><![CDATA[Transfer pump station P-101, supply tank T-100]]></Description>
+<DataTypes/>
+<Modules>
+<Module Name="Local" CatalogNumber="1769-L33ER" Vendor="1" ProductType="14" ProductCode="155" Major="33" Minor="11" ParentModule="Local" ParentModPortId="1" Inhibited="false" MajorFault="true">
+<Ports><Port Id="1" Address="0" Type="Compact" Upstream="false"><Bus Size="31"/></Port></Ports>
+</Module>
+<Module Name="DI_Card" CatalogNumber="1769-IQ16" Vendor="1" ProductType="7" ProductCode="10" Major="2" Minor="1" ParentModule="Local" ParentModPortId="1" Inhibited="false" MajorFault="false">
+<Ports><Port Id="1" Address="1" Type="Compact" Upstream="true"/></Ports>
+<Communications><Connections><Connection Name="InputData" RPI="20000" Type="Input">
+<InputTag ExternalAccess="Read/Write"><Comments>
+<Comment Operand=".DATA.0"><![CDATA[P-101 motor running feedback (MCC aux contact)]]></Comment>
+<Comment Operand=".DATA.1"><![CDATA[P-101 motor overload tripped]]></Comment>
+<Comment Operand=".DATA.2"><![CDATA[PSL-101 suction pressure low switch, 1 = pressure OK]]></Comment>
+<Comment Operand=".DATA.3"><![CDATA[PSH-102 discharge pressure high switch, 1 = high]]></Comment>
+<Comment Operand=".DATA.4"><![CDATA[Safety relay SR-1 status: e-stop circuit healthy]]></Comment>
+</Comments></InputTag>
+</Connection></Connections></Communications>
+</Module>
+<Module Name="DO_Card" CatalogNumber="1769-OB16" Vendor="1" ProductType="7" ProductCode="11" Major="2" Minor="1" ParentModule="Local" ParentModPortId="1" Inhibited="false" MajorFault="false">
+<Ports><Port Id="1" Address="2" Type="Compact" Upstream="true"/></Ports>
+<Communications><Connections><Connection Name="OutputData" RPI="20000" Type="Output">
+<OutputTag ExternalAccess="Read/Write"><Comments>
+<Comment Operand=".DATA.0"><![CDATA[P-101 motor run command to MCC]]></Comment>
+</Comments></OutputTag>
+</Connection></Connections></Communications>
+</Module>
+<Module Name="AI_Card" CatalogNumber="1769-IF4" Vendor="1" ProductType="10" ProductCode="35" Major="1" Minor="1" ParentModule="Local" ParentModPortId="1" Inhibited="false" MajorFault="false">
+<Ports><Port Id="1" Address="3" Type="Compact" Upstream="true"/></Ports>
+</Module>
+</Modules>
+<AddOnInstructionDefinitions/>
+<Tags>
+<Tag Name="P101_Running" TagType="Alias" AliasFor="Local:1:I.Data.0" Radix="Decimal" ExternalAccess="Read/Write">
+<Description><![CDATA[P-101 running feedback]]></Description>
+</Tag>
+<Tag Name="P101_OL" TagType="Alias" AliasFor="Local:1:I.Data.1" Radix="Decimal" ExternalAccess="Read/Write">
+<Description><![CDATA[P-101 overload tripped]]></Description>
+</Tag>
+<Tag Name="PSL_101" TagType="Alias" AliasFor="Local:1:I.Data.2" Radix="Decimal" ExternalAccess="Read/Write">
+<Description><![CDATA[Suction pressure low switch, 1 = OK]]></Description>
+</Tag>
+<Tag Name="PSH_102" TagType="Alias" AliasFor="Local:1:I.Data.3" Radix="Decimal" ExternalAccess="Read/Write">
+<Description><![CDATA[Discharge pressure high switch, 1 = high]]></Description>
+</Tag>
+<Tag Name="SR_EStop_OK" TagType="Alias" AliasFor="Local:1:I.Data.4" Radix="Decimal" ExternalAccess="Read/Write">
+<Description><![CDATA[Safety relay SR-1: e-stop circuit healthy (status only)]]></Description>
+</Tag>
+<Tag Name="P101_Run" TagType="Alias" AliasFor="Local:2:O.Data.0" Radix="Decimal" ExternalAccess="Read/Write">
+<Description><![CDATA[P-101 run command]]></Description>
+</Tag>
+<Tag Name="PT_101" TagType="Base" DataType="REAL" Radix="Float" Constant="false" ExternalAccess="Read/Write">
+<Description><![CDATA[Suction pressure PT-101, kPa (scaled in AI module)]]></Description>
+<Data Format="L5K"><![CDATA[0.00000000e+000]]></Data>
+<Data Format="Decorated"><DataValue DataType="REAL" Radix="Float" Value="0.0"/></Data>
+</Tag>
+<Tag Name="HMI_Start_PB" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Description><![CDATA[HMI start command P-101 (momentary)]]></Description>
+<Data Format="L5K"><![CDATA[0]]></Data>
+</Tag>
+<Tag Name="HMI_Stop_PB" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Description><![CDATA[HMI stop command P-101 (momentary)]]></Description>
+<Data Format="L5K"><![CDATA[0]]></Data>
+</Tag>
+<Tag Name="Fault_Reset" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Description><![CDATA[HMI fault reset (momentary)]]></Description>
+<Data Format="L5K"><![CDATA[0]]></Data>
+</Tag>
+<Tag Name="PSL_Debounce" TagType="Base" DataType="TIMER" Constant="false" ExternalAccess="Read/Write">
+<Description><![CDATA[Low suction pressure debounce, 5 s]]></Description>
+<Data Format="L5K"><![CDATA[[0,5000,0]]]></Data>
+<Data Format="Decorated"><Structure DataType="TIMER"><DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="5000"/><DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="0"/></Structure></Data>
+</Tag>
+<Tag Name="P101_LowSuct_Trip" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Description><![CDATA[P-101 tripped on low suction pressure (latched)]]></Description>
+<Data Format="L5K"><![CDATA[0]]></Data>
+</Tag>
+<Tag Name="P101_Permissive" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Description><![CDATA[All P-101 run permissives healthy]]></Description>
+<Data Format="L5K"><![CDATA[0]]></Data>
+</Tag>
+<Tag Name="P101_Fault" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Description><![CDATA[P-101 common fault for HMI]]></Description>
+<Data Format="L5K"><![CDATA[0]]></Data>
+</Tag>
+</Tags>
+<Programs>
+<Program Name="Pumps" TestEdits="false" MainRoutineName="MainRoutine" Disabled="false" UseAsFolder="false">
+<Tags/>
+<Routines>
+<Routine Name="MainRoutine" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N"><Text><![CDATA[JSR(P101_Control,0);]]></Text></Rung>
+</RLLContent>
+</Routine>
+<Routine Name="P101_Control" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N">
+<Comment><![CDATA[P-101 run permissives: safety relay healthy (status from SR-1), no overload, no high discharge pressure, no low-suction trip]]></Comment>
+<Text><![CDATA[XIC(SR_EStop_OK)XIO(P101_OL)XIO(PSH_102)XIO(P101_LowSuct_Trip)OTE(P101_Permissive);]]></Text>
+</Rung>
+<Rung Number="1" Type="N">
+<Comment><![CDATA[Low suction pressure debounce: PSL-101 must be lost for 5 s while running]]></Comment>
+<Text><![CDATA[XIC(P101_Run)XIO(PSL_101)TON(PSL_Debounce,?,?);]]></Text>
+</Rung>
+<Rung Number="2" Type="N">
+<Comment><![CDATA[Latch low suction trip]]></Comment>
+<Text><![CDATA[XIC(PSL_Debounce.DN)OTL(P101_LowSuct_Trip);]]></Text>
+</Rung>
+<Rung Number="3" Type="N">
+<Comment><![CDATA[Reset low suction trip once pressure is back]]></Comment>
+<Text><![CDATA[XIC(Fault_Reset)XIC(PSL_101)OTU(P101_LowSuct_Trip);]]></Text>
+</Rung>
+<Rung Number="4" Type="N">
+<Comment><![CDATA[P-101 run seal-in from HMI start/stop]]></Comment>
+<Text><![CDATA[[XIC(HMI_Start_PB) ,XIC(P101_Run) ]XIO(HMI_Stop_PB)XIC(P101_Permissive)OTE(P101_Run);]]></Text>
+</Rung>
+<Rung Number="5" Type="N">
+<Comment><![CDATA[Common fault for HMI]]></Comment>
+<Text><![CDATA[[XIC(P101_OL) ,XIC(P101_LowSuct_Trip) ,XIC(PSH_102) ]OTE(P101_Fault);]]></Text>
+</Rung>
+</RLLContent>
+</Routine>
+</Routines>
+</Program>
+</Programs>
+<Tasks>
+<Task Name="MainTask" Type="CONTINUOUS" Priority="10" Watchdog="500" DisableUpdateOutputs="false" InhibitTask="false">
+<ScheduledPrograms><ScheduledProgram Name="Pumps"/></ScheduledPrograms>
+</Task>
+</Tasks>
+</Controller>
+</RSLogix5000Content>

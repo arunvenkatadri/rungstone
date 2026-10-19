@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="32.02" TargetName="Conveyor_Cell" TargetType="Controller" ContainsContext="false" ExportDate="Mon Jun 02 14:03:10 2025" ExportOptions="NoRawData L5KData DecoratedData ForceProtectedEncoding AllProjDocTrans">
+<Controller Use="Target" Name="Conveyor_Cell" ProcessorType="1756-L83ES" MajorRev="32" MinorRev="12" SafetyLevel="SIL2/PLd">
+<SafetyInfo SafetySignatureExists="true" SafetyLocked="false" SignatureRunModeProtect="false" ConfigureSafetyIOAlways="false" SafetyLevel="SIL2/PLd"/>
+<DataTypes/>
+<Modules>
+<Module Name="Local" CatalogNumber="1756-L83ES" Vendor="1" ProductType="14" ProductCode="215" Major="32" Minor="12" ParentModule="Local" ParentModPortId="1" Inhibited="false" MajorFault="true">
+<Ports><Port Id="1" Address="0" Type="ICP" Upstream="false"><Bus Size="10"/></Port></Ports>
+</Module>
+<Module Name="Safety_DI" CatalogNumber="1734-IB8S" Vendor="1" ProductType="35" ProductCode="12" Major="1" Minor="1" ParentModule="Local" ParentModPortId="1" Inhibited="false" MajorFault="false">
+<Description><![CDATA[POINT Guard safety input - e-stop channels]]></Description>
+<Ports><Port Id="1" Address="3" Type="PointIO" Upstream="true"/></Ports>
+</Module>
+</Modules>
+<AddOnInstructionDefinitions/>
+<Tags>
+<Tag Name="S_EStop_OK" TagType="Base" DataType="BOOL" Radix="Decimal" Class="Safety" Constant="false" ExternalAccess="Read Only">
+<Description><![CDATA[Safety: e-stop circuit healthy (from safety task)]]></Description>
+<Data Format="L5K"><![CDATA[0]]></Data>
+</Tag>
+<Tag Name="S_EStop_Ctrl" TagType="Base" DataType="DCI_STOP_TEST" Class="Safety" Constant="false" ExternalAccess="Read Only">
+<Description><![CDATA[DCS instance for e-stop]]></Description>
+</Tag>
+<Tag Name="EStop_PB_1" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Description><![CDATA[Standard monitoring contact, e-stop station 1]]></Description>
+</Tag>
+<Tag Name="EStop_PB_2" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Description><![CDATA[Standard monitoring contact, e-stop station 2]]></Description>
+</Tag>
+<Tag Name="EStop_Chain_OK" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write"/>
+<Tag Name="Conv_Start" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Description><![CDATA[Conveyor start PB]]></Description>
+</Tag>
+<Tag Name="Conv_Stop" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Description><![CDATA[Conveyor stop PB (NC)]]></Description>
+</Tag>
+<Tag Name="Conv_Run" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Description><![CDATA[Conveyor motor run command]]></Description>
+</Tag>
+<Tag Name="Jam_Timer" TagType="Base" DataType="TIMER" Constant="false" ExternalAccess="Read/Write">
+<Description><![CDATA[Jam detect timer]]></Description>
+</Tag>
+<Tag Name="Jam_Eye" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Description><![CDATA[Photo-eye at transfer, blocked = 1]]></Description>
+</Tag>
+<Tag Name="Jam_Fault" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Description><![CDATA[Jam fault latched]]></Description>
+</Tag>
+<Tag Name="Fault_Reset" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Description><![CDATA[Fault reset PB]]></Description>
+</Tag>
+</Tags>
+<Programs>
+<Program Name="MainProgram" TestEdits="false" MainRoutineName="MainRoutine" Disabled="false" UseAsFolder="false">
+<Tags/>
+<Routines>
+<Routine Name="MainRoutine" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N"><Text><![CDATA[JSR(R20_EStop_Chain,0);]]></Text></Rung>
+<Rung Number="1" Type="N"><Text><![CDATA[JSR(Conveyor,0);]]></Text></Rung>
+</RLLContent>
+</Routine>
+<Routine Name="R20_EStop_Chain" Type="RLL">
+<Description><![CDATA[Standard-task monitoring of e-stop stations for HMI annunciation]]></Description>
+<RLLContent>
+<Rung Number="0" Type="N">
+<Comment><![CDATA[Both stations released]]></Comment>
+<Text><![CDATA[XIC(EStop_PB_1)XIC(EStop_PB_2)OTE(EStop_Chain_OK);]]></Text>
+</Rung>
+</RLLContent>
+</Routine>
+<Routine Name="Conveyor" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N">
+<Comment><![CDATA[Conveyor run seal-in, permissive from safety task]]></Comment>
+<Text><![CDATA[XIC(S_EStop_OK)XIO(Jam_Fault)[XIC(Conv_Start) ,XIC(Conv_Run) ]XIC(Conv_Stop)OTE(Conv_Run);]]></Text>
+</Rung>
+<Rung Number="1" Type="N">
+<Comment><![CDATA[Jam detection: eye blocked for 3 s while running]]></Comment>
+<Text><![CDATA[XIC(Conv_Run)XIC(Jam_Eye)TON(Jam_Timer,3000,0);]]></Text>
+</Rung>
+<Rung Number="2" Type="N">
+<Text><![CDATA[XIC(Jam_Timer.DN)OTL(Jam_Fault);]]></Text>
+</Rung>
+<Rung Number="3" Type="N">
+<Text><![CDATA[XIC(Fault_Reset)XIO(Jam_Eye)OTU(Jam_Fault);]]></Text>
+</Rung>
+</RLLContent>
+</Routine>
+</Routines>
+</Program>
+<Program Name="SafetyProgram" TestEdits="false" MainRoutineName="SafetyMain" Disabled="false" Class="Safety" UseAsFolder="false">
+<Tags>
+<Tag Name="EStop_Ch_A" TagType="Alias" AliasFor="Safety_DI:I.Pt00Data" Class="Safety" ExternalAccess="Read/Write"/>
+<Tag Name="EStop_Ch_B" TagType="Alias" AliasFor="Safety_DI:I.Pt01Data" Class="Safety" ExternalAccess="Read/Write"/>
+</Tags>
+<Routines>
+<Routine Name="SafetyMain" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N">
+<Comment><![CDATA[Dual-channel e-stop, manual reset]]></Comment>
+<Text><![CDATA[DCS(S_EStop_Ctrl,1,Equivalent - Active High,500,Manual,EStop_Ch_A,EStop_Ch_B,Fault_Reset,Fault_Reset);]]></Text>
+</Rung>
+<Rung Number="1" Type="N">
+<Text><![CDATA[XIC(S_EStop_Ctrl.O1)OTE(S_EStop_OK);]]></Text>
+</Rung>
+</RLLContent>
+</Routine>
+</Routines>
+</Program>
+</Programs>
+<Tasks>
+<Task Name="MainTask" Type="CONTINUOUS" Priority="10" Watchdog="500" DisableUpdateOutputs="false" InhibitTask="false">
+<ScheduledPrograms><ScheduledProgram Name="MainProgram"/></ScheduledPrograms>
+</Task>
+<Task Name="SafetyTask" Type="PERIODIC" Rate="20" Priority="1" Watchdog="20" DisableUpdateOutputs="false" InhibitTask="false" Class="Safety">
+<ScheduledPrograms><ScheduledProgram Name="SafetyProgram"/></ScheduledPrograms>
+</Task>
+</Tasks>
+</Controller>
+</RSLogix5000Content>

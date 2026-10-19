@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project xmlns="http://www.plcopen.org/xml/tc6_0200">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP19" creationDateTime="2025-05-14T10:21:07.1872635" />
+  <contentHeader name="Mixer.project" modificationDateTime="2025-05-14T10:20:51.4312196">
+    <coordinateInfo><fbd><scaling x="1" y="1" /></fbd><ld><scaling x="1" y="1" /></ld><sfc><scaling x="1" y="1" /></sfc></coordinateInfo>
+  </contentHeader>
+  <types>
+    <dataTypes />
+    <pous>
+      <pou name="PLC_PRG" pouType="program">
+        <interface>
+          <localVars>
+            <variable name="Start_PB" address="%IX0.0"><type><BOOL /></type><documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">Start pushbutton</xhtml></documentation></variable>
+            <variable name="Stop_PB" address="%IX0.1"><type><BOOL /></type><documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">Stop pushbutton</xhtml></documentation></variable>
+            <variable name="Motor_Fault" address="%IX0.2"><type><BOOL /></type><documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">Agitator motor overload</xhtml></documentation></variable>
+            <variable name="Manual_Run" address="%IX0.3"><type><BOOL /></type><documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">Manual jog selector</xhtml></documentation></variable>
+            <variable name="Agitator_Run" address="%QX0.0"><type><BOOL /></type><documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">Agitator contactor</xhtml></documentation></variable>
+            <variable name="Batch_Done" address="%QX0.1"><type><BOOL /></type><documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">Batch complete lamp</xhtml></documentation></variable>
+            <variable name="Bypass_Mode"><type><BOOL /></type><documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">Maintenance bypass</xhtml></documentation></variable>
+            <variable name="Run_Request"><type><BOOL /></type></variable>
+            <variable name="Mix_Timer"><type><derived name="TON" /></type></variable>
+          </localVars>
+        </interface>
+        <body>
+          <ST>
+            <xhtml xmlns="http://www.w3.org/1999/xhtml">(* Mixer sequence *)
+IF Start_PB AND NOT Bypass_Mode THEN
+    Run_Request := TRUE;
+END_IF
+IF NOT Stop_PB OR Motor_Fault THEN
+    Run_Request := FALSE;
+END_IF
+
+Mix_Timer(IN := Run_Request, PT := T#45S);
+Agitator_Run := Run_Request AND NOT Mix_Timer.Q;
+
+IF Bypass_Mode THEN
+    Agitator_Run := Manual_Run;
+END_IF
+
+Batch_Done := Mix_Timer.Q;</xhtml>
+          </ST>
+        </body>
+      </pou>
+    </pous>
+  </types>
+  <instances>
+    <configurations>
+      <configuration name="Device">
+        <resource name="Application">
+          <task name="MainTask" interval="PT0.02S" priority="1"><pouInstance name="PLC_PRG" typeName="PLC_PRG" /></task>
+        </resource>
+      </configuration>
+    </configurations>
+  </instances>
+</project>

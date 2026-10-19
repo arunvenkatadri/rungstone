@@ -1,0 +1,93 @@
+{
+  "skill_name": "rungstone-hmi-scada",
+  "evals": [
+    {
+      "id": 1,
+      "name": "hmi-label-disagrees-with-plc-comment",
+      "prompt": "We're about to migrate the fill station on line 3. Attached are the Studio 5000 export, the FactoryTalk View SE overview display (XML export) and the HMI tag CSV. Before we touch anything, can you check the HMI against the PLC and tell me what doesn't line up? Target will be an S7-1500.",
+      "expected_output": "Consistency report with a conflicts table. The HMI label that disagrees with the PLC comment is flagged as a conflict: miTankLevel caption 'Tank LOW level' vs Tank_Full PLC/IO comment 'Tank high level switch (LSH-301)', and Batch_Count labelled 'Good batches completed'/'Batches completed today' vs PLC 'Rejected batches'. Also broken links Level_Bypass and Tank_Ful, Fill_Timer.ACC has no direct IEC equivalent (ET), and open questions.",
+      "files": ["fixtures/plc/timers_hmi/Fill_Station.L5X", "fixtures/hmi/factorytalk/Fill_Overview.xml", "fixtures/plc/timers_hmi/FTView_Fill_tags.csv"],
+      "expectations": [
+        "Flags a label_mismatch conflict for Tank_Full: HMI says 'Tank LOW level' while the PLC comment / I/O comment says high level switch",
+        "Flags a label_mismatch conflict for Batch_Count: HMI says good/completed batches while the PLC description says 'Rejected batches'",
+        "Each label conflict cites both texts and both sources (HMI object and PLC comment or I/O map)",
+        "Reports Level_Bypass (button pbBypass) as a broken binding: no such PLC tag",
+        "Reports Tank_Ful in the tag CSV as a broken link (typo of Tank_Full)",
+        "States that Fill_Timer.ACC read by the HMI has no direct equivalent in an IEC/S7 timer (ET is TIME) and proposes rebinding the HMI to a new DINT tag",
+        "Marks the position-based association of the 'Good batches completed' text with the numeric display as inferred",
+        "Does not claim anything was tested or verified on hardware; says the analysis is read-only on exported files"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "alarm-history-chattering-nuisance",
+      "prompt": "Operators on nights are complaining the alarm banner never stops. Here's three days of alarm history exported from the alarm server (alarm_history.csv). One operator console covers the whole area. What's going on and what should we fix first?",
+      "expected_output": "ISA-18.2 style alarm cleanup report: FILL_TANK_HI_LVL identified as a chattering nuisance alarm and the top bad actor (~59 % of load) driving most floods; DOOR3_OPEN_SW fleeting; PUMP2_SEAL_LEAK standing > 24 h; COMP1_TRIP -> AIR_PRESS_LO consequential pair; the 2024-05-14 14:00 flood is a compressor trip cascade; priority mix far from 80/15/5; suggestions (on-delay/deadband, suppression, re-prioritization) labelled as suggestions for the alarm philosophy owner.",
+      "files": ["fixtures/hmi/alarms/alarm_history.csv"],
+      "expectations": [
+        "Identifies FILL_TANK_HI_LVL as a chattering alarm and calls it a nuisance alarm, with evidence (episodes or activation counts)",
+        "Names FILL_TANK_HI_LVL as the top bad actor and recommends fixing it first (on-delay, deadband/hysteresis or instrument check)",
+        "Explains that most floods are driven by the chattering alarm, while the 2024-05-14 14:00 flood is a multi-alarm cascade starting with COMP1_TRIP",
+        "Identifies AIR_PRESS_LO as consequential to COMP1_TRIP and suggests state-based suppression or first-out grouping",
+        "Identifies PUMP2_SEAL_LEAK as a standing/stale alarm",
+        "Compares the average rate and priority distribution against ISA-18.2 guidance (about 6/hour; ~80/15/5)",
+        "Labels priority and configuration changes as suggestions for the alarm philosophy owner to approve, not decisions"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "retarget-hmi-to-s7-with-timer-members",
+      "prompt": "Translation of the fill station to S7-1500 is done and the mapping is in mapping.csv. Rebind the FactoryTalk display, the Ignition tags and the FT tag CSV to the new PLC. The new RSLinx/OPC device name is FILL_S7.",
+      "expected_output": "retarget.py run producing rebound copies (originals untouched), a table of rebinds, unmapped references (Level_Bypass, Tank_Ful) left unchanged, and review items: Fill_Timer.ACC -> new DINT tag (high), Fill_Timer.PRE -> DINT setpoint (high), Fill_Timer.TT -> new BOOL (high), Batch_Count.ACC -> .CV (medium). States nothing is final until approved.",
+      "files": ["fixtures/hmi/retarget/mapping.csv", "fixtures/hmi/factorytalk/Fill_Overview.xml", "fixtures/hmi/ignition/tags.json", "fixtures/plc/timers_hmi/FTView_Fill_tags.csv"],
+      "expectations": [
+        "Writes rebound copies to an output folder and states the original files were not modified",
+        "Rebinds Fill_Timer.ACC to a new DINT tag (not to ET directly) and flags it high risk for review",
+        "Rebinds Fill_Timer.PRE to a new DINT setpoint tag and explains the TIME conversion needed in the PLC",
+        "Lists Level_Bypass and Tank_Ful as could-not-be-mapped and does not invent targets for them",
+        "Renames the device/shortcut FILL_PLC to FILL_S7 in the rebound references",
+        "Says the engineer must approve the review items before export"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "verify-bindings-simulated-label",
+      "prompt": "Can you verify the overview screen buttons actually do something in the PLC program? Use the simulator if you have one.",
+      "expected_output": "Binding check (resolved/broken) plus scenarios run through simulate.py; pbBypass scenario reported 'not run' because Level_Bypass does not exist; other scenarios reported as ran with observed values; heading labelled 'simulated, not hardware-tested'.",
+      "files": ["fixtures/plc/timers_hmi/Fill_Station.L5X", "fixtures/hmi/factorytalk/Fill_Overview.xml"],
+      "expectations": [
+        "Reports every binding as resolved, broken or member_invalid",
+        "Reports the pbBypass/Level_Bypass scenario as not run with the reason (broken binding)",
+        "Labels the scenario results 'simulated, not hardware-tested'",
+        "Does not say any button was verified on hardware or that the behaviour is proven"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "understand-ignition-view-and-scripts",
+      "prompt": "New to this site - what does the Ignition fill screen and the shift rollover gateway script actually do? Files attached.",
+      "expected_output": "Plain-English explanation: the view shows fill time elapsed, a bidirectional preset entry, valve LED, a Reset batch count button whose script writes ResetCount (HMI_Reset_Count in the PLC), and a nav button; the gateway script reads the batch count and shift, inserts a row into a database table (side effect) and pulses the PLC reset bit; Shift is a memory tag, not a PLC tag; open questions (e.g. who clears HMI_Reset_Count, double reset from screen and script).",
+      "files": ["fixtures/hmi/ignition/view.json", "fixtures/hmi/ignition/tags.json", "fixtures/hmi/scripts/shift_rollover.py"],
+      "expectations": [
+        "Explains that btnReset runs a script that writes [default]Fill/ResetCount, which maps to PLC tag HMI_Reset_Count",
+        "Explains that the gateway script writes to a database (system.db.runPrepUpdate) as well as pulsing the reset bit",
+        "Identifies Fill/Shift as a memory tag, not a PLC tag",
+        "Identifies nefPreset as an operator write to Fill_Timer.PRE (bidirectional binding)",
+        "Says the scripts were read, not executed"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "migrate-ft-to-ignition-draft",
+      "prompt": "We're replacing the PanelView/FactoryTalk HMI with Ignition. Convert the FT tag database and the overview display for Ignition, using the S7 mapping.",
+      "expected_output": "DRAFT_tags_ignition.json with OPC item paths on the new device, DRAFT screen wireframe (md/html) explicitly labelled draft layout only, review items for timer/counter member rebinds, unmapped Tank_Ful listed, README_DRAFT.md with import checks.",
+      "files": ["fixtures/plc/timers_hmi/FTView_Fill_tags.csv", "fixtures/hmi/factorytalk/Fill_Overview.xml", "fixtures/hmi/retarget/mapping.csv"],
+      "expectations": [
+        "Produces an Ignition tag JSON draft whose OPC item paths use the new PLC symbols",
+        "States the screens are draft layout descriptions only, not migrated screens",
+        "Flags that the OPC item path syntax must be checked against the Ignition Siemens driver in use",
+        "Lists the unmapped Tank_Ful reference"
+      ]
+    }
+  ]
+}

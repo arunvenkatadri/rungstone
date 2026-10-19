@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Shared tag map (.rungstone/tagmap.json) - one entry per signal, reused by every skill",
+  "type": "object",
+  "required": [
+    "tags"
+  ],
+  "properties": {
+    "schema": {
+      "const": "rungstone/tagmap@1"
+    },
+    "tags": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "display",
+          "basis"
+        ],
+        "properties": {
+          "display": {
+            "type": "string",
+            "description": "source address or symbol as written"
+          },
+          "data_type": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "meaning": {
+            "type": "string"
+          },
+          "basis": {
+            "enum": [
+              "confirmed",
+              "comment",
+              "io_map",
+              "inferred",
+              "unknown"
+            ]
+          },
+          "evidence": {
+            "type": "string",
+            "description": "quote or reasoning behind the basis"
+          },
+          "used_in": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "systems": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "plc",
+                "hmi",
+                "scada",
+                "historian"
+              ]
+            }
+          },
+          "new_symbol": {
+            "type": "string"
+          },
+          "new_address": {
+            "type": "string"
+          },
+          "safety": {
+            "type": "string",
+            "description": "set when the signal belongs to excluded safety logic"
+          }
+        }
+      }
+    }
+  }
+}

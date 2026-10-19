@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rungstone Workbench</title>
+<style>
+:root{
+  --bg:#0e1116;--panel:#151a21;--panel2:#1b212a;--line:#2a323d;--text:#d8dee7;--muted:#8d98a7;
+  --amber:#f5a524;--amber-bg:#3a2a0b;--red:#f2554f;--red-bg:#3b1414;--green:#3fb950;--green-bg:#10301a;
+  --blue:#6cb6ff;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 var(--sans)}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;
+  padding:12px 20px;border-bottom:1px solid var(--line);background:var(--panel)}
+.brand{font-weight:700;letter-spacing:.04em}.brand small{color:var(--muted);font-weight:400;margin-left:8px;font-family:var(--mono)}
+.pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px;font-family:var(--mono);white-space:nowrap}
+.pill.block{border-color:var(--red);color:#ffd6d4;background:var(--red-bg)}
+.pill.ok{border-color:var(--green);color:#c9f5d2;background:var(--green-bg)}
+.pill.warn{border-color:var(--amber);color:#ffe3b0;background:var(--amber-bg)}
+.banner{margin:12px 20px 0;padding:10px 14px;border-radius:6px;border:1px solid var(--amber);background:var(--amber-bg);color:#ffe3b0}
+.banner.safety{border-color:var(--amber)}
+.banner b{color:var(--amber)}
+.banner.static{border-color:var(--blue);background:#0f2236;color:#cfe6ff}
+nav{display:flex;gap:2px;padding:0 20px;border-bottom:1px solid var(--line);overflow-x:auto;background:var(--bg)}
+nav button{background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);padding:10px 12px;
+  font:inherit;cursor:pointer;white-space:nowrap}
+nav button[aria-selected=true]{color:var(--text);border-bottom-color:var(--amber)}
+nav button:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+main{padding:16px 20px 60px;max-width:1400px}
+section{display:none}section.active{display:block}
+h2{font-size:15px;margin:22px 0 8px;color:#eef2f7}h2:first-child{margin-top:4px}
+h3{font-size:14px;margin:16px 0 6px}
+.muted{color:var(--muted)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:8px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.stat b{display:block;font-size:20px;font-family:var(--mono)}.stat span{color:var(--muted);font-size:12px}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;margin:8px 0}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;vertical-align:top;padding:7px 10px;border-bottom:1px solid var(--line)}
+th{background:var(--panel2);color:var(--muted);font-weight:600;position:sticky;top:0}
+tr:last-child td{border-bottom:0}
+code,.mono,td.mono{font-family:var(--mono);font-size:12.5px}
+pre{background:#0a0d11;border:1px solid var(--line);border-radius:6px;padding:10px;overflow-x:auto;font:12.5px/1.45 var(--mono)}
+.chip{display:inline-block;border-radius:4px;padding:1px 7px;font:600 11.5px var(--mono);text-transform:uppercase;border:1px solid var(--line)}
+.chip.high,.chip.differs,.chip.blocked{color:#ffd6d4;background:var(--red-bg);border-color:var(--red)}
+.chip.medium,.chip.notrun{color:#ffe3b0;background:var(--amber-bg);border-color:var(--amber)}
+.chip.low{color:var(--muted)}
+.chip.match,.chip.approved{color:#c9f5d2;background:var(--green-bg);border-color:var(--green)}
+.chip.rejected{color:var(--muted);text-decoration:line-through}
+.chip.edited{color:#cfe6ff;border-color:var(--blue)}
+.chip.open{color:var(--text)}
+.label-sim{display:inline-block;margin:4px 0 10px;padding:6px 10px;border:1px dashed var(--amber);border-radius:6px;
+  color:var(--amber);font:600 13px var(--mono);letter-spacing:.02em}
+button.act{font:inherit;font-size:12.5px;padding:4px 10px;border-radius:5px;border:1px solid var(--line);
+  background:var(--panel2);color:var(--text);cursor:pointer;margin:2px 4px 2px 0}
+button.act:hover{border-color:var(--muted)}
+button.act.approve{border-color:#2d6a3a}button.act.reject{border-color:#7a2d2a}
+button.act[disabled]{opacity:.45;cursor:not-allowed}
+textarea,input[type=text],input[type=search],select{font:13px var(--mono);background:#0a0d11;color:var(--text);
+  border:1px solid var(--line);border-radius:5px;padding:6px 8px;width:100%}
+textarea{min-height:64px;resize:vertical}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0}
+.toolbar input[type=search]{max-width:340px}
+.err{color:#ffd6d4}
+.md table{margin:8px 0}.md p{margin:6px 0}.md ul,.md ol{margin:6px 0 6px 20px;padding:0}
+.md blockquote{margin:6px 0;padding:4px 12px;border-left:3px solid var(--amber);color:#e9d8b5}
+.md h1{font-size:18px}.md h2{font-size:15.5px}.md h3{font-size:14px}
+.md a{color:var(--blue)}
+.instr{display:flex;gap:8px;align-items:stretch}.instr input{flex:1}
+.empty{color:var(--muted);font-style:italic;padding:8px 0}
+.row-high td:first-child{box-shadow:inset 3px 0 0 var(--red)}
+.row-medium td:first-child{box-shadow:inset 3px 0 0 var(--amber)}
+@media (max-width:640px){header,main,nav{padding-left:12px;padding-right:12px}.banner{margin:10px 12px 0}th,td{padding:6px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">RUNGSTONE <small id="projname">workbench</small></div>
+  <div class="pills" id="pills"></div>
+</header>
+<div id="banners"></div>
+<nav role="tablist" id="tabs"></nav>
+<main id="main"></main>
+<script>
+"use strict";
+var BOOT = /*__BOOT__*/null;
+var LABEL = "simulated, not hardware-tested";
+var TABS = [
+  ["files","Project files"],["understand","Understand"],["translate","Translate"],["verify","Verify"],
+  ["deps","Dependency map"],["hmi","HMI/SCADA"],["ops","Operations"]];
+var REPORT_TAB = [
+  [/^understand/i,"understand"],[/^(translate|review|mapping)/i,"translate"],[/^(verify|scenario|sim)/i,"verify"],
+  [/^(dep|conflict)/i,"deps"],[/^(hmi|scada|alarm|retarget|binding)/i,"hmi"],
+  [/^(ops|operation|troubleshoot|report|shift|downtime|trend)/i,"ops"]];
+var S = null, LIVE = BOOT && BOOT.mode === "live", CSRF = BOOT && BOOT.csrf;
+var current = "files", staticDecisions = {};
+
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+function el(id){return document.getElementById(id);}
+function chip(v){var k=String(v||"").toLowerCase().replace(/[^a-z]/g,"");return '<span class="chip '+esc(k)+'">'+esc(v||"-")+'</span>';}
+function table(cols,rows,rowClass){
+  if(!rows.length) return '<div class="empty">None.</div>';
+  var h='<div class="tablewrap"><table><thead><tr>'+cols.map(function(c){return '<th>'+esc(c[0])+'</th>';}).join("")+'</tr></thead><tbody>';
+  rows.forEach(function(r){h+='<tr class="'+(rowClass?esc(rowClass(r)):"")+'">'+cols.map(function(c){
+    var v=c[1](r);return '<td'+(c[2]?' class="mono"':'')+'>'+v+'</td>';}).join("")+'</tr>';});
+  return h+'</tbody></table></div>';
+}
+
+/* ---- safe markdown: escape everything, then add a small set of tags ---- */
+function inline(s){
+  s=esc(s);
+  s=s.replace(/`([^`]+)`/g,function(_,c){return '<code>'+c+'</code>';});
+  s=s.replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/(^|[^*])\*([^*\s][^*]*)\*/g,'$1<i>$2</i>');
+  s=s.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,function(_,t,u){return '<a href="'+u+'" rel="noopener noreferrer" target="_blank">'+t+'</a>';});
+  return s;
+}
+function md(src){
+  var lines=String(src||"").replace(/\r\n?/g,"\n").split("\n"),out=[],i=0;
+  function isRow(l){return /^\s*\|.*\|\s*$/.test(l);}
+  function cells(l){return l.trim().replace(/^\||\|$/g,"").split(/(?<!\\)\|/).map(function(c){return c.replace(/\\\|/g,"|").trim();});}
+  while(i<lines.length){
+    var l=lines[i];
+    if(/^```/.test(l)){var buf=[];i++;while(i<lines.length&&!/^```/.test(lines[i])){buf.push(lines[i]);i++;}i++;
+      out.push('<pre>'+esc(buf.join("\n"))+'</pre>');continue;}
+    var m=/^(#{1,4})\s+(.*)$/.exec(l);
+    if(m){var n=Math.min(m[1].length+1,4);out.push('<h'+n+'>'+inline(m[2])+'</h'+n+'>');i++;continue;}
+    if(/^\s*(-{3,}|\*{3,})\s*$/.test(l)){out.push('<hr>');i++;continue;}
+    if(isRow(l)&&i+1<lines.length&&/^\s*\|?\s*:?-{2,}/.test(lines[i+1])){
+      var head=cells(l);i+=2;var rows=[];while(i<lines.length&&isRow(lines[i])){rows.push(cells(lines[i]));i++;}
+      out.push('<div class="tablewrap"><table><thead><tr>'+head.map(function(c){return '<th>'+inline(c)+'</th>';}).join("")+
+        '</tr></thead><tbody>'+rows.map(function(r){return '<tr>'+r.map(function(c){return '<td>'+inline(c)+'</td>';}).join("")+'</tr>';}).join("")+
+        '</tbody></table></div>');continue;}
+    if(/^\s*([-*]|\d+\.)\s+/.test(l)){var ordered=/^\s*\d+\./.test(l),items=[];
+      while(i<lines.length&&/^\s*([-*]|\d+\.)\s+/.test(lines[i])){items.push(lines[i].replace(/^\s*([-*]|\d+\.)\s+/,""));i++;}
+      var t=ordered?"ol":"ul";out.push('<'+t+'>'+items.map(function(x){return '<li>'+inline(x)+'</li>';}).join("")+'</'+t+'>');continue;}
+    if(/^>\s?/.test(l)){var q=[];while(i<lines.length&&/^>\s?/.test(lines[i])){q.push(lines[i].replace(/^>\s?/,""));i++;}
+      out.push('<blockquote>'+inline(q.join(" "))+'</blockquote>');continue;}
+    if(!l.trim()){i++;continue;}
+    var p=[];while(i<lines.length&&lines[i].trim()&&!/^(#{1,4}\s|```|>|\s*([-*]|\d+\.)\s)/.test(lines[i])&&!isRow(lines[i])){p.push(lines[i]);i++;}
+    if(!p.length){p.push(l);i++;}
+    out.push('<p>'+inline(p.join(" "))+'</p>');
+  }
+  return '<div class="md">'+out.join("\n")+'</div>';
+}
+
+function reportsFor(tab){
+  var r=S.reports||{},names=Object.keys(r).sort(),h="";
+  names.forEach(function(n){
+    var t="files";for(var k=0;k<REPORT_TAB.length;k++){if(REPORT_TAB[k][0].test(n)){t=REPORT_TAB[k][1];break;}}
+    if(t===tab) h+='<div class="card"><div class="muted mono">.rungstone/reports/'+esc(n)+'</div>'+md(r[n])+'</div>';
+  });
+  return h;
+}
+
+/* ---- header, banners ---- */
+function renderChrome(){
+  var p=S.project||{};
+  el("projname").textContent=(p.name||"project")+(p.target?"  ->  "+p.target:"");
+  var q=S.queue||[],open=q.filter(function(i){return i.status==="open";}).length;
+  var pills='';
+  pills+= S.export.blocked ? '<span class="pill block" title="Open high-risk items: '+esc(S.export.open_high.join(", "))+'">EXPORT BLOCKED: '+S.export.open_high.length+' high-risk open</span>'
+                           : '<span class="pill ok">export gate clear</span>';
+  pills+='<span class="pill">'+open+' open review item'+(open===1?"":"s")+'</span>';
+  pills+='<span class="pill warn">'+esc(LABEL)+'</span>';
+  if(!LIVE) pills+='<span class="pill">static snapshot</span>';
+  el("pills").innerHTML=pills;
+  var b='';
+  if(!LIVE) b+='<div class="banner static"><b>Static snapshot.</b> Buttons build an instruction line instead of saving. Copy it into the chat (for example <code>approve R1, R3; reject R2: reason</code>) and Claude will apply it to the project state.</div>';
+  var sf=S.excluded_safety||[];
+  if(sf.length){
+    var seen={},items=[];sf.forEach(function(e){var k=(e.name||"")+"|"+(e.kind||"");if(!seen[k]){seen[k]=1;items.push(e);}});
+    b+='<div class="banner safety"><b>Safety logic excluded.</b> '+items.length+' safety-rated item'+(items.length===1?" was":"s were")+
+      ' detected and excluded from every workflow (not analysed, translated, simulated or mapped): '+
+      items.slice(0,8).map(function(e){return '<code>'+esc(e.name)+'</code>'+(e.confidence?' <span class="muted">('+esc(e.confidence)+')</span>':'');}).join(", ")+
+      (items.length>8?" and "+(items.length-8)+" more":"")+'. Safety functions must be engineered and validated by a qualified safety engineer in the vendor safety tooling.</div>';
+  }
+  el("banners").innerHTML=b;
+}
+
+/* ---- tabs ---- */
+function renderTabs(){
+  el("tabs").innerHTML=TABS.map(function(t){return '<button role="tab" id="tab-'+t[0]+'" aria-selected="'+(t[0]===current)+'" data-tab="'+t[0]+'">'+esc(t[1])+'</button>';}).join("");
+  Array.prototype.forEach.call(el("tabs").querySelectorAll("button"),function(b){b.onclick=function(){current=b.getAttribute("data-tab");renderTabs();renderMain();};});
+}
+
+function viewFiles(){
+  var p=S.project||{},h='<h2>Project</h2><div class="grid">'+
+    '<div class="stat"><b>'+esc((p.sources||[]).length)+'</b><span>source files</span></div>'+
+    '<div class="stat"><b>'+esc(Object.keys((S.tagmap||{}).tags||{}).length)+'</b><span>tag map entries</span></div>'+
+    '<div class="stat"><b>'+esc((S.mapping||[]).length)+'</b><span>mapping rows</span></div>'+
+    '<div class="stat"><b>'+esc((S.queue||[]).length)+'</b><span>review items</span></div></div>';
+  h+='<div class="muted mono" style="margin-top:6px">state: '+esc(S.state_dir||"")+'</div>';
+  h+='<h2>Source files</h2>'+table([["Path",function(s){return esc(s.path);},1],["Format",function(s){return esc(s.format||"");},1],
+     ["SHA-256",function(s){return '<span title="'+esc(s.sha256)+'">'+esc(String(s.sha256||"").slice(0,12))+'…</span>';},1],
+     ["Added",function(s){return esc(s.added||"");},1]],p.sources||[]);
+  h+='<h2>Cost estimate</h2>'+viewEstimate();
+  h+=reportsFor("files");
+  h+='<h2>Decisions log</h2>'+((S.decisions||[]).length?'<pre>'+esc(S.decisions.slice(-60).join("\n"))+'</pre>':'<div class="empty">No decisions yet.</div>');
+  return h;
+}
+function viewEstimate(){
+  var e=S.estimate;
+  if(!e||e.error) return '<div class="empty">No estimate yet. Run <code>estimate.py --json &gt; .rungstone/estimate.json</code> before large jobs.</div>';
+  var h='';
+  if(e.confirm_before_running) h+='<div class="banner" style="margin:6px 0"><b>Large job.</b> Confirm scope with the engineer before running.</div>';
+  var sc=e.scope||{};
+  h+='<div class="muted">Model <code>'+esc(e.model)+'</code> at $'+esc((e.price_per_mtok||{}).input)+' / $'+esc((e.price_per_mtok||{}).output)+
+     ' per MTok (prices as of '+esc(e.prices_as_of)+'). Scope: '+esc(sc.routines)+' routines, '+esc(sc.items)+' rungs/lines, '+esc(sc.signals)+' tags.</div>';
+  h+=table([["Job",function(j){return esc(j.job);}],["Input tok",function(j){return esc((j.input_tokens||0).toLocaleString());},1],
+    ["Output tok",function(j){return esc((j.output_tokens||0).toLocaleString());},1],["Passes",function(j){return esc(j.passes);},1],
+    ["Cost (mid, band)",function(j){return '$'+esc(j.usd_mid)+' <span class="muted">('+esc(j.usd_low)+'–'+esc(j.usd_high)+')</span>';},1],
+    ["Notes",function(j){return esc(j.note||"");}]],e.jobs||[]);
+  if(e.total) h+='<div class="mono">Total ≈ $'+esc(e.total.usd_mid)+' ('+esc(e.total.usd_low)+'–'+esc(e.total.usd_high)+')</div>';
+  return h;
+}
+
+function viewTranslate(){
+  var q=S.queue||[],filt=window.__qfilter||"open";
+  var rows=q.filter(function(i){return filt==="all"||i.status===filt;}).sort(function(a,b){
+    var r={high:0,medium:1,low:2};return (r[a.risk]-r[b.risk])||String(a.id).localeCompare(String(b.id),undefined,{numeric:true});});
+  var h='<h2>Review queue</h2><div class="muted">Nothing is final until the engineer approves it. Export stays blocked while any high-risk item is open.</div>';
+  h+='<div class="toolbar"><label class="muted">Show <select id="qfilter">'+["open","approved","edited","rejected","all"].map(function(o){
+    return '<option'+(o===filt?" selected":"")+'>'+o+'</option>';}).join("")+'</select></label></div>';
+  h+=table([["ID",function(i){return '<b class="mono">'+esc(i.id)+'</b>';}],["Risk",function(i){return chip(i.risk);}],
+    ["Status",function(i){return chip(i.status);}],["Location",function(i){return '<span class="mono">'+esc(i.location)+'</span>';}],
+    ["Issue",function(i){return esc(i.issue);}],
+    ["Proposed fix",function(i){return '<div id="fix-'+esc(i.id)+'">'+esc(i.proposed_fix)+'</div>'+(i.resolution?'<div class="muted">note: '+esc(i.resolution)+'</div>':'');}],
+    ["Decision",function(i){return actions(i);}]],rows,function(i){return "row-"+i.risk;});
+  if(!LIVE) h+='<h3>Instruction for chat</h3><div class="instr"><input type="text" id="instr" readonly value="'+esc(instructionLine())+'"><button class="act" id="copyinstr">Copy</button></div>';
+  h+='<h2>Mapping table <span class="muted">(mapping.csv)</span></h2>';
+  var m=S.mapping||[];
+  h+='<div class="toolbar"><input type="search" id="mapq" placeholder="filter old/new address, symbol, description"></div><div id="maptable">'+mappingTable(m)+'</div>';
+  h+=reportsFor("translate");
+  return h;
+}
+function mappingTable(m){
+  return table([["Old address",function(r){return esc(r.old_address);},1],["Old symbol",function(r){return esc(r.old_symbol);},1],
+    ["Description",function(r){return esc(r.old_description);}],["Old type",function(r){return esc(r.old_type);},1],
+    ["New symbol",function(r){return esc(r.new_symbol);},1],["New address",function(r){return esc(r.new_address);},1],
+    ["New type",function(r){return esc(r.new_type);},1],["Basis",function(r){return chip(r.basis);}],["Notes",function(r){return esc(r.notes);}]],m);
+}
+function actions(i){
+  var id=esc(i.id);
+  if(LIVE){
+    if(i.status!=="open") return '<span class="muted">'+esc(i.decided_by||"")+' '+esc(i.decided_at||"")+'</span>';
+    return '<button class="act approve" data-act="approve" data-id="'+id+'">Approve</button>'+
+      '<button class="act" data-act="edit" data-id="'+id+'">Edit</button>'+
+      '<button class="act reject" data-act="reject" data-id="'+id+'">Reject</button>'+
+      '<div id="form-'+id+'"></div><div class="err" id="aerr-'+id+'"></div>';
+  }
+  var d=staticDecisions[i.id]||{};
+  return '<button class="act approve" data-sact="approve" data-id="'+id+'">'+(d.a==="approve"?"✓ ":"")+'Approve</button>'+
+    '<button class="act" data-sact="edit" data-id="'+id+'">'+(d.a==="edit"?"✓ ":"")+'Edit</button>'+
+    '<button class="act reject" data-sact="reject" data-id="'+id+'">'+(d.a==="reject"?"✓ ":"")+'Reject</button>'+
+    '<div id="form-'+id+'"></div>';
+}
+function instructionLine(){
+  var ap=[],parts=[];
+  Object.keys(staticDecisions).sort(function(a,b){return a.localeCompare(b,undefined,{numeric:true});}).forEach(function(id){
+    var d=staticDecisions[id];
+    if(d.a==="approve") ap.push(id);
+    else if(d.a==="reject") parts.push("reject "+id+": "+(d.text||"<reason>"));
+    else if(d.a==="edit") parts.push("edit "+id+": "+(d.text||"<new fix>"));
+  });
+  if(ap.length) parts.unshift("approve "+ap.join(", "));
+  return parts.join("; ")||"(choose Approve / Edit / Reject above)";
+}
+function inlineForm(id,kind,initial,onSave){
+  var f=el("form-"+id);if(!f) return;
+  f.innerHTML='<textarea id="ta-'+esc(id)+'" placeholder="'+(kind==="reject"?"Reason (required)":"New proposed fix")+'">'+esc(initial||"")+'</textarea>'+
+    '<button class="act" id="save-'+esc(id)+'">'+(kind==="reject"?"Confirm reject":"Save edit")+'</button><button class="act" id="cancel-'+esc(id)+'">Cancel</button><div class="err" id="err-'+esc(id)+'"></div>';
+  el("ta-"+id).focus();
+  el("cancel-"+id).onclick=function(){f.innerHTML="";};
+  el("save-"+id).onclick=function(){var v=el("ta-"+id).value.trim();if(!v){el("err-"+id).textContent=kind==="reject"?"A reason is required.":"Enter the new fix.";return;}onSave(v);};
+}
+function post(body,errId){
+  return fetch("/api/queue/decide",{method:"POST",headers:{"Content-Type":"application/json","X-Rungstone-CSRF":CSRF},
+    body:JSON.stringify(body),credentials:"same-origin"}).then(function(r){return r.json().then(function(j){if(!r.ok) throw new Error(j.error||r.status);return j;});})
+    .then(function(){return load();}).catch(function(e){var x=errId&&el(errId);if(x) x.textContent=String(e.message||e);});
+}
+function wireTranslate(){
+  var qf=el("qfilter");if(qf) qf.onchange=function(){window.__qfilter=qf.value;renderMain();};
+  var mq=el("mapq");if(mq) mq.oninput=function(){var t=mq.value.toLowerCase();el("maptable").innerHTML=mappingTable((S.mapping||[]).filter(function(r){
+    return !t||Object.keys(r).some(function(k){return String(r[k]||"").toLowerCase().indexOf(t)>=0;});}));};
+  Array.prototype.forEach.call(document.querySelectorAll("button[data-act]"),function(b){
+    var id=b.getAttribute("data-id"),a=b.getAttribute("data-act");
+    b.onclick=function(){
+      if(a==="approve"){b.disabled=true;post({ids:[id],action:"approve"},"aerr-"+id);}
+      else if(a==="reject") inlineForm(id,"reject","",function(v){post({ids:[id],action:"reject",note:v},"err-"+id);});
+      else if(a==="edit"){var it=(S.queue||[]).filter(function(x){return x.id===id;})[0]||{};
+        inlineForm(id,"edit",it.proposed_fix,function(v){post({ids:[id],action:"edit",fix:v},"err-"+id);});}
+    };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("button[data-sact]"),function(b){
+    var id=b.getAttribute("data-id"),a=b.getAttribute("data-sact");
+    b.onclick=function(){
+      if(a==="approve"){staticDecisions[id]={a:"approve"};renderMain();}
+      else{var it=(S.queue||[]).filter(function(x){return x.id===id;})[0]||{};
+        inlineForm(id,a,a==="edit"?it.proposed_fix:"",function(v){staticDecisions[id]={a:a,text:v.replace(/[;\n]+/g," ")};renderMain();});}
+    };
+  });
+  var c=el("copyinstr");if(c) c.onclick=function(){var i=el("instr");i.select();try{navigator.clipboard.writeText(i.value);}catch(e){document.execCommand("copy");}c.textContent="Copied";};
+}
+
+function findVerdictRows(obj,out,ctx){
+  if(Array.isArray(obj)) obj.forEach(function(x){findVerdictRows(x,out,ctx);});
+  else if(obj&&typeof obj==="object"){
+    if("verdict" in obj) out.push({ctx:ctx,r:obj});
+    Object.keys(obj).forEach(function(k){if(k!=="verdict"&&typeof obj[k]==="object") findVerdictRows(obj[k],out,obj.name||obj.run||obj.id||ctx);});
+  }
+}
+function viewVerify(){
+  var v=S.verify||{},rows=[];findVerdictRows(v.runs||v.results||v,rows,"");
+  var h='<div class="label-sim">'+esc(LABEL).toUpperCase()+'</div>';
+  h+='<div class="muted">Results come only from simulation runs that actually executed. Scenarios that could not run are shown as NOT RUN with the reason.</div>';
+  var c={match:0,differs:0,notrun:0};rows.forEach(function(x){var k=String(x.r.verdict||"").toLowerCase().replace(/[^a-z]/g,"");if(k in c) c[k]++;});
+  h+='<div class="grid" style="margin-top:8px"><div class="stat"><b>'+c.match+'</b><span>match</span></div><div class="stat"><b>'+c.differs+'</b><span>differs</span></div><div class="stat"><b>'+c.notrun+'</b><span>not run</span></div></div>';
+  h+='<h2>Scenarios</h2>'+table([["Scenario",function(x){var r=x.r;return '<span class="mono">'+esc(r.scenario||r.name||r.id||x.ctx||"")+'</span>';}],
+    ["Category",function(x){return esc(x.r.category||"");}],["Verdict",function(x){return chip(x.r.verdict);}],
+    ["Detail",function(x){var r=x.r,d=r.reason||r.detail||r.first_difference||r.diff||"";return esc(typeof d==="string"?d:JSON.stringify(d));}]],rows,
+    function(x){var k=String(x.r.verdict||"").toLowerCase();return k==="differs"?"row-high":(k.indexOf("not")===0?"row-medium":"");});
+  h+=reportsFor("verify");
+  return h;
+}
+
+function viewDeps(){
+  var d=S.dependencies||{},h='';
+  if(!d.summary&&!d.conflicts) return '<div class="empty">No dependency map yet. Run <code>dependency_map.py -o .rungstone/dependencies.json</code>.</div>'+reportsFor("deps");
+  var s=d.summary||{};
+  h+='<div class="grid"><div class="stat"><b>'+esc(s.tags)+'</b><span>tags</span></div><div class="stat"><b>'+esc(s.references)+'</b><span>references</span></div>'+
+     '<div class="stat"><b>'+esc(s.conflicts)+'</b><span>conflicts</span></div><div class="stat"><b>'+esc(s.open_questions)+'</b><span>open questions</span></div></div>';
+  h+='<h2>Conflicts</h2>'+table([["Severity",function(c){return chip(c.severity);}],["Type",function(c){return '<span class="mono">'+esc(c.type)+'</span>';}],
+    ["Tag",function(c){return '<span class="mono">'+esc(c.tag)+'</span>';}],["Detail",function(c){return esc(c.detail);}],
+    ["Evidence",function(c){return '<span class="mono">'+esc((c.evidence||[]).join("; "))+'</span>';}]],d.conflicts||[],function(c){return "row-"+c.severity;});
+  h+='<h2>Open questions for the plant</h2>'+((d.open_questions||[]).length?'<ol>'+d.open_questions.map(function(q){return '<li>'+esc(q.question)+'</li>';}).join("")+'</ol>':'<div class="empty">None.</div>');
+  h+='<h2>Cross-reference</h2><div class="toolbar"><input type="search" id="tagq" placeholder="filter tags"></div><div id="tagtable">'+tagTable(d.tags||[])+'</div>';
+  h+=reportsFor("deps");
+  return h;
+}
+function tagTable(t){
+  return table([["Tag",function(r){return '<b class="mono">'+esc(r.tag)+'</b>'+(r.safety?' '+chip("safety"):'');}],["Type",function(r){return esc(r.data_type||"");},1],
+    ["Address",function(r){return esc(r.address||"");},1],["Descriptions",function(r){return esc((r.descriptions||[]).map(function(x){return x.text+" ("+x.source+")";}).join("; "));}],
+    ["Readers",function(r){return esc((r.readers||[]).join("; "));},1],["Writers",function(r){return esc((r.writers||[]).join("; "));},1]],t.slice(0,2000));
+}
+function wireDeps(){var q=el("tagq");if(q) q.oninput=function(){var s=q.value.toLowerCase();el("tagtable").innerHTML=tagTable(((S.dependencies||{}).tags||[]).filter(function(r){
+  return !s||JSON.stringify(r).toLowerCase().indexOf(s)>=0;}));};}
+
+function viewReports(tab,title,empty){
+  var r=reportsFor(tab);
+  return '<h2>'+esc(title)+'</h2>'+(r||'<div class="empty">'+empty+'</div>');
+}
+function viewOps(){
+  return '<div class="banner" style="margin:0 0 10px">Offline analysis of exported data only. Live monitoring is not part of this version.</div>'+
+    viewReports("ops","Operations reports","No operations reports yet. Troubleshooting and shift/downtime reports saved to <code>.rungstone/reports/</code> appear here.");
+}
+
+function renderMain(){
+  var v;
+  if(current==="files") v=viewFiles();
+  else if(current==="understand") v=viewReports("understand","Understand","No understanding report yet. Save it as <code>.rungstone/reports/understand-*.md</code>.");
+  else if(current==="translate") v=viewTranslate();
+  else if(current==="verify") v=viewVerify();
+  else if(current==="deps") v=viewDeps();
+  else if(current==="hmi") v=viewReports("hmi","HMI / SCADA","No HMI/SCADA reports yet. Save them as <code>.rungstone/reports/hmi-*.md</code> or <code>alarms-*.md</code>.");
+  else v=viewOps();
+  el("main").innerHTML='<section class="active" role="tabpanel" aria-labelledby="tab-'+current+'">'+v+'</section>';
+  if(current==="translate") wireTranslate();
+  if(current==="deps") wireDeps();
+}
+function render(){renderChrome();renderTabs();renderMain();}
+function load(){
+  return fetch("/api/state",{credentials:"same-origin"}).then(function(r){return r.json();}).then(function(j){S=j;render();})
+    .catch(function(e){el("main").innerHTML='<div class="err">Could not load state: '+esc(e)+'</div>';});
+}
+if(LIVE) load();
+else if(BOOT&&BOOT.state){S=BOOT.state;render();}
+else el("main").innerHTML='<div class="err">No state embedded. Open this page through server.py or generate it with static.py.</div>';
+</script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{"scenarios": [
+ {"id": "S1", "name": "Normal drain: tank 1 then tank 2", "category": "normal", "scan_ms": 10, "duration_ms": 5000,
+  "initial": {"I:1/15": 1, "I:1/0": 1, "I:1/1": 1, "I:3.0": 9830, "N7:1": 200, "N7:2": 16000},
+  "events": [{"at_ms": 100, "set": {"I:1/14": 1}}, {"at_ms": 300, "set": {"I:1/14": 0}},
+             {"at_ms": 2000, "set": {"I:3.0": 5898}}, {"at_ms": 2500, "set": {"I:1/0": 0}},
+             {"at_ms": 4000, "set": {"I:1/1": 0}}],
+  "observe": ["O:2/15", "O:4.0", "O:6.0", "N7:0"]},
+ {"id": "S2", "name": "Stop pressed while draining", "category": "reset", "scan_ms": 10, "duration_ms": 3000,
+  "initial": {"I:1/15": 1, "I:1/0": 1, "I:1/1": 1, "I:3.0": 9830, "N7:1": 200, "N7:2": 16000},
+  "events": [{"at_ms": 100, "set": {"I:1/14": 1}}, {"at_ms": 300, "set": {"I:1/14": 0}},
+             {"at_ms": 1500, "set": {"I:1/15": 0}}, {"at_ms": 1700, "set": {"I:1/15": 1}}],
+  "observe": ["O:2/15", "O:4.0", "O:6.0"]},
+ {"id": "S3", "name": "Power cycle while running: master must not restart by itself", "category": "power_cycle", "scan_ms": 10,
+  "duration_ms": 3000, "initial": {"I:1/15": 1, "I:1/0": 1, "I:1/1": 1, "I:3.0": 9830, "N7:1": 200, "N7:2": 16000},
+  "events": [{"at_ms": 100, "set": {"I:1/14": 1}}, {"at_ms": 300, "set": {"I:1/14": 0}}, {"at_ms": 1500, "power_cycle": true}],
+  "observe": ["O:2/15", "O:4.0", "O:6.0"]},
+ {"id": "S4", "name": "Level transmitter wire break (raw 0, below 4 mA)", "category": "missing_input", "scan_ms": 10,
+  "duration_ms": 2000, "initial": {"I:1/15": 1, "I:1/0": 1, "I:1/1": 1, "I:3.0": 9830, "N7:1": 200, "N7:2": 16000},
+  "events": [{"at_ms": 100, "set": {"I:1/14": 1}}, {"at_ms": 300, "set": {"I:1/14": 0}}, {"at_ms": 1000, "set": {"I:3.0": 0}}],
+  "observe": ["O:2/15", "O:4.0", "N7:0"]}
+]}

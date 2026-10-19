@@ -1,0 +1,157 @@
+# Rungstone
+
+**Rungstone** is a Claude plugin for industrial controls engineers. It reads PLC, HMI and SCADA
+exports and helps you **understand, translate, verify, and map dependencies** in control logic
+across vendors, carry that work through to **HMI/SCADA** screens, tags and alarms, and
+**troubleshoot stops offline** from exported historian data.
+
+It is read-only and offline by design. Rungstone produces files for the vendor IDE; the engineer
+reviews them, approves every flagged change, and loads them.
+
+## Safety and trust rules
+
+These rules hold in every skill, command and script:
+
+1. **Read-only.** Rungstone never connects to or writes to a running controller, device, or network
+   address. Outputs are files for Studio 5000, TIA Portal, CODESYS, TwinCAT or the HMI tool, and the engineer loads them.
+2. **Safety logic is excluded.** Safety-rated logic is detected and excluded from every workflow,
+   with a visible notice. That covers e-stops, safety relays, GuardLogix safety tasks and `Class="Safety"`,
+   Siemens F-blocks, PLCopen `SF_*` blocks and TwinSAFE. Standard logic that reads a safety status is kept and flagged.
+3. **No unearned "verified".** Behavior is never called verified unless a simulation actually ran.
+   Every result is labelled **"simulated, not hardware-tested."**
+4. **Every meaning is labelled** `confirmed`, `comment`, `io_map`, `inferred` or `unknown`. A guess
+   is never presented as fact.
+5. **The engineer approves** every flagged change (review queue: approve / edit / reject) before export.
+   Export is blocked while any high-risk item is open.
+6. **Scope and cost are shown** before any large job.
+7. **Parse only.** Nothing from customer files is ever executed. XML is parsed with defusedxml when
+   available, otherwise with a guard that refuses any DTD/entity declaration.
+
+## What's inside
+
+| Component | What it does |
+|---|---|
+| `skills/rungstone-plc` | **Phases 1–2: PLC.** Understand (summary, machine sequence by rung, signal table with evidence, open questions). Translate to S7-1500 SCL, Rockwell Logix L5X, or IEC Structured Text, with `mapping.csv` and a ranked review queue. Verify with scenario plans plus a pure-Python scan-cycle simulator that compares source and target scan by scan. Dependency map of readers, writers and conflicts across PLC + HMI + SCADA. |
+| `skills/rungstone-hmi-scada` | **Phase 3: HMI/SCADA.** Explain screens, buttons, indicators and scripts. Retarget bindings with `mapping.csv`. Migrate tag databases, scripts and alarms (screens as draft layouts only). Verify bindings. Check consistency across PLC + HMI + SCADA. Clean up alarms from alarm history (ISA-18.2 style: floods, chattering, standing alarms, priorities, response text). |
+| `skills/rungstone-ops` | **Phase 4: operations, offline.** Find why a line stopped from historian/alarm exports plus the PLC logic (cause, evidence, logic cited, what to check first, what wasn't checked). Answer plant questions with a chart. Build shift and downtime reports. |
+| `commands/` | `/rungstone:understand` `/rungstone:translate` `/rungstone:verify` `/rungstone:dependencies` `/rungstone:hmi` `/rungstone:alarms` `/rungstone:troubleshoot` `/rungstone:report` `/rungstone:workbench` `/rungstone:export` |
+| `hooks/` | Guardrails: block `/rungstone:export` while high-risk items are open; block device/network write actions; warn when a file read or written looks like safety logic. |
+| `shared/` | Safe XML parsing, `.rungstone/` state, export, workbench UI, JSON schemas. Vendored into each skill's `scripts/_shared/` so every skill also works standalone. |
+| `mcp/historian` | **Optional** local, read-only historian MCP server. **Disabled by default and not registered.** See below. |
+| `evals/`, `fixtures/`, `tests/` | Test cases per skill, small sample files, and the unit tests. |
+
+## Supported formats
+
+| In | Out |
+|---|---|
+| Rockwell Studio 5000 / RSLogix 5000 `.L5X` (full or partial; RLL, ST, FBD, SFC, AOIs, UDTs, I/O module comments) | S7-1500 SCL source (`.scl`) + tag table rows |
+| RSLogix 500 / PLC-5 ladder text (ASCII export `SOR … EOR`, or neutral text) | Rockwell Logix partial-export `.L5X` |
+| Siemens TIA Portal SimaticML `.xml` (SCL, LAD/FBD summarized, STL, DBs, tag tables, UDTs) and SCL source `.scl` | IEC 61131-3 Structured Text (`.st`, or PLCopen XML) |
+| PLCopen XML (CODESYS, Beckhoff, Beremiz), TwinCAT `.TcPOU/.TcGVL/.TcDUT`, IEC ST source | `mapping.csv`, review queue, verification results |
+| I/O lists (CSV; XLSX when `openpyxl` is installed) | HMI/SCADA rebind reports, draft tag/alarm databases |
+| HMI/SCADA: FactoryTalk View exports, Ignition JSON/XML, WinCC exports, tag CSVs, scripts (read as text) | Dependency maps, alarm reports, troubleshooting and downtime reports |
+| Historian and alarm/event CSV exports | Charts (PNG with matplotlib, otherwise SVG) |
+
+Binary projects (`.ACD`, `.RSS`, `.ap1x`, `.project`) can't be read. Rungstone explains how to export them.
+
+## Install
+
+**Claude Code** (this repo is also a plugin marketplace):
+
+```
+/plugin marketplace add arunvenkatadri/rungstone
+/plugin install rungstone@rungstone
+```
+
+**claude.ai / Cowork:** download a standalone skill package from the releases (`rungstone-plc.skill`,
+`rungstone-hmi-scada.skill`, `rungstone-ops.skill`) and upload it in Settings > Capabilities > Skills.
+Outside Claude Code the workbench is generated as a single self-contained HTML page, and approvals
+happen in chat ("approve R1, R3; reject R2: reason").
+
+Requirements: Python 3.9+ (standard library only). Optional: `defusedxml`, `openpyxl` (XLSX), `matplotlib` (PNG charts).
+
+## How a project works
+
+Rungstone keeps its state in `.rungstone/` inside your project folder. Everything is a plain file, so it works with git:
+
+```
+.rungstone/
+  project.json         sources (path + sha256), target platform
+  tagmap.json          shared tag map: meaning, basis, new name (reused by every skill)
+  mapping.csv          old -> new address/symbol table
+  review_queue.json    flagged changes and your decisions
+  verify_results.json  simulation results ("simulated, not hardware-tested")
+  dependencies.json    readers, writers, conflicts
+  decisions.log        append-only audit trail
+```
+
+Typical flow: `/rungstone:understand` → `/rungstone:translate … to siemens-scl` → review in
+`/rungstone:workbench` (or approve in chat) → `/rungstone:verify` → `/rungstone:export`.
+
+## What runs, and data handling
+
+- **Everything runs locally.** The skills run the Python scripts in `skills/*/scripts/` on files you
+  provide. They read those files, write results to `.rungstone/`, `out/` and `export/` in your project folder, and print JSON.
+- **No network access.** No script opens an outbound connection, sends telemetry, or fetches anything.
+- **The workbench** (`shared/workbench/server.py`) binds to `127.0.0.1` only (any other address is refused),
+  uses a per-session CSRF token, and serves only the local state files.
+- **Hooks** (`hooks/scripts/*.py`) read the hook event JSON and local `.rungstone/review_queue.json`, and
+  return allow/deny decisions or a warning. They send nothing anywhere. The network guard always blocks
+  PLC/fieldbus client libraries, device-write calls, and write-type MCP tools on plant-system servers. Inside an Rungstone project
+  (a folder containing `.rungstone/`), or with `RUNGSTONE_GUARD=always`, it also blocks remote shells, HTTP uploads,
+  raw sockets and Windows script hosts. It doesn't change permission settings.
+- **Customer files are never executed.** HMI/SCADA scripts are parsed as text.
+
+## Optional historian MCP server (read-only)
+
+`mcp/historian/` is a small, read-only MCP server for querying a historian or SCADA database that you
+configure: SQLite, CSV, and optional ODBC/OPC UA read backends. It is **disabled by default** and **not
+registered** by the plugin. It refuses to start unless you point `RUNGSTONE_HISTORIAN_CONFIG` at a config with
+`"enabled": true`. It has no write capability of any kind: no raw SQL from the model, parameterized
+SELECTs only, and a read-only connection.
+
+> **Get approval from plant IT/OT before you enable it.** Connecting any tool to plant systems must follow your
+> site's OT security policy. See `mcp/historian/README.md`.
+
+Live monitoring isn't part of this version. The ops skill works on exported data.
+
+## Limits
+
+- Static analysis sees only the files you supply. Indirect addressing, pointers and communications instructions can hide readers and writers.
+- The simulator approximates standard instructions only. These include contacts, coils, latches, one-shots, TON/TOF/RTO,
+  CTU/CTD, moves, compares, basic math, and ST IF/CASE/assignments. Vendor-specific instructions (PID, motion,
+  messaging, file/sequencer) show as **"not run"**. It does not model asynchronous I/O or exact task timing.
+  Results are **simulated, not hardware-tested**.
+- SimaticML LAD/FBD and L5X FBD networks are summarized, so topology may be approximate.
+- Translations are drafts. Analog scaling, PID, motion, retentive memory, fault behavior and protocols always go to the review queue.
+- Safety-rated logic is never analysed or translated. It must be engineered and validated by a qualified safety engineer.
+
+## Development
+
+```
+python3 -m unittest discover -s tests -p 'test_*.py'    # unit tests
+python3 tools/sync_shared.py [--check]                  # vendor shared/ into each skill
+python3 tools/build_skills.py                           # standalone .skill packages into dist/
+claude plugin validate . --strict
+```
+
+### Fixtures and rights
+
+Every file in `fixtures/` was written for this repository. None is copied from a vendor, customer, or third-party
+project, and all are released under this repository's MIT license:
+
+| Folder | Contents | Origin |
+|---|---|---|
+| `fixtures/plc/timers_hmi` | Fill-station L5X, FactoryTalk-style tag CSV, IEC ST translation for simulation | authored for Rungstone |
+| `fixtures/plc/estop` | GuardLogix-style conveyor cell L5X with a safety program and an e-stop routine | authored for Rungstone |
+| `fixtures/plc/unwritten_bit` | CODESYS-style PLCopen XML mixer program | authored for Rungstone |
+| `fixtures/plc/two_tank` | SLC 500 two-tank ladder (RSLogix 500 ASCII style), SCL translation, scenarios | authored for Rungstone |
+| `fixtures/hmi/*` | FactoryTalk, Ignition, WinCC-style exports, scripts, synthetic alarm history (seeded generator in `gen/`) | authored for Rungstone |
+| `fixtures/ops/*` | Pump-station L5X, synthetic historian, alarm and downtime logs (seeded generator in `gen/`) | authored for Rungstone |
+
+Vendor product names (Studio 5000, TIA Portal, FactoryTalk, Ignition, WinCC, CODESYS, TwinCAT) are used only to
+describe file formats. They are trademarks of their owners, and this project is not affiliated with them.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

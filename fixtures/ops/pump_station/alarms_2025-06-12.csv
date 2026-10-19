@@ -1,0 +1,14 @@
+Timestamp,Source,Message,Priority,State
+2025-06-12T02:05:31,C3_FILTER_DP,Compressor C-3 inlet filter dP high,Low,ACT
+2025-06-12T02:06:02,C3_FILTER_DP,Compressor C-3 inlet filter dP high,Low,ACK
+2025-06-12T02:28:08,PT_101,P-101 suction pressure low warning (<100 kPa),Medium,ACT
+2025-06-12T02:28:52,LT_100,T-100 supply tank level low (<30 %),Medium,ACT
+2025-06-12T02:29:38,PSL_101,P-101 suction pressure low (PSL-101),High,ACT
+2025-06-12T02:29:44,P101_FAULT,P-101 tripped: low suction pressure,High,ACT
+2025-06-12T02:29:44,P101_RUN,P-101 stopped,Event,EVT
+2025-06-12T02:35:10,P101_FAULT,P-101 tripped: low suction pressure,High,ACK
+2025-06-12T02:35:11,PSL_101,P-101 suction pressure low (PSL-101),High,ACK
+2025-06-12T02:35:12,LT_100,T-100 supply tank level low (<30 %),Medium,ACK
+2025-06-12T02:43:20,PT_101,P-101 suction pressure low warning (<100 kPa),Medium,RTN
+2025-06-12T02:43:20,P101_FAULT,P-101 tripped: low suction pressure,High,RTN
+2025-06-12T02:44:00,P101_RUN,P-101 started from HMI,Event,EVT

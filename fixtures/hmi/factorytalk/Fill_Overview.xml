@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Original sample for Rungstone tests: FactoryTalk View-style display export (structure simplified). -->
+<gfx xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <displaySettings displayType="replace" size="1280x800" title="Fill Station Overview"/>
+  <group name="grpTimer">
+    <text name="lblFillTime" caption="Fill time elapsed (ms)" left="40" top="60"/>
+    <numericDisplay name="ndFillAcc" left="240" top="60" width="100" height="24">
+      <connections>
+        <connection name="Value" expression="{[FILL_PLC]Fill_Timer.ACC}"/>
+      </connections>
+    </numericDisplay>
+    <text name="lblFillPreset" caption="Fill time setpoint (ms)" left="40" top="100"/>
+    <numericInput name="niFillPreset" left="240" top="100" width="100" height="24" minimum="1000" maximum="120000">
+      <connections>
+        <connection name="Value" expression="{[FILL_PLC]Fill_Timer.PRE}"/>
+      </connections>
+    </numericInput>
+  </group>
+  <group name="grpBatch">
+    <text name="lblBatch" caption="Good batches completed" left="40" top="160"/>
+    <numericDisplay name="ndBatchCount" left="240" top="160" width="100" height="24">
+      <connections>
+        <connection name="Value" expression="{[FILL_PLC]Batch_Count.ACC}"/>
+      </connections>
+    </numericDisplay>
+    <momentaryPushButton name="pbResetCount" left="360" top="160" width="120" height="30">
+      <states>
+        <state stateId="0" caption="Reset Count"/>
+        <state stateId="1" caption="Resetting"/>
+      </states>
+      <connections>
+        <connection name="Value" expression="{[FILL_PLC]HMI_Reset_Count}"/>
+        <connection name="Indicator" expression="{[FILL_PLC]HMI_Reset_Count}"/>
+      </connections>
+    </momentaryPushButton>
+  </group>
+  <multistateIndicator name="miFillValve" left="40" top="220" width="140" height="30">
+    <states>
+      <state stateId="0" caption="FILL VALVE CLOSED"/>
+      <state stateId="1" caption="FILL VALVE OPEN"/>
+    </states>
+    <connections>
+      <connection name="Indicator" expression="{[FILL_PLC]Fill_Valve}"/>
+    </connections>
+  </multistateIndicator>
+  <multistateIndicator name="miTankLevel" left="200" top="220" width="140" height="30" caption="Tank LOW level">
+    <states>
+      <state stateId="0" caption="OK"/>
+      <state stateId="1" caption="TANK LOW"/>
+    </states>
+    <connections>
+      <connection name="Indicator" expression="{[FILL_PLC]Tank_Full}"/>
+    </connections>
+  </multistateIndicator>
+  <rectangle name="rectFilling" left="40" top="280" width="300" height="20">
+    <animations>
+      <animateColor expression="{[FILL_PLC]Fill_Timer.TT}"/>
+      <animateVisibility expression="{[FILL_PLC]Fill_Active}"/>
+    </animations>
+  </rectangle>
+  <maintainedPushButton name="pbBypass" left="360" top="220" width="120" height="30" caption="Level bypass">
+    <connections>
+      <connection name="Value" expression="{[FILL_PLC]Level_Bypass}"/>
+    </connections>
+  </maintainedPushButton>
+  <gotoDisplayButton name="btnAlarms" display="Alarm Summary" left="1100" top="740" caption="Alarms"/>
+</gfx>

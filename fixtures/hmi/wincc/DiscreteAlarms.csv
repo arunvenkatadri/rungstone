@@ -1,0 +1,4 @@
+ID;Name;Alarm text;Alarm class;Trigger tag;Trigger bit;Acknowledgment tag;Info text
+1;Tank1_LowLevel;Tank 1 low level - drain stopped;Warnings;Alarm_Word_1;0;;Check LLS-1 (I:1/0 on the old system)
+2;Tank2_LowLevel;Tank 2 low level - drain stopped;Warnings;Alarm_Word_1;1;;
+3;Valve1_Fault;Tank 1 drain valve position deviation;Errors;Alarm_Word_1;2;Ack_Word_1;Valve feedback disagrees with command for 10 s

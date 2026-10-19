@@ -1,0 +1,26 @@
+{
+  "custom": {},
+  "params": {},
+  "props": {"defaultSize": {"width": 800, "height": 480}},
+  "root": {
+    "type": "ia.container.coord",
+    "meta": {"name": "root"},
+    "children": [
+      {"type": "ia.display.label", "meta": {"name": "lblElapsed"}, "position": {"x": 20, "y": 20, "width": 200, "height": 32},
+       "props": {"text": "Fill time elapsed (ms)"}},
+      {"type": "ia.display.label", "meta": {"name": "valElapsed"}, "position": {"x": 230, "y": 20, "width": 120, "height": 32},
+       "propConfig": {"props.text": {"binding": {"type": "tag", "config": {"tagPath": "[default]Fill/TimerAcc", "bidirectional": false}}}}},
+      {"type": "ia.input.numeric-entry-field", "meta": {"name": "nefPreset"}, "position": {"x": 230, "y": 60, "width": 120, "height": 32},
+       "propConfig": {"props.value": {"binding": {"type": "tag", "config": {"tagPath": "[default]Fill/TimerPreset", "bidirectional": true}}}}},
+      {"type": "ia.display.led-display", "meta": {"name": "ledValve"}, "position": {"x": 20, "y": 110, "width": 80, "height": 32},
+       "propConfig": {"props.value": {"binding": {"type": "tag", "config": {"tagPath": "[default]Fill/ValveOpen"}}}}},
+      {"type": "ia.input.button", "meta": {"name": "btnReset"}, "position": {"x": 120, "y": 110, "width": 140, "height": 32},
+       "props": {"text": "Reset batch count"},
+       "events": {"component": {"onActionPerformed": {"type": "script", "scope": "G",
+         "config": {"script": "\tsystem.tag.writeBlocking(['[default]Fill/ResetCount'], [True])"}}}}},
+      {"type": "ia.input.button", "meta": {"name": "btnTrend"}, "position": {"x": 280, "y": 110, "width": 140, "height": 32},
+       "props": {"text": "Trends"},
+       "events": {"dom": {"onClick": {"type": "nav", "config": {"page": "/trends"}}}}}
+    ]
+  }
+}

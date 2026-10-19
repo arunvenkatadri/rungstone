@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "mapping.csv columns (old -> new), one row per source signal",
+  "type": "object",
+  "properties": {
+    "old_address": {
+      "type": "string"
+    },
+    "old_symbol": {
+      "type": "string"
+    },
+    "old_description": {
+      "type": "string"
+    },
+    "old_type": {
+      "type": "string"
+    },
+    "new_symbol": {
+      "type": "string"
+    },
+    "new_address": {
+      "type": "string"
+    },
+    "new_type": {
+      "type": "string"
+    },
+    "basis": {
+      "enum": [
+        "confirmed",
+        "comment",
+        "io_map",
+        "inferred",
+        "unknown"
+      ]
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "old_address",
+    "new_symbol",
+    "basis"
+  ],
+  "x-csv-column-order": [
+    "old_address",
+    "old_symbol",
+    "old_description",
+    "old_type",
+    "new_symbol",
+    "new_address",
+    "new_type",
+    "basis",
+    "notes"
+  ]
+}

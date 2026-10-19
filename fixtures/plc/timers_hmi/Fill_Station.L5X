@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="33.01" TargetName="Fill_Station" TargetType="Controller" ContainsContext="false" ExportDate="Tue Mar 04 09:12:44 2025" ExportOptions="NoRawData L5KData DecoratedData ForceProtectedEncoding AllProjDocTrans">
+<Controller Use="Target" Name="Fill_Station" ProcessorType="1769-L33ER" MajorRev="33" MinorRev="11">
+<Description><![CDATA[Bottle fill station - line 3]]></Description>
+<DataTypes/>
+<Modules>
+<Module Name="Local" CatalogNumber="1769-L33ER" Vendor="1" ProductType="14" ProductCode="155" Major="33" Minor="11" ParentModule="Local" ParentModPortId="1" Inhibited="false" MajorFault="true">
+<Ports><Port Id="1" Address="0" Type="Compact" Upstream="false"><Bus Size="31"/></Port></Ports>
+</Module>
+<Module Name="DI_Card" CatalogNumber="1769-IQ16" Vendor="1" ProductType="7" ProductCode="10" Major="2" Minor="1" ParentModule="Local" ParentModPortId="1" Inhibited="false" MajorFault="false">
+<Ports><Port Id="1" Address="1" Type="Compact" Upstream="true"/></Ports>
+<Communications><Connections><Connection Name="InputData" RPI="20000" Type="Input">
+<InputTag ExternalAccess="Read/Write"><Comments>
+<Comment Operand=".DATA.0"><![CDATA[Start pushbutton (NO)]]></Comment>
+<Comment Operand=".DATA.1"><![CDATA[Stop pushbutton (NC)]]></Comment>
+<Comment Operand=".DATA.2"><![CDATA[Tank high level switch LSH-301]]></Comment>
+</Comments><Data Format="Decorated"><Structure DataType="AB:1769_DI16:I:0"><DataValueMember Name="Fault" DataType="DINT" Radix="Binary" Value="2#0000_0000_0000_0000_0000_0000_0000_0000"/></Structure></Data></InputTag>
+</Connection></Connections></Communications>
+</Module>
+<Module Name="DO_Card" CatalogNumber="1769-OB16" Vendor="1" ProductType="7" ProductCode="11" Major="2" Minor="1" ParentModule="Local" ParentModPortId="1" Inhibited="false" MajorFault="false">
+<Ports><Port Id="1" Address="2" Type="Compact" Upstream="true"/></Ports>
+<Communications><Connections><Connection Name="OutputData" RPI="20000" Type="Output">
+<OutputTag ExternalAccess="Read/Write"><Comments>
+<Comment Operand=".DATA.0"><![CDATA[Fill valve solenoid XV-301]]></Comment>
+</Comments></OutputTag>
+</Connection></Connections></Communications>
+</Module>
+</Modules>
+<AddOnInstructionDefinitions/>
+<Tags>
+<Tag Name="Start_PB" TagType="Alias" AliasFor="Local:1:I.Data.0" Radix="Decimal" ExternalAccess="Read/Write">
+<Description><![CDATA[Start pushbutton]]></Description>
+</Tag>
+<Tag Name="Stop_PB" TagType="Alias" AliasFor="Local:1:I.Data.1" Radix="Decimal" ExternalAccess="Read/Write">
+<Description><![CDATA[Stop pushbutton, wired NC]]></Description>
+</Tag>
+<Tag Name="Tank_Full" TagType="Alias" AliasFor="Local:1:I.Data.2" Radix="Decimal" ExternalAccess="Read/Write">
+<Description><![CDATA[Tank high level switch]]></Description>
+</Tag>
+<Tag Name="Fill_Valve" TagType="Alias" AliasFor="Local:2:O.Data.0" Radix="Decimal" ExternalAccess="Read/Write">
+<Description><![CDATA[Fill valve solenoid]]></Description>
+</Tag>
+<Tag Name="Fill_Active" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Description><![CDATA[Fill cycle in progress]]></Description>
+<Data Format="L5K"><![CDATA[0]]></Data>
+<Data Format="Decorated"><DataValue DataType="BOOL" Radix="Decimal" Value="0"/></Data>
+</Tag>
+<Tag Name="Start_OS" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Data Format="L5K"><![CDATA[0]]></Data>
+<Data Format="Decorated"><DataValue DataType="BOOL" Radix="Decimal" Value="0"/></Data>
+</Tag>
+<Tag Name="Cycle_Done" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Description><![CDATA[One-scan pulse at end of fill]]></Description>
+<Data Format="L5K"><![CDATA[0]]></Data>
+<Data Format="Decorated"><DataValue DataType="BOOL" Radix="Decimal" Value="0"/></Data>
+</Tag>
+<Tag Name="Fill_Timer" TagType="Base" DataType="TIMER" Constant="false" ExternalAccess="Read/Write">
+<Description><![CDATA[Fill duration timer]]></Description>
+<Data Format="L5K"><![CDATA[[0,30000,0]]]></Data>
+<Data Format="Decorated"><Structure DataType="TIMER"><DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="30000"/><DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="0"/><DataValueMember Name="EN" DataType="BOOL" Value="0"/><DataValueMember Name="TT" DataType="BOOL" Value="0"/><DataValueMember Name="DN" DataType="BOOL" Value="0"/></Structure></Data>
+</Tag>
+<Tag Name="Batch_Count" TagType="Base" DataType="COUNTER" Constant="false" ExternalAccess="Read/Write">
+<Description><![CDATA[Rejected batches]]></Description>
+<Data Format="L5K"><![CDATA[[0,100,0]]]></Data>
+<Data Format="Decorated"><Structure DataType="COUNTER"><DataValueMember Name="PRE" DataType="DINT" Radix="Decimal" Value="100"/><DataValueMember Name="ACC" DataType="DINT" Radix="Decimal" Value="0"/></Structure></Data>
+</Tag>
+<Tag Name="HMI_Reset_Count" TagType="Base" DataType="BOOL" Radix="Decimal" Constant="false" ExternalAccess="Read/Write">
+<Description><![CDATA[HMI reset batch counter]]></Description>
+<Data Format="L5K"><![CDATA[0]]></Data>
+<Data Format="Decorated"><DataValue DataType="BOOL" Radix="Decimal" Value="0"/></Data>
+</Tag>
+</Tags>
+<Programs>
+<Program Name="MainProgram" TestEdits="false" MainRoutineName="MainRoutine" Disabled="false" UseAsFolder="false">
+<Tags/>
+<Routines>
+<Routine Name="MainRoutine" Type="RLL">
+<RLLContent>
+<Rung Number="0" Type="N">
+<Comment><![CDATA[Operator start latches the fill cycle]]></Comment>
+<Text><![CDATA[XIC(Start_PB)ONS(Start_OS)XIO(Fill_Active)OTL(Fill_Active);]]></Text>
+</Rung>
+<Rung Number="1" Type="N">
+<Comment><![CDATA[Fill for the preset time. Preset is adjustable from the HMI.]]></Comment>
+<Text><![CDATA[XIC(Fill_Active)TON(Fill_Timer,?,?);]]></Text>
+</Rung>
+<Rung Number="2" Type="N">
+<Text><![CDATA[XIC(Fill_Active)XIO(Fill_Timer.DN)XIO(Tank_Full)OTE(Fill_Valve);]]></Text>
+</Rung>
+<Rung Number="3" Type="N">
+<Comment><![CDATA[End of fill on time or high level]]></Comment>
+<Text><![CDATA[XIC(Fill_Active)[XIC(Fill_Timer.DN) ,XIC(Tank_Full) ]OTU(Fill_Active)OTE(Cycle_Done);]]></Text>
+</Rung>
+<Rung Number="4" Type="N">
+<Text><![CDATA[XIO(Stop_PB)OTU(Fill_Active);]]></Text>
+</Rung>
+<Rung Number="5" Type="N">
+<Text><![CDATA[XIC(Cycle_Done)CTU(Batch_Count,?,?);]]></Text>
+</Rung>
+<Rung Number="6" Type="N">
+<Text><![CDATA[XIC(HMI_Reset_Count)RES(Batch_Count);]]></Text>
+</Rung>
+</RLLContent>
+</Routine>
+</Routines>
+</Program>
+</Programs>
+<Tasks>
+<Task Name="MainTask" Type="CONTINUOUS" Priority="10" Watchdog="500" DisableUpdateOutputs="false" InhibitTask="false">
+<ScheduledPrograms><ScheduledProgram Name="MainProgram"/></ScheduledPrograms>
+</Task>
+</Tasks>
+</Controller>
+</RSLogix5000Content>
