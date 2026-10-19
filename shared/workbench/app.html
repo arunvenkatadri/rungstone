@@ -280,7 +280,7 @@ function inlineForm(id,kind,initial,onSave){
 }
 function post(body,errId){
   return fetch("/api/queue/decide",{method:"POST",headers:{"Content-Type":"application/json","X-Rungstone-CSRF":CSRF},
-    body:JSON.stringify(body),credentials:"same-origin"}).then(function(r){return r.json().then(function(j){if(!r.ok) throw new Error(j.error||r.status);return j;});})
+    body:JSON.stringify(body)}).then(function(r){return r.json().then(function(j){if(!r.ok) throw new Error(j.error||r.status);return j;});})
     .then(function(){return load();}).catch(function(e){var x=errId&&el(errId);if(x) x.textContent=String(e.message||e);});
 }
 function wireTranslate(){
@@ -374,7 +374,7 @@ function renderMain(){
 }
 function render(){renderChrome();renderTabs();renderMain();}
 function load(){
-  return fetch("/api/state",{credentials:"same-origin"}).then(function(r){return r.json();}).then(function(j){S=j;render();})
+  return fetch("/api/state",{}).then(function(r){return r.json();}).then(function(j){S=j;render();})
     .catch(function(e){el("main").innerHTML='<div class="err">Could not load state: '+esc(e)+'</div>';});
 }
 if(LIVE) load();
