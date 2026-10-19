@@ -108,7 +108,7 @@ class PlcModel(object):
             self.source = "plc project via rungstone-plc"
         elif plc_files and not hc.dm:
             raise SystemExit("PLC files given but the rungstone-plc skill is not installed next to this skill; "
-                             "pass --tagmap .rungstone/tagmap.json instead, or install rungstone-plc.")
+                             "supply the tag map with --tagmap .rungstone/tagmap.json instead, or install rungstone-plc.")
         elif tagmap:
             data = json.load(open(tagmap, encoding="utf-8"))
             for k, v in (data.get("tags") or {}).items():

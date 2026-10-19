@@ -155,7 +155,7 @@ def analyse(path, a):
         if skipped > 30:
             break
     if header is None:
-        raise SystemExit("could not find a header with a time column and an alarm column; pass --time-col/--alarm-col")
+        raise SystemExit("could not find a header with a time column and an alarm column; use --time-col/--alarm-col")
     ci_t, ci_a = pick(header, TIME_COLS, a.time_col), pick(header, ALARM_COLS, a.alarm_col)
     ci_s, ci_p = pick(header, STATE_COLS, a.state_col), pick(header, PRIO_COLS, a.priority_col)
     ci_m, ci_ar = pick(header, MSG_COLS), pick(header, AREA_COLS)

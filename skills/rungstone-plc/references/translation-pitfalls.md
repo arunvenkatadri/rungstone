@@ -132,7 +132,7 @@ Pitfalls:
 ## 7. One-shots and edges — high if they gate counts/latches
 
 - `ONS(storage)`: rung-out true for one scan on false->true; the storage bit must be unique.
-  `OSR(storage, output)` / `OSF` (falling) write an output bit and pass the rung condition.
+  `OSR(storage, output)` / `OSF` (falling) write an output bit and keep the rung condition unchanged.
 - Logix sets ONS storage on **prescan** (so no pulse on the first scan after run); SLC similar.
   IEC `R_TRIG` memory initializes FALSE -> a TRUE input on the first scan **does** produce a
   pulse. Flag where a first-scan pulse would count, latch, or start something.

@@ -42,7 +42,7 @@ PRICES_AS_OF = "2026-10"
 
 CODE_CPT = 3.0       # chars per token, PLC code
 DECL_CPT = 3.6       # chars per token, declarations / JSON / prose
-CHUNK_INPUT = 120000  # tokens of project material per pass before we chunk
+CHUNK_INPUT = 120000  # tokens of project material per chunk before we split
 LARGE_TOKENS = 150000
 LARGE_USD = 2.00
 LARGE_ROUTINES = 40
@@ -135,7 +135,7 @@ def jobs_for(m, jobs, target):
             output = 35 * m["signals"] + 1200
             note = "script runs locally (no tokens); Claude reads and explains the report"
         passes = max(1, int(math.ceil(material / float(CHUNK_INPUT))))
-        # each pass re-reads the skill references; agentic overhead ~ +25% input for tool turns
+        # each chunk re-reads the skill references; agentic overhead ~ +25% input for tool turns
         inp = int((material + ref_tok * passes) * 1.25)
         out.append({"job": job, "input_tokens": inp, "output_tokens": int(output), "passes": passes,
                     "reference_tokens_per_pass": ref_tok, "note": note})
@@ -183,7 +183,7 @@ def main(argv=None):
     if args.price_out is not None:
         pout = args.price_out
     if pin is None or pout is None:
-        sys.exit("Unknown model %s; pass --price-in and --price-out." % args.model)
+        sys.exit("Unknown model %s; set prices with --price-in and --price-out." % args.model)
 
     m = measure(projects)
     jobs = price(jobs_for(m, [j.strip() for j in args.jobs.split(",") if j.strip()], args.target), pin, pout)

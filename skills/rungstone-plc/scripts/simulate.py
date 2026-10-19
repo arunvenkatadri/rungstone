@@ -768,7 +768,7 @@ class Program(object):
             return [r["id"].lower() for r in progs]
         if len(cands) == 1:
             return [cands[0]["id"].lower()]
-        raise NotRun("ambiguous entry point (%s); pass --entry" % ", ".join(r["name"] for r in cands))
+        raise NotRun("ambiguous entry point (%s); choose one with --entry" % ", ".join(r["name"] for r in cands))
 
     @staticmethod
     def is_startup(r):

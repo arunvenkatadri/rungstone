@@ -143,7 +143,7 @@ ignore them.
 |---|---|---|---|
 | O0 | Output image | `O:2/15`, `O:4.0` | `O:slot.word/bit`; word 0 may be omitted for bits (`O:2/15` = `O:2.0/15`). |
 | I1 | Input image | `I:1/14`, `I:3.0` | Analog channels are words: `I:3.0` = slot 3 channel 0 on a 1746-NI4. |
-| S2 | Status | `S:1/15` first-pass bit, `S:4` free-running clock, `S:5/0` overflow trap, `S:13/S:14` math register | No direct equivalents in IEC; translate intent. |
+| S2 | Status | `S:1/15` first-scan bit, `S:4` free-running clock, `S:5/0` overflow trap, `S:13/S:14` math register | No direct equivalents in IEC; translate intent. |
 | B3 | Bit | `B3:0/5`, `B3/21` (= `B3:1/5`) | Word/bit or flat bit numbering. |
 | T4 | Timer | `T4:0.ACC`, `T4:0/DN` | ACC/PRE are 16-bit INT in **time-base** units (1.0 s or 0.01 s; 0.001 on MicroLogix). |
 | C5 | Counter | `C5:0.ACC`, `C5:0/DN`, `/OV`, `/UN` | 16-bit, -32768..32767. |

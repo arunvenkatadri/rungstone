@@ -287,7 +287,7 @@ def xlsx_sheets(path):
     try:
         import openpyxl  # noqa: F401
     except ImportError:
-        raise RuntimeError("openpyxl is not installed; export the workbook sheets to CSV and pass those instead")
+        raise RuntimeError("openpyxl is not installed; export the workbook sheets to CSV and use those instead")
     import openpyxl
     wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
     for ws in wb.worksheets:

@@ -1289,7 +1289,7 @@ def parse_file(p, ctx):
         if rn == "TcPlcObject":
             return parse_twincat(p, root, ctx)
         pr = new_project(p, "unknown-xml")
-        pr["warnings"].append("Unrecognised XML root <%s>. If this is an HMI/SCADA file, pass it to dependency_map.py instead." % rn)
+        pr["warnings"].append("Unrecognised XML root <%s>. If this is an HMI/SCADA file, give it to dependency_map.py instead." % rn)
         return pr
     if ext == ".csv":
         return parse_csv_map(p, text, ctx)
