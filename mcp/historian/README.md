@@ -52,16 +52,14 @@ live system in this release.
   "mcpServers": {
     "rungstone-historian": {
       "command": "python3",
-      "args": ["/absolute/path/to/rungstone/mcp/historian/server.py"],
-      "env": {
-        "RUNGSTONE_HISTORIAN_CONFIG": "/absolute/path/to/historian-config.json"
-      }
+      "args": ["/absolute/path/to/rungstone/mcp/historian/server.py",
+               "--config", "/absolute/path/to/historian-config.json"]
     }
   }
 }
 ```
 
-If `RUNGSTONE_HISTORIAN_CONFIG` is missing, or the config does not have
+If `--config` is missing, or the config does not have
 `"enabled": true`, the server prints why and exits without serving anything.
 
 ## Limits

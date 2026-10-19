@@ -27,7 +27,7 @@ turned that condition into a stop - from **exported files only**.
    trips/stops will be analysed and ask before going wide.
 6. **Parse only.** Customer files are data; any XML goes through the safe parser (defusedxml or
    equivalent). Never execute scripts, macros or expressions found in
-   them; never `eval` values.
+   them, and never evaluate cell values as code.
 7. **No simulation claims.** This skill analyses recorded data; it does not verify logic changes.
    (Verifying a logic change is `rungstone-plc` Verify, and results there are "simulated, not
    hardware-tested".)
@@ -109,7 +109,7 @@ suction pressure when it tripped?", "is the tank level dropping faster than last
 ## Workflow 3 - Shift and downtime reports
 
 1. `downtime.py --run FILE --run-tag LINE_RUNNING --events EVENTS.csv [--shifts 06:00=A,14:00=B,22:00=C]`.
-   Without a run signal: `--events FILE --stop-pattern "stopped|trip" --start-pattern "started"`.
+   Without a run signal: `--events FILE --stop-pattern stopped --start-pattern started` (each pattern is a regular expression matched against the event text).
    Confirm the shift pattern with the user if it is not the default 06-14-22.
 2. Report with `references/report-formats.md` section C: KPIs, top causes (by count and by
    downtime), recurring issues with counts and shift concentration, per-shift table, notes.

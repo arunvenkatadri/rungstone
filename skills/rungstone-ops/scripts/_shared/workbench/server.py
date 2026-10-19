@@ -22,7 +22,7 @@ import argparse
 import csv
 import json
 import os
-import secrets
+import hmac
 import sys
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -169,7 +169,7 @@ class Handler(BaseHTTPRequestHandler):
         port = self.server.server_address[1]
         if origin and origin.lower() not in ("http://127.0.0.1:%d" % port, "http://localhost:%d" % port):
             return self._json(403, {"error": "cross-origin request refused"})
-        if not secrets.compare_digest(self.headers.get("X-Rungstone-CSRF", ""), self.server.csrf):
+        if not hmac.compare_digest(self.headers.get("X-Rungstone-CSRF", ""), self.server.csrf):
             return self._json(403, {"error": "missing or bad CSRF token"})
         try:
             n = int(self.headers.get("Content-Length", "0"))
@@ -216,7 +216,7 @@ class Workbench(HTTPServer):
             raise ValueError("workbench binds to 127.0.0.1 only; refused host %r" % host)
         HTTPServer.__init__(self, (host, port), Handler)
         self.state_dir = state_dir
-        self.csrf = secrets.token_urlsafe(32)
+        self.csrf = os.urandom(32).hex()
         self.lock = threading.Lock()
         self.verbose = verbose
 

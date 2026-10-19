@@ -51,12 +51,9 @@ class HistorianTest(unittest.TestCase):
         return p
 
     def run_server(self, messages, cfg_path):
-        env = dict(os.environ)
-        env.pop("RUNGSTONE_HISTORIAN_CONFIG", None)
-        if cfg_path:
-            env["RUNGSTONE_HISTORIAN_CONFIG"] = cfg_path
+        args = [sys.executable, "-I", SERVER] + (["--config", cfg_path] if cfg_path else [])
         inp = "".join(json.dumps(m) + "\n" for m in messages)
-        p = subprocess.run([sys.executable, "-I", SERVER], input=inp, capture_output=True, text=True, env=env, timeout=20)
+        p = subprocess.run(args, input=inp, capture_output=True, text=True, timeout=20)
         out = [json.loads(l) for l in p.stdout.splitlines() if l.strip()]
         return p.returncode, out, p.stderr
 

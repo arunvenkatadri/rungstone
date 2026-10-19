@@ -10,8 +10,7 @@ work is untouched.
 Scope: plugin hooks run in every session, so only the PLC/fieldbus-specific
 patterns (client libraries, device write calls, plant MCP write tools) are
 enforced everywhere. Generic patterns (ssh, curl POST, raw sockets, script
-hosts) are enforced only inside an Rungstone project (a .rungstone/ folder at
-or above the working directory) or when RUNGSTONE_GUARD=always is set.
+hosts) are enforced only inside an Rungstone project (a .rungstone/ folder at or above the working directory).
 """
 import json
 import os
@@ -40,8 +39,6 @@ MCP_PLC = re.compile(r"(?i)(plc|opc|modbus|s7|logix|siemens|rockwell|codesys|twi
 
 
 def in_project(cwd):
-    if os.environ.get("RUNGSTONE_GUARD", "").lower() == "always":
-        return True
     cur = os.path.abspath(cwd or os.getcwd())
     while True:
         if os.path.isdir(os.path.join(cur, ".rungstone")):

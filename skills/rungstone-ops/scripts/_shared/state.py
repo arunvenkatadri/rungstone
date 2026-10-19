@@ -90,7 +90,7 @@ def save(d, name, data):
 
 
 def log(d, action, detail="", item="", actor=None):
-    actor = actor or os.environ.get("RUNGSTONE_ACTOR") or os.environ.get("USER") or "engineer"
+    actor = actor or "engineer"
     line = "\t".join([now(), actor, action, item, detail.replace("\t", " ").replace("\n", " ")])
     with open(_path(d, "decisions.log"), "a", encoding="utf-8") as f:
         f.write(line + "\n")
@@ -169,21 +169,21 @@ def queue_add(d, risk, location, issue, fix, workflow="translate", source=None):
     return item
 
 
-def queue_decide(d, ids, status, note=None, fix=None):
+def queue_decide(d, ids, status, note=None, fix=None, by=None):
     q = queue(d)
     done = []
     for item in q["items"]:
         if item["id"] in ids:
             item["status"] = status
             item["decided_at"] = now()
-            item["decided_by"] = os.environ.get("RUNGSTONE_ACTOR") or os.environ.get("USER") or "engineer"
+            item["decided_by"] = by or "engineer"
             if note:
                 item["resolution"] = note
             if fix:
                 item["previous_fix"] = item.get("proposed_fix")
                 item["proposed_fix"] = fix
             done.append(item["id"])
-            log(d, "queue." + status, note or fix or "", item["id"])
+            log(d, "queue." + status, note or fix or "", item["id"], actor=by)
     save(d, "review_queue.json", q)
     missing = sorted(set(ids) - set(done))
     return done, missing
@@ -219,10 +219,12 @@ def main(argv=None):
         x = qs.add_parser(name)
         x.add_argument("ids", nargs="+")
         x.add_argument("--note", required=(name == "reject"))
+        x.add_argument("--by", help="name recorded as the decision maker (default: engineer)")
     qe = qs.add_parser("edit")
     qe.add_argument("id")
     qe.add_argument("--fix", required=True)
     qe.add_argument("--note")
+    qe.add_argument("--by", help="name recorded as the decision maker (default: engineer)")
     args = ap.parse_args(argv)
 
     if args.cmd == "init":
@@ -263,10 +265,11 @@ def main(argv=None):
         elif args.qcmd == "add":
             print(json.dumps(queue_add(d, args.risk, args.location, args.issue, args.fix, args.workflow)))
         elif args.qcmd in ("approve", "reject"):
-            done, missing = queue_decide(d, set(args.ids), "approved" if args.qcmd == "approve" else "rejected", args.note)
+            done, missing = queue_decide(d, set(args.ids), "approved" if args.qcmd == "approve" else "rejected", args.note,
+                                         by=args.by)
             print(json.dumps({"updated": done, "not_found": missing}))
         elif args.qcmd == "edit":
-            done, missing = queue_decide(d, {args.id}, "edited", args.note, args.fix)
+            done, missing = queue_decide(d, {args.id}, "edited", args.note, args.fix, by=args.by)
             print(json.dumps({"updated": done, "not_found": missing}))
         return 0
     ap.print_help()

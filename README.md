@@ -98,7 +98,7 @@ Typical flow: `/rungstone:understand` → `/rungstone:translate … to siemens-s
 - **Hooks** (`hooks/scripts/*.py`) read the hook event JSON and local `.rungstone/review_queue.json`, and
   return allow/deny decisions or a warning. They send nothing anywhere. The network guard always blocks
   PLC/fieldbus client libraries, device-write calls, and write-type MCP tools on plant-system servers. Inside an Rungstone project
-  (a folder containing `.rungstone/`), or with `RUNGSTONE_GUARD=always`, it also blocks remote shells, HTTP uploads,
+  (a folder containing `.rungstone/`), it also blocks remote shells, HTTP uploads,
   raw sockets and Windows script hosts. It doesn't change permission settings.
 - **Customer files are never executed.** HMI/SCADA scripts are parsed as text.
 
@@ -106,7 +106,7 @@ Typical flow: `/rungstone:understand` → `/rungstone:translate … to siemens-s
 
 `mcp/historian/` is a small, read-only MCP server for querying a historian or SCADA database that you
 configure: SQLite, CSV, and optional ODBC/OPC UA read backends. It is **disabled by default** and **not
-registered** by the plugin. It refuses to start unless you point `RUNGSTONE_HISTORIAN_CONFIG` at a config with
+registered** by the plugin. It refuses to start unless you start it with `--config` pointing at a config with
 `"enabled": true`. It has no write capability of any kind: no raw SQL from the model, parameterized
 SELECTs only, and a read-only connection.
 

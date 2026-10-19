@@ -4,7 +4,7 @@ Rungstone historian MCP server - OPTIONAL, LOCAL, READ-ONLY.
 
 Disabled by default.  It is not registered in the plugin's .mcp.json; a user
 adds it to their own project after plant IT/OT approval (see README.md).  It
-refuses to start unless RUNGSTONE_HISTORIAN_CONFIG points at a JSON config
+refuses to start unless --config points at a JSON config
 with "enabled": true.
 
 Transport: MCP stdio (newline-delimited JSON-RPC 2.0).  Standard library only.
@@ -455,10 +455,11 @@ def err(mid, code, message):
     return {"jsonrpc": "2.0", "id": mid, "error": {"code": code, "message": message}}
 
 
-def load_config():
-    path = os.environ.get("RUNGSTONE_HISTORIAN_CONFIG")
+def load_config(argv=None):
+    argv = sys.argv[1:] if argv is None else argv
+    path = argv[argv.index("--config") + 1] if "--config" in argv and argv.index("--config") + 1 < len(argv) else None
     if not path:
-        raise SystemExit("rungstone-historian: disabled. Set RUNGSTONE_HISTORIAN_CONFIG to a config file with "
+        raise SystemExit("rungstone-historian: disabled. Start it with --config PATH pointing at a config file with "
                          "\"enabled\": true (plant IT/OT approval required first).")
     with open(path, encoding="utf-8") as f:
         cfg = json.load(f)
