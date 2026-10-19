@@ -1105,7 +1105,7 @@ def main(argv=None):
 
     projects = load_projects(args.plc, args.allow_suspected)
     idx = build_index(projects)
-    known = set(k for k in idx.sym) | set(k.split(".")[-1] for k in idx.sym)
+    known = set(k for k in idx.sym).union(k.split(".")[-1] for k in idx.sym)
     hmi_refs, errors = scan_hmi_files(args.hmi, known)
     mapping = load_mapping(args.mapping) if args.mapping else None
     res = analyse(projects, hmi_refs, args.target, mapping)

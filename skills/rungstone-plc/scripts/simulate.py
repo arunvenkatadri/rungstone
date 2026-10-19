@@ -1907,7 +1907,7 @@ def cmd_compare(args):
            "approximations": APPROXIMATIONS, "runs": []}
     for sc in load_scenarios(args.scenarios):
         r = {"id": sc.get("id"), "name": sc.get("name"), "category": sc.get("category"), "label": LABEL}
-        names = set(sc.get("observe", [])) | set(sc.get("initial", {})) | set(
+        names = set(sc.get("observe", [])).union(sc.get("initial", {})).union(
             n for e in sc.get("events", []) for n in (e.get("set") or {}))
         rename = {}
         unmapped = []

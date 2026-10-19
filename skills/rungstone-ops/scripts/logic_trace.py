@@ -70,7 +70,7 @@ def collect(projects):
 
 def resolve_tag(name, sym, refs):
     key = dm.norm_path(name)
-    bases = set(r["base"] for r in refs) | set(sym.sym)
+    bases = set(r["base"] for r in refs).union(sym.sym)
     if key in bases:
         return key, "exact"
     for b in bases:

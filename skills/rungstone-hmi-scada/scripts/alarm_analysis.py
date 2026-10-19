@@ -54,7 +54,20 @@ MSG_COLS = ("message", "description", "text", "alarm text", "label", "msg", "ala
 AREA_COLS = ("area", "group", "unit", "plant area", "alarm group")
 TAG_COLS = ("tagpath", "tag path", "tag", "tagname", "tag name", "source")
 
-ACT = re.compile(r"(?i)^(active|act|alm|alarm|in|on|raised|set|came in|active.*unack.*|activated|0|true|high|trip)$")
+ACT_WORDS = frozenset(["active", "act", "alm", "alarm", "in", "on", "raised", "set", "came in", "activated", "0",
+                       "true", "high", "trip"])
+ACT_UNACK = re.compile(r"(?i)^active.*unack.*$")
+
+
+class _Act(object):
+    """Activation state words (plain word list plus 'active ... unack' variants)."""
+
+    @staticmethod
+    def match(st):
+        return st.strip().lower() in ACT_WORDS or bool(ACT_UNACK.match(st))
+
+
+ACT = _Act()
 CLR = re.compile(r"(?i)^(clear|cleared|clr|rtn|return.*|normal|norm|out|off|reset|went out|inactive|1|false|"
                  r"active.*ack.*clear.*|cleared.*)$")
 ACK = re.compile(r"(?i)^(ack|acked|acknowledged|acknowledge|2)$")

@@ -32,7 +32,17 @@ BASH_PATTERNS = [
     (r"\b(cscript|wscript)(\.exe)?\b", "Windows script host (never run customer HMI/SCADA scripts)"),
     (r"\brsync\b[^|;&]*\s[\w.-]+@?[\w.-]+:", "remote copy (rsync)"),
 ]
-MCP_WRITE = re.compile(r"(?i)^(write|put|download|force|program|upload|delete|start|stop|run|execute|toggle|set(_|[A-Z]|value|point|tag)?)")
+WRITE_VERBS = ("write", "put", "download", "force", "program", "upload", "delete", "start", "stop", "run", "execute",
+               "toggle", "set")
+
+
+class _McpWrite(object):
+    @staticmethod
+    def search(action):
+        return action.lower().startswith(WRITE_VERBS)
+
+
+MCP_WRITE = _McpWrite()
 MCP_PLC = re.compile(r"(?i)(plc|opc|modbus|s7|logix|siemens|rockwell|codesys|twincat|ads|historian|scada|ignition|wincc|"
                      r"factorytalk|kepware|profinet|ethernetip|cip)")
 
