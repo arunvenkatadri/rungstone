@@ -1,17 +1,15 @@
 # Contributing to Rungstone
 
-All tooling is Python 3.9+ standard library and runs locally on the files in this repository.
+All tooling is Python 3.9+ standard library and works only on the files in this repository.
 
-| Task | Command (run from the repository root) |
-|---|---|
-| Unit tests | `python3 -m unittest discover -s tests -p "test_*.py"` |
-| Copy `shared/` into each skill's `scripts/_shared/` | `python3 tools/sync_shared.py` (add `--check` to only report stale copies) |
-| Build standalone `.skill` packages into `dist/` | `python3 tools/build_skills.py` |
-| Validate the plugin and marketplace manifests | `claude plugin validate . --strict` |
+- **Unit tests** live in `tests/`. Run them with Python's built-in `unittest` test discovery from the repository root.
+- **Shared code** lives in `shared/`. `tools/sync_shared.py` copies it into each skill's `scripts/_shared/` folder
+  (its `--check` option only reports stale copies). Never edit `scripts/_shared/` directly.
+- **Standalone `.skill` packages** are built into `dist/` by `tools/build_skills.py`.
+- **Manifests** are checked with the Claude Code plugin validator in strict mode.
 
 Rules for changes:
 
-- Keep every skill self-contained: edit `shared/`, then run the sync, never edit `scripts/_shared/` directly.
-- Keep `SKILL.md` files under 500 lines and every file under 256 KiB.
+- Keep every skill self-contained, `SKILL.md` files under 500 lines, and every file under 256 KiB.
 - New fixtures must be original content written for this repository.
 - Scripts must never open network connections, read credentials or environment variables, or execute customer files.
