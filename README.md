@@ -8,6 +8,44 @@ across vendors, carry that work through to **HMI/SCADA** screens, tags and alarm
 It is read-only and offline by design. Rungstone produces files for the vendor IDE; the engineer
 reviews them, approves every flagged change, and loads them.
 
+```mermaid
+flowchart LR
+    subgraph IN["Your exports (read-only)"]
+        PLC["PLC projects<br/>L5X · SLC text · SimaticML · SCL · PLCopen"]
+        HMI["HMI / SCADA<br/>FactoryTalk · Ignition · WinCC"]
+        HIST["Historian + alarm logs<br/>CSV exports"]
+    end
+
+    subgraph RS["Rungstone"]
+        P["rungstone-plc<br/>understand · translate<br/>verify · dependencies"]
+        H["rungstone-hmi-scada<br/>rebind · migrate · alarms"]
+        O["rungstone-ops<br/>why did it stop? · reports"]
+        Q{{"Review queue<br/>engineer approves"}}
+        SAFE["Safety logic<br/>excluded, with notice"]:::warn
+    end
+
+    subgraph OUT["Files for the vendor IDE"]
+        F["SCL · L5X · ST<br/>mapping.csv · MANIFEST"]
+    end
+
+    PLC --> P
+    HMI --> H
+    HIST --> O
+    P --> Q
+    H --> Q
+    P -. "logic citations" .-> O
+    Q -- "approved only" --> F
+    F -. "engineer imports and loads" .-> IDE["Studio 5000 · TIA Portal<br/>CODESYS · TwinCAT"]
+
+    P -. "detects" .-> SAFE
+
+    classDef warn fill:#3a2a06,stroke:#f5a524,color:#f5d38a
+    style Q fill:#1f2a1f,stroke:#5fb35f,color:#cfe8cf
+    style IDE stroke-dasharray: 5 5
+```
+
+Nothing in this picture talks to a live controller. The last arrow is the engineer, using the vendor tool.
+
 ## Safety and trust rules
 
 These rules hold in every skill, command and script:
@@ -85,8 +123,26 @@ Rungstone keeps its state in `.rungstone/` inside your project folder. Everythin
   decisions.log        append-only audit trail
 ```
 
-Typical flow: `/rungstone:understand` → `/rungstone:translate … to siemens-scl` → review in
-`/rungstone:workbench` (or approve in chat) → `/rungstone:verify` → `/rungstone:export`.
+Typical flow:
+
+```mermaid
+flowchart LR
+    U["/rungstone:understand<br/>meanings, labelled"] --> T["/rungstone:translate<br/>draft + review queue"]
+    T --> V["/rungstone:verify<br/>scan-cycle simulator"]
+    V --> W["/rungstone:workbench<br/>approve · edit · reject"]
+    W --> G{"High-risk<br/>items open?"}
+    G -- "yes: blocked" --> W
+    G -- "no" --> E["/rungstone:export<br/>files + MANIFEST"]
+    style G fill:#3a2a06,stroke:#f5a524,color:#f5d38a
+    style E fill:#1f2a1f,stroke:#5fb35f,color:#cfe8cf
+```
+
+The workbench is a local page (127.0.0.1 only) that shows the review queue, the mapping table,
+the verification results and the dependency conflicts:
+
+![Workbench review queue and mapping table](docs/images/workbench-review.png)
+
+![Workbench verification results, labelled simulated, not hardware-tested](docs/images/workbench-verify.png)
 
 ## What runs, and data handling
 
