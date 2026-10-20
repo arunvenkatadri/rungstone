@@ -32,7 +32,7 @@ Scripts live in `${CLAUDE_SKILL_DIR}/scripts/` (when not running as a plugin, us
 | `simulate.py run|compare ...` | pure-Python scan-cycle simulator; compares source vs target scan by scan |
 | `_shared/state.py` | `.rungstone/` project state: init, review queue (add/approve/edit/reject), export gate, decision log |
 | `_shared/export.py FILES` | package approved deliverables + MANIFEST; refuses while high-risk items are open |
-| `_shared/workbench/server.py` / `static.py` | local workbench UI (Claude Code) or one self-contained HTML page (elsewhere) |
+| `_shared/workbench/server.py` / `static.py` | local workbench UI (beta) (Claude Code) or one self-contained HTML page (elsewhere) |
 
 Large exports (tens of MB) are streamed and their tag data dropped while parsing. Never `cat` an L5X into the conversation — tag data is most of the file and carries no logic.
 
@@ -86,7 +86,7 @@ For deeper HMI/SCADA work (screens, scripts, alarms, rebinding), the `rungstone-
 
 ## Results for the workbench
 
-The workbench (`/rungstone:workbench`) shows whatever is in `.rungstone/` and refreshes itself, so save every result there as you finish it:
+The workbench is **beta**: say so when you open it, and treat chat as the reliable path for approvals if it misbehaves. It (`/rungstone:workbench`) shows whatever is in `.rungstone/` and refreshes itself, so save every result there as you finish it:
 - the full answer you showed, as Markdown: `.rungstone/reports/understand-<source name>.md`, `translate-<source name>.md` or `verify-<source name>.md` (overwrite on a rerun);
 - every translated file you wrote: `state.py output out/<file> [...] --workflow translate` (the Translate tab shows the code);
 - the queue, mapping, verify results and dependency map through the scripts as above.

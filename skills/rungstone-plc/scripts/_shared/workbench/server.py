@@ -69,15 +69,7 @@ SOURCE_PLATFORMS = ("rockwell-logix", "rockwell-slc500", "rockwell-plc5", "rockw
 _RX = re.compile
 
 
-def sniff_platform(path):
-    """Name the source platform from the file's first bytes. Returns {platform, detail, confidence, evidence}."""
-    try:
-        with open(path, "rb") as fh:
-            head = fh.read(SNIFF_BYTES).decode("utf-8", "replace")
-    except OSError:
-        return {"platform": None, "confidence": "unknown", "evidence": "file could not be read"}
-    ext = os.path.splitext(path)[1].lower()
-
+def _sniff_plc(path, head, ext):
     def attr(name):
         m = _RX(r'\b%s="([^"]{1,60})"' % name).search(head)
         return m.group(1) if m else None
@@ -112,6 +104,44 @@ def sniff_platform(path):
     if ext == ".st" or _RX(r"(?im)^\s*(FUNCTION_BLOCK|PROGRAM)\s+\w").search(head):
         return {"platform": "iec-st", "confidence": "inferred", "evidence": "IEC Structured Text keywords"}
     return {"platform": None, "confidence": "unknown", "evidence": "not a recognised PLC export"}
+
+
+def _sniff_other(head, ext):
+    """Non-PLC exports: HMI/SCADA projects and tag lists, alarm/event logs, historian data."""
+    first = head.lstrip("\ufeff").split("\n", 1)[0]
+    low = first.lower()
+    if head.startswith(";###") or "{[" in head[:4000] or "<gfx" in head[:2000]:
+        return "hmi", "FactoryTalk View export"
+    if ext == ".json" and ('"tagType"' in head or '"ia.' in head):
+        return "hmi", "Ignition export"
+    if ";" in first and any(k in low for k in ("plc tag", "connection", "alarm text", "trigger tag")):
+        return "hmi", "WinCC export"
+    if ext in (".csv", ".txt") and "message" in low and any(k in low for k in ("source", "alarm", "tag")):
+        return "alarms", "alarm/event log (time, source, message columns)"
+    if ext == ".csv" and re.match(r"(?i)\s*\"?(timestamp|time|datetime|date|t_stamp)", first):
+        return "historian", "historian export (time column then tag columns)"
+    return None, None
+
+
+def sniff_platform(path):
+    """Name the source platform and kind of file from its first bytes.
+
+    Returns {kind: plc|hmi|alarms|historian|None, platform, detail, confidence, evidence}.
+    """
+    try:
+        with open(path, "rb") as fh:
+            head = fh.read(SNIFF_BYTES).decode("utf-8", "replace")
+    except OSError:
+        return {"kind": None, "platform": None, "confidence": "unknown", "evidence": "file could not be read"}
+    ext = os.path.splitext(path)[1].lower()
+    r = _sniff_plc(path, head, ext)
+    if r.get("platform"):
+        r["kind"] = "plc"
+        return r
+    kind, why = _sniff_other(head, ext)
+    if kind:
+        return {"kind": kind, "platform": None, "confidence": "detected", "evidence": why}
+    return dict(r, kind=None)
 
 
 def parsed_platforms(d):
@@ -268,6 +298,7 @@ def build_state(d):
     open_high = [i for i in queue if i.get("status") == "open" and i.get("risk") == "high"]
     return {
         "state_dir": d,
+        "project_root": project_root(d),
         "project": files["project.json"] or {},
         "tagmap": files["tagmap.json"] or {},
         "queue": queue,

@@ -110,10 +110,18 @@ class WorkbenchServerTest(unittest.TestCase):
                  os.path.join(fx, "two_tank", "two_tank_slc.txt"): ("rockwell-slc500", "inferred"),
                  os.path.join(fx, "two_tank", "sim", "FB_TwoTank.scl"): ("siemens-tia", "detected"),
                  os.path.join(fx, "unwritten_bit", "Mixer_PLCopen.xml"): ("codesys", "detected"),
-                 os.path.join(fx, "timers_hmi", "FTView_Fill_tags.csv"): (None, "unknown")}
+                 os.path.join(fx, "timers_hmi", "FTView_Fill_tags.csv"): (None, "detected")}
         for f, want in cases.items():
             r = server.sniff_platform(f)
             self.assertEqual((r["platform"], r["confidence"]), want, f)
+        kinds = {os.path.join(fx, "timers_hmi", "Fill_Station.L5X"): "plc",
+                 os.path.join(fx, "timers_hmi", "FTView_Fill_tags.csv"): "hmi",
+                 os.path.join(ROOT, "fixtures", "hmi", "ignition", "tags.json"): "hmi",
+                 os.path.join(ROOT, "fixtures", "hmi", "wincc", "HMITags.csv"): "hmi",
+                 os.path.join(ROOT, "fixtures", "hmi", "alarms", "alarm_history.csv"): "alarms",
+                 os.path.join(ROOT, "fixtures", "ops", "pump_station", "historian_2025-06-12.csv"): "historian"}
+        for f, k in kinds.items():
+            self.assertEqual(server.sniff_platform(f)["kind"], k, f)
         self.assertIn("1756-L83ES", server.sniff_platform(os.path.join(fx, "estop", "Conveyor_Cell.L5X"))["detail"])
         samples = {"plc5.txt": ("// PLC-5/40, rack 1771-IBD\n0 SOR XIC I:001/00 OTE O:002/00 EOR\n", "rockwell-plc5"),
                    "ml.txt": ("// MicroLogix 1400 1766-L32BXB\n0 SOR XIC I:0/0 OTE O:0/0 EOR\n", "rockwell-micrologix"),

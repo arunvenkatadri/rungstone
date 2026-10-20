@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Rungstone Workbench</title>
+<title>Rungstone Workbench (beta)</title>
 <style>
 :root{
   --bg:#0e1116;--panel:#151a21;--panel2:#1b212a;--line:#2a323d;--text:#d8dee7;--muted:#8d98a7;
@@ -76,12 +76,12 @@ textarea{min-height:64px;resize:vertical}
 .row-high td:first-child{box-shadow:inset 3px 0 0 var(--red)}
 .row-medium td:first-child{box-shadow:inset 3px 0 0 var(--amber)}
 @media (max-width:640px){header,main,nav{padding-left:12px;padding-right:12px}.banner{margin:10px 12px 0}th,td{padding:6px}}
-.pick{cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;padding:4px 8px;margin:-4px -8px;border-radius:6px}.pick:hover{background:var(--panel2)}.pick input{width:16px;height:16px;margin:0}.pick input{accent-color:var(--amber,#f5a524)}.job{max-width:760px}.out summary{cursor:pointer}.out pre.code{max-height:420px;overflow:auto;margin:8px 0 0;font-size:12.5px}.pill.live{border-color:var(--green);color:#c9f5d2}.newres{position:fixed;right:20px;bottom:20px;z-index:10;box-shadow:0 4px 16px rgba(0,0,0,.5)}.chg{margin-top:6px}.chg summary{cursor:pointer;color:var(--muted);font-size:13px}.chg select{margin-top:6px;background:var(--panel2);color:inherit;border:1px solid var(--line);border-radius:6px;padding:5px 8px}.jobrow{display:grid;grid-template-columns:90px 1fr;gap:10px;align-items:center;margin:8px 0}.jobrow select{max-width:360px;background:var(--panel2);color:inherit;border:1px solid var(--line);border-radius:6px;padding:5px 8px}.cmd{display:flex;gap:8px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:6px 0 2px 100px}.cmd code{flex:1;white-space:normal;word-break:break-all}.cmd button{flex:none}button.primary{background:var(--amber,#f5a524);color:#1a1300;border-color:var(--amber,#f5a524);font-weight:600}.job .banner{margin:8px 0}.banner.ok{border-color:#5fb35f;background:#1f2a1f;color:#cfe8cf}.addsrc{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 4px}.addsrc select{min-width:280px;max-width:100%;background:var(--panel,#161b22);color:inherit;border:1px solid var(--line,#30363d);border-radius:6px;padding:5px 8px}.addsrc .muted{flex-basis:100%}
+.pick{cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;padding:4px 8px;margin:-4px -8px;border-radius:6px}.pick:hover{background:var(--panel2)}.pick input{width:16px;height:16px;margin:0}.pick input{accent-color:var(--amber,#f5a524)}.beta{display:inline-block;font:700 10px var(--mono);letter-spacing:.06em;padding:2px 6px;border-radius:4px;border:1px solid var(--blue,#58a6ff);color:var(--blue,#58a6ff);vertical-align:2px}.job{max-width:760px}.out summary{cursor:pointer}.out pre.code{max-height:420px;overflow:auto;margin:8px 0 0;font-size:12.5px}.pill.live{border-color:var(--green);color:#c9f5d2}.newres{position:fixed;right:20px;bottom:20px;z-index:10;box-shadow:0 4px 16px rgba(0,0,0,.5)}.chg{margin-top:6px}.chg summary{cursor:pointer;color:var(--muted);font-size:13px}.chg select{margin-top:6px;background:var(--panel2);color:inherit;border:1px solid var(--line);border-radius:6px;padding:5px 8px}.jobrow{display:grid;grid-template-columns:90px 1fr;gap:10px;align-items:center;margin:8px 0}.jobrow select{max-width:360px;background:var(--panel2);color:inherit;border:1px solid var(--line);border-radius:6px;padding:5px 8px}.cmd{display:flex;gap:8px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:6px 0 2px 100px}.cmd code{flex:1;white-space:normal;word-break:break-all}.cmd button{flex:none}button.primary{background:var(--amber,#f5a524);color:#1a1300;border-color:var(--amber,#f5a524);font-weight:600}.job .banner{margin:8px 0}.banner.ok{border-color:#5fb35f;background:#1f2a1f;color:#cfe8cf}.addsrc{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 4px}.addsrc select{min-width:280px;max-width:100%;background:var(--panel,#161b22);color:inherit;border:1px solid var(--line,#30363d);border-radius:6px;padding:5px 8px}.addsrc .muted{flex-basis:100%}
 </style>
 </head>
 <body>
 <header>
-  <div class="brand">RUNGSTONE <small id="projname">workbench</small></div>
+  <div class="brand">RUNGSTONE <span class="beta" title="The workbench is in beta. Every approval can also be made in chat.">BETA</span> <small id="projname">workbench</small></div>
   <div class="pills" id="pills"></div>
 </header>
 <div id="banners"></div>
@@ -217,11 +217,8 @@ function viewFiles(){
     h+='<div class="addsrc"><select id="srcpick" aria-label="File to add"><option value="">Loading project files…</option></select>'+
        '<button class="act" id="srcadd">Add to list</button><div class="err" id="srcerr"></div></div>';
     h+='<h2>2. Choose what to do with it</h2><div class="card job">'+
-       '<div class="jobrow"><span class="muted">File</span><code id="jobfile">'+(pend?esc(pend):'(pick a file above)')+'</code></div>'+
-       '<div class="jobrow"><span class="muted">Workflow</span><select id="jobwf">'+
-         [["understand","Understand: explain what it does"],["translate","Translate to another platform"],["verify","Verify the translation (simulator)"],
-          ["dependencies","Dependency map"],["hmi","HMI/SCADA: explain or rebind"],["alarms","Alarm cleanup"],["troubleshoot","Troubleshoot a stop"]]
-         .map(function(o){return '<option value="'+o[0]+'"'+((window.__wf||"understand")===o[0]?' selected':'')+'>'+esc(o[1])+'</option>';}).join("")+'</select></div>'+
+       '<div class="jobrow"><span class="muted">File</span><span><code id="jobfile">'+(pend?esc(pend):'(pick a file above)')+'</code> <span class="muted" id="jobkind"></span></span></div>'+
+       '<div class="jobrow"><span class="muted">Workflow</span><select id="jobwf"></select></div>'+
        '<div class="jobrow" id="tgtrow"><span class="muted">Target</span><select id="jobtgt">'+
          [["siemens-scl","Siemens S7-1500 SCL"],["rockwell","Rockwell Logix (L5X)"],["iec-st","IEC 61131-3 Structured Text"]]
          .map(function(o){return '<option value="'+o[0]+'"'+((window.__tgt||(S.project||{}).target||"siemens-scl")===o[0]?' selected':'')+'>'+esc(o[1])+'</option>';}).join("")+'</select></div>'+
@@ -267,7 +264,7 @@ function platformOf(src){
   var sn=(S.sniffed||{})[src.path]||{},hit=(S.platforms||[]).filter(function(x){return x.file===src.path;})[0],c=(hit&&hit.controller)||{};
   var detail=sn.detail||[c.processor,c.revision?"v"+c.revision:""].filter(Boolean).join(", ");
   if(src.platform) return {key:src.platform,name:platformName(src.platform),detail:detail,conf:"set by engineer",evidence:"chosen in the workbench",plc:src.platform!=="other"};
-  if(!sn.platform) return {key:"",name:"Not detected",detail:"",conf:"unknown",evidence:sn.evidence||"not a recognised PLC export",plc:false};
+  if(!sn.platform) return {key:"",name:sn.kind?"Not a PLC program ("+KIND_NAMES[sn.kind]+")":"Not detected",detail:"",conf:sn.kind?"detected":"unknown",evidence:sn.evidence||"not a recognised PLC export",plc:false};
   return {key:sn.platform,name:platformName(sn.platform),detail:detail,conf:sn.confidence,evidence:sn.evidence,plc:true};
 }
 function viewTranslateSetup(){
@@ -289,7 +286,7 @@ function viewTranslateSetup(){
        '<button class="act primary" id="trset">Set target</button> <span class="err" id="trerr"></span></div></div>';
     h+='<div class="jobrow"><span class="muted">Saved</span><div>'+(t?'<span class="chip approved">'+esc(targetName(t))+'</span>':'<span class="muted">no target set yet</span>')+'</div></div>';
     if(src&&t&&pf.plc){var cmd="/rungstone:translate "+src.path+" from "+pf.key+" to "+t;
-      h+='<div class="jobrow"><span class="muted">Next</span><span>Paste this into Claude Code to run the translation. Nothing runs until you do.</span></div>'+
+      h+='<div class="jobrow"><span class="muted">Next</span><span>Paste this into Claude Code to run the translation. Nothing runs until you do.</span></div>'+folderLine()+
          '<div class="cmd"><code id="trcmd">'+esc(cmd)+'</code><button class="act" id="trcopy" data-cmd="'+esc(cmd)+'">Copy</button></div>';}
   } else {
     h+='<div class="jobrow"><span class="muted">To</span><div>'+(t?'<b>'+esc(targetName(t))+'</b>':'<span class="muted">not set; tell Claude the target in chat</span>')+'</div></div>';
@@ -474,6 +471,24 @@ function renderMain(){
   if(current==="deps") wireDeps();
   if(current==="files"&&LIVE) wireFiles();
 }
+var WORKFLOWS={understand:"Understand: explain what it does",translate:"Translate to another platform",verify:"Verify the translation (simulator)",
+  dependencies:"Dependency map (PLC + HMI readers and writers)",hmi:"HMI/SCADA: explain or rebind",alarms:"Alarm cleanup (ISA-18.2 style)",
+  troubleshoot:"Troubleshoot a stop",report:"Shift / downtime report"};
+var KIND_WORKFLOWS={plc:["understand","translate","verify","dependencies"],hmi:["hmi","dependencies"],
+  alarms:["alarms","troubleshoot","report"],historian:["troubleshoot","report"]};
+var KIND_NAMES={plc:"PLC program",hmi:"HMI/SCADA export",alarms:"alarm/event log",historian:"historian data"};
+function kindOf(path){var k=((S.sniffed||{})[path]||{}).kind;return k||null;}
+function fillWorkflows(){
+  var wf=el("jobwf");if(!wf) return;
+  var k=kindOf(window.__pending),list=KIND_WORKFLOWS[k]||Object.keys(WORKFLOWS);
+  if(list.indexOf(window.__wf)<0) window.__wf=list[0];
+  wf.innerHTML=list.map(function(o){return '<option value="'+o+'"'+(window.__wf===o?' selected':'')+'>'+esc(WORKFLOWS[o])+'</option>';}).join("");
+  el("jobkind").textContent=k?"("+KIND_NAMES[k]+")":"(file type not recognised; all workflows shown)";
+}
+function folderLine(){
+  return '<div class="jobrow"><span class="muted">Where</span><span>Run it in Claude Code started in <code>'+esc(S.project_root||"the project folder")+
+    '</code>. The path in the command is relative to that folder.</span></div>';
+}
 function jobCommand(){
   var f=window.__pending||"",wf=el("jobwf").value,t=el("jobtgt").value;
   return "/rungstone:"+wf+" "+f+(wf==="translate"?" to "+t:"");
@@ -496,13 +511,14 @@ function wireFiles(){
   pick.onchange=function(){window.__srcpick=pick.value;el("srcerr").textContent="";};
   add.onclick=function(){var o=pick.options[pick.selectedIndex];if(!o||!o.value){el("srcerr").textContent="Choose a file in the list first.";return;}
     add.disabled=true;window.__srcpick="";window.__pending=o.value;post({path:o.value,format:o.getAttribute("data-fmt")},"srcerr","/api/source/add");};
-  function choose(path){window.__pending=path;el("jobfile").textContent=path;el("jobout").innerHTML=window.__jobHTML="";
+  function choose(path){window.__pending=path;el("jobfile").textContent=path;el("jobout").innerHTML=window.__jobHTML="";fillWorkflows();syncTarget();
     Array.prototype.forEach.call(document.querySelectorAll("input[data-src-sel]"),function(c){c.checked=c.getAttribute("data-src-sel")===path;});}
   Array.prototype.forEach.call(document.querySelectorAll("input[data-src-sel]"),function(c){c.onchange=function(){if(c.checked) choose(c.getAttribute("data-src-sel"));};});
   Array.prototype.forEach.call(document.querySelectorAll("[data-src-lbl]"),function(l){l.onclick=function(e){e.preventDefault();choose(l.getAttribute("data-src-lbl"));};});
   Array.prototype.forEach.call(document.querySelectorAll("button[data-src-rm]"),function(b){
     b.onclick=function(){b.disabled=true;post({path:b.getAttribute("data-src-rm")},"srcerr","/api/source/remove");};});
   var wf=el("jobwf"),tgt=el("jobtgt"),go=el("jobgo");
+  fillWorkflows();
   function syncTarget(){el("tgtrow").style.display=wf.value==="translate"?"":"none";}
   wf.onchange=function(){window.__wf=wf.value;syncTarget();el("jobout").innerHTML=window.__jobHTML="";};
   tgt.onchange=function(){window.__tgt=tgt.value;el("jobout").innerHTML=window.__jobHTML="";};
@@ -521,6 +537,7 @@ function wireFiles(){
         window.__jobCmd=cmd;
         el("jobout").innerHTML=window.__jobHTML='<div class="banner ok"><b>Saved.</b> <code>'+esc(window.__pending)+'</code> is now the file in use.</div>'+
           '<div class="jobrow"><span class="muted">Next</span><span>Paste this into Claude Code to run it. The workbench can\'t start Claude by itself, so nothing runs until you do.</span></div>'+
+          folderLine()+
           '<div class="cmd"><code id="jobcmd">'+esc(cmd)+'</code><button class="act" id="jobcopy">Copy</button></div>';
         wireJobCopy();
       }).catch(function(e){el("joberr").textContent=String(e.message||e);go.disabled=false;});

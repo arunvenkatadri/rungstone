@@ -72,7 +72,7 @@ These rules hold in every skill, command and script:
 | `skills/rungstone-plc` | **Phases 1–2: PLC.** Understand (summary, machine sequence by rung, signal table with evidence, open questions). Translate to S7-1500 SCL, Rockwell Logix L5X, or IEC Structured Text, with `mapping.csv` and a ranked review queue. Verify with scenario plans plus a pure-Python scan-cycle simulator that compares source and target scan by scan. Dependency map of readers, writers and conflicts across PLC + HMI + SCADA. |
 | `skills/rungstone-hmi-scada` | **Phase 3: HMI/SCADA.** Explain screens, buttons, indicators and scripts. Retarget bindings with `mapping.csv`. Migrate tag databases, scripts and alarms (screens as draft layouts only). Verify bindings. Check consistency across PLC + HMI + SCADA. Clean up alarms from alarm history (ISA-18.2 style: floods, chattering, standing alarms, priorities, response text). |
 | `skills/rungstone-ops` | **Phase 4: operations, offline.** Find why a line stopped from historian/alarm exports plus the PLC logic (cause, evidence, logic cited, what to check first, what wasn't checked). Answer plant questions with a chart. Build shift and downtime reports. |
-| `commands/` | `/rungstone:understand` `/rungstone:translate` `/rungstone:verify` `/rungstone:dependencies` `/rungstone:hmi` `/rungstone:alarms` `/rungstone:troubleshoot` `/rungstone:report` `/rungstone:workbench` `/rungstone:export` |
+| `commands/` | `/rungstone:understand` `/rungstone:translate` `/rungstone:verify` `/rungstone:dependencies` `/rungstone:hmi` `/rungstone:alarms` `/rungstone:troubleshoot` `/rungstone:report` `/rungstone:workbench` (beta) `/rungstone:export` |
 | `hooks/` | Guardrails: block `/rungstone:export` while high-risk items are open; block device/network write actions; warn when a file read or written looks like safety logic. |
 | `shared/` | Safe XML parsing, `.rungstone/` state, export, workbench UI, JSON schemas. Vendored into each skill's `scripts/_shared/` so every skill also works standalone. |
 | `mcp/historian` | **Optional** read-only historian connector (SQLite, CSV, ODBC, OPC UA). **Off until you configure it** in the plugin settings. See below. |
@@ -103,7 +103,7 @@ Binary projects (`.ACD`, `.RSS`, `.ap1x`, `.project`) can't be read. Rungstone e
 
 **claude.ai / Cowork:** download a standalone skill package from the releases (`rungstone-plc.skill`,
 `rungstone-hmi-scada.skill`, `rungstone-ops.skill`) and upload it in Settings > Capabilities > Skills.
-Outside Claude Code the workbench is generated as a single self-contained HTML page, and approvals
+Outside Claude Code the workbench (beta) is generated as a single self-contained HTML page, and approvals
 happen in chat ("approve R1, R3; reject R2: reason").
 
 Requirements: Python 3.9+ (standard library only). Optional: `defusedxml`, `openpyxl` (XLSX), `matplotlib` (PNG charts).
@@ -129,7 +129,7 @@ Typical flow:
 flowchart LR
     U["/rungstone:understand<br/>meanings, labelled"] --> T["/rungstone:translate<br/>draft + review queue"]
     T --> V["/rungstone:verify<br/>scan-cycle simulator"]
-    V --> W["/rungstone:workbench<br/>approve · edit · reject"]
+    V --> W["/rungstone:workbench (beta)<br/>approve · edit · reject"]
     W --> G{"High-risk<br/>items open?"}
     G -- "yes: blocked" --> W
     G -- "no" --> E["/rungstone:export<br/>files + MANIFEST"]
@@ -137,7 +137,7 @@ flowchart LR
     style E fill:#1f2a1f,stroke:#5fb35f,color:#cfe8cf
 ```
 
-The workbench is a local page (127.0.0.1 only) that shows the review queue, the mapping table,
+The workbench (**beta**) is a local page (127.0.0.1 only) that shows the review queue, the mapping table,
 the verification results and the dependency conflicts:
 
 ![Workbench review queue and mapping table](docs/images/workbench-review.png)
