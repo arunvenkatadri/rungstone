@@ -1,7 +1,7 @@
 {
   "name": "rungstone",
   "displayName": "Rungstone",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Offline, read-only toolkit for controls engineers: understand, translate, verify and dependency-map PLC code across Rockwell, Siemens, CODESYS and Beckhoff; extend to HMI/SCADA screens, tags and alarms; troubleshoot stops from exported historian data. Safety-rated logic is always excluded; simulation results are labelled simulated, not hardware-tested.",
   "author": {
     "name": "Arun Venkatadri"
