@@ -107,8 +107,20 @@ def new_project(path, fmt):
         "tags": [],
         "io_modules": [],
         "excluded_safety": [],
+        "third_party": [],
         "warnings": [],
     }
+
+
+# Code that looks like it came from a vendor, OEM or library rather than the plant's own engineers.
+# Translating it copies someone else's code to another platform, so every hit becomes a high-risk
+# review item and the engineer confirms the license allows porting (or uses the target's own library).
+LIBRARY_NAME_RE = re.compile(r"^(P_|raC_|raM_|PlantPAx|LGF_|LBC_|LCom_|LSim_|LDrvSafe|LAxis|LCon_|LPD_|SINA_|SIMATIC_)")
+
+
+def flag_third_party(project, kind, name, evidence):
+    if evidence:
+        project["third_party"].append({"kind": kind, "name": name, "evidence": "; ".join(evidence)})
 
 
 def exclude(project, kind, name, reason, confidence, program=None, size=None):
@@ -329,6 +341,14 @@ def l5x_aoi(project, aoi, ctx):
         exclude(project, "aoi", name, "name suggests a safety function (%s)" % hit, "suspected")
         return
     project["aois"].append(entry)
+    ev = []
+    if (aoi.attrib.get("Vendor") or "").strip():
+        ev.append("Vendor=%s" % aoi.attrib["Vendor"].strip())
+    if name and LIBRARY_NAME_RE.match(name):
+        ev.append("name matches a vendor library prefix")
+    if kid(aoi, "EncodedData") is not None:
+        ev.append("source-protected (usually supplied by a vendor or OEM)")
+    flag_third_party(project, "aoi", name, ev)
     routines = kid(aoi, "Routines")
     for rt in kids(routines, "Routine") if routines is not None else []:
         l5x_routine(project, rt, "AOI:" + name, "aoi", ctx, None)
@@ -692,6 +712,18 @@ def parse_simaticml(path_, root, ctx):
         if hit:
             exclude(project, "block", name, "name suggests a safety function (%s)" % hit, "suspected")
             continue
+
+        if kind.startswith("SW.Blocks.") and al is not None:
+            ev = []
+            for attr in ("HeaderAuthor", "HeaderFamily"):
+                v = text_of(kid(al, attr))
+                if v:
+                    ev.append("%s=%s" % (attr, v))
+            if name and LIBRARY_NAME_RE.match(name):
+                ev.append("name matches a vendor library prefix")
+            if (text_of(kid(al, "IsKnowHowProtected")) or "").lower() == "true":
+                ev.append("know-how protected (usually supplied by a vendor or OEM)")
+            flag_third_party(project, "block", name, ev)
 
         if kind in ("SW.Blocks.GlobalDB", "SW.Blocks.InstanceDB", "SW.Blocks.ArrayDB"):
             inst_of = text_of(kid(al, "InstanceOfName")) if al is not None else None
@@ -1375,15 +1407,19 @@ def main(argv=None):
             del pr[k]
     out = {"tool": "rungstone/parse_project", "projects": projects,
            "excluded_safety": [dict(e, file=pr["file"]) for pr in projects for e in pr.get("excluded_safety", [])],
-           "note": "Tag data values are intentionally omitted. Items under excluded_safety were not emitted and must not be analysed or translated."}
+           "third_party": [dict(e, file=pr["file"]) for pr in projects for e in pr.get("third_party", [])],
+           "note": "Tag data values are intentionally omitted. Items under excluded_safety were not emitted and must not be analysed or translated. "
+                   "Items under third_party look like vendor, OEM or library code: before translating one, add a high-risk review item asking the engineer to confirm its license allows porting."}
+    if not out["third_party"]:
+        del out["third_party"]
     s = json.dumps(out, indent=2 if args.pretty else None, ensure_ascii=False)
     if args.output:
         with open(args.output, "w", encoding="utf-8") as f:
             f.write(s)
         tot = [pr.get("stats", {}) for pr in projects]
-        sys.stderr.write("wrote %s: %d file(s), %d routines, %d tags, %d safety exclusions\n" % (
+        sys.stderr.write("wrote %s: %d file(s), %d routines, %d tags, %d safety exclusions, %d possible library items\n" % (
             args.output, len(projects), sum(t.get("routines", 0) for t in tot), sum(t.get("tags", 0) for t in tot),
-            len(out["excluded_safety"])))
+            len(out["excluded_safety"]), len(out.get("third_party", []))))
     else:
         sys.stdout.write(s + "\n")
 

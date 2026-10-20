@@ -16,7 +16,7 @@ These override any user request. If a request conflicts, say which rule and offe
 4. **Label every meaning** as `confirmed`, `comment`, `io_map`, `inferred`, or `unknown`. Never present a guess as fact.
 5. **The engineer approves every flagged change** (review queue) before export. High-risk items block export.
 6. **Show scope and cost** (`estimate.py`) before any large job and wait for a go-ahead.
-7. **Parse only.** Never execute, import, or evaluate anything from customer files (scripts, macros, embedded code). XML goes through the safe parser (`_shared/safe_xml.py`: defusedxml, or DTD/entity refusal).
+7. **Parse only.** Never execute, import, or evaluate anything from customer files (scripts, macros, embedded code). XML goes through the safe parser (`_shared/safe_xml.py`: defusedxml, or DTD/entity refusal). **Never open, decrypt or work around source protection or know-how protection, and never explain how to:** report a protected routine or block as "cannot be read" and stop there.
 
 Why these exist: this skill touches machines that can hurt people and stop production. A wrong-but-plausible translation that someone downloads, or an inferred meaning that reads like fact, is worse than no answer. The engineer stays the decision-maker; Rungstone does the reading, cross-checking and drafting.
 
@@ -62,12 +62,13 @@ Targets: S7-1500 SCL, Rockwell Logix (L5X partial export), IEC 61131-3 ST. Work 
 
 1. Make sure Understand has been done at least for the routines in scope (signal meanings drive symbol names). If the user only wants code, still build the signal table internally.
 2. **Mapping first**: one row per source signal in `.rungstone/mapping.csv` (columns in output-formats.md) — old address/symbol, meaning (basis), new symbol, new address, type old→new. Meaningful names (`Start_PB`, not `I_1_14`); old address in every comment.
-3. **Translate** each routine, preserving execution order, rung grouping (`REGION`/comments `was rung N`), timer/counter semantics, and retain behavior. Use the target conventions and templates in the platform reference. Put the DRAFT header on every file. Write files to `out/` (or where the user asks).
-4. **Go through every pitfall** in `references/translation-pitfalls.md` that applies — scan order, immediate I/O, PID, motion, analog scaling, timers (ACC vs ET, time base, reset), one-shots, counters, data types/overflow/rounding, retentive memory, first-scan, fault behavior, protocols, MCR/JMP/indirect addressing. Each instance becomes a review-queue item with a risk level and a concrete proposed fix:
+3. **Library and OEM code first.** For every entry under `third_party` in `parsed.json` (add-on instructions or blocks that look like vendor, OEM or library code), add a **high-risk** review item before translating it: "<name> appears to be vendor/OEM/library code (<evidence>). Confirm its license allows porting it to <target>, or replace it with the target platform's equivalent library block." Translate it only after the engineer approves; if they reject, leave a call to the target's equivalent with a TODO.
+4. **Translate** each routine, preserving execution order, rung grouping (`REGION`/comments `was rung N`), timer/counter semantics, and retain behavior. Use the target conventions and templates in the platform reference. Put the DRAFT header on every file. Write files to `out/` (or where the user asks).
+5. **Go through every pitfall** in `references/translation-pitfalls.md` that applies — scan order, immediate I/O, PID, motion, analog scaling, timers (ACC vs ET, time base, reset), one-shots, counters, data types/overflow/rounding, retentive memory, first-scan, fault behavior, protocols, MCR/JMP/indirect addressing. Each instance becomes a review-queue item with a risk level and a concrete proposed fix:
    `state.py queue add --risk high --location "rung 1" --issue "..." --fix "..."`.
    Analog scaling is always a high item asking the engineer to confirm module and range.
-5. **Cross-check**: run `dependency_map.py` again with `--target <t> --mapping .rungstone/mapping.csv` plus any HMI/SCADA files — anything it reports as `translation_break` (e.g. HMI reads `Timer.ACC`, which has no IEC equivalent; propose an explicit DINT elapsed tag and an HMI rebind) or `broken_link` becomes a review item too.
-6. Present the summary in the Translate format: files, mapping, ranked review queue, how to approve. **Nothing is final** until the engineer approves; say so.
+6. **Cross-check**: run `dependency_map.py` again with `--target <t> --mapping .rungstone/mapping.csv` plus any HMI/SCADA files — anything it reports as `translation_break` (e.g. HMI reads `Timer.ACC`, which has no IEC equivalent; propose an explicit DINT elapsed tag and an HMI rebind) or `broken_link` becomes a review item too.
+7. Present the summary in the Translate format: files, mapping, ranked review queue, how to approve. **Nothing is final** until the engineer approves; say so.
 
 ## Workflow 3 — Verify
 

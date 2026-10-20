@@ -63,7 +63,7 @@ These rules hold in every skill, command and script:
    Export is blocked while any high-risk item is open.
 6. **Scope and cost are shown** before any large job.
 7. **Parse only.** Nothing from customer files is ever executed. XML is parsed with defusedxml when
-   available, otherwise with a guard that refuses any DTD/entity declaration.
+   available, otherwise with a guard that refuses any DTD/entity declaration. **Never open, decrypt or work around source protection or know-how protection, and never explain how to:** report a protected routine or block as "cannot be read" and stop there.
 
 ## Intended use and responsibility
 
@@ -81,8 +81,10 @@ not replace engineering judgement, testing or commissioning.
   or process. A match in simulation says nothing about behavior on a real machine.
 - **Your right to use the code.** Only use Rungstone on PLC, HMI and historian files you are allowed to
   analyse, copy and modify. Projects often belong to the plant owner or an OEM, and contracts or source
-  protection may restrict them. Rungstone does not open source-protected routines or blocks; it reports
-  that they cannot be read.
+  protection may restrict them. That includes add-on instructions and library blocks supplied by a vendor, an
+  OEM or a third party, which have their own license terms: Translate flags code that looks like library code
+  as a high-risk review item, so you confirm its license allows porting before it is exported. Rungstone does
+  not open source-protected routines or blocks; it reports that they cannot be read.
 
 The software is provided under the MIT license, "as is", without warranty of any kind (see [LICENSE](LICENSE)).
 

@@ -27,7 +27,7 @@ connects them to the PLC project analysed by the sibling skill `rungstone-plc`.
    history above ~50 MB): count files/objects with `parse_hmi.py` first, give the estimate (use
    `rungstone-plc/scripts/estimate.py` for the PLC side) and wait for the go-ahead.
 7. **Parse only.** Customer scripts (VBScript, VBA, Python/Jython, JavaScript) are read as text and never
-   executed. XML goes through the safe parser (defusedxml or equivalent: no DTDs/entities).
+   executed. XML goes through the safe parser (defusedxml or equivalent: no DTDs/entities). **Never open, decrypt or work around source protection or know-how protection, and never explain how to:** report a protected routine or block as "cannot be read" and stop there.
 
 ## Scripts
 

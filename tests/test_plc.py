@@ -48,6 +48,29 @@ class ParseTests(unittest.TestCase):
         mod = [m for m in pr["io_modules"] if m["name"] == "DI_Card"][0]
         self.assertEqual(mod["io_comments"][0]["comment"], "Start pushbutton (NO)")
 
+    def test_library_code_flagged(self):
+        aoi = ('<AddOnInstructionDefinition Name="%s" Revision="1.0"%s><Parameters/><LocalTags/><Routines>'
+               '<Routine Name="Logic" Type="RLL"><RLLContent><Rung Number="0" Type="N"><Text><![CDATA[NOP();]]></Text></Rung>'
+               '</RLLContent></Routine></Routines></AddOnInstructionDefinition>')
+        l5x = ('<?xml version="1.0"?><RSLogix5000Content SchemaRevision="1.0" SoftwareRevision="33.01" TargetType="Controller">'
+               '<Controller Name="C" ProcessorType="1756-L83E"><AddOnInstructionDefinitions>%s%s%s</AddOnInstructionDefinitions>'
+               '<Tags/><Programs/></Controller></RSLogix5000Content>') % (
+            aoi % ("P_Motor", ""), aoi % ("Acme_Valve", ' Vendor="Acme Machines Inc."'), aoi % ("My_Seal", ""))
+        sml = ('<?xml version="1.0"?><Document><Engineering version="V19"/><SW.Blocks.FB ID="0"><AttributeList>'
+               '<HeaderAuthor>OEM_X</HeaderAuthor><Name>FB_Dosing</Name><Number>10</Number><ProgrammingLanguage>SCL</ProgrammingLanguage>'
+               '</AttributeList></SW.Blocks.FB><SW.Blocks.FC ID="1"><AttributeList><Name>FC_Own</Name><Number>11</Number>'
+               '<ProgrammingLanguage>SCL</ProgrammingLanguage></AttributeList></SW.Blocks.FC></Document>')
+        with tempfile.TemporaryDirectory() as d:
+            for name, text in (("lib.L5X", l5x), ("lib.xml", sml)):
+                with open(os.path.join(d, name), "w") as f:
+                    f.write(text)
+            got = dict((e["name"], e["evidence"]) for e in parse(os.path.join(d, "lib.L5X")).get("third_party", []))
+            self.assertEqual(sorted(got), ["Acme_Valve", "P_Motor"])
+            self.assertIn("Vendor=Acme Machines Inc.", got["Acme_Valve"])
+            got = dict((e["name"], e["evidence"]) for e in parse(os.path.join(d, "lib.xml")).get("third_party", []))
+            self.assertEqual(got, {"FB_Dosing": "HeaderAuthor=OEM_X"})
+        self.assertNotIn("third_party", parse(os.path.join(FIX, "timers_hmi", "Fill_Station.L5X")))
+
     def test_guardlogix_safety_excluded(self):
         pr = parse(os.path.join(FIX, "estop", "Conveyor_Cell.L5X"))
         names = {e["name"]: e for e in pr["excluded_safety"]}
