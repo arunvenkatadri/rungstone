@@ -99,6 +99,18 @@ var REPORT_TAB = [
   [/^(dep|conflict)/i,"deps"],[/^(hmi|scada|alarm|retarget|binding)/i,"hmi"],
   [/^(ops|operation|troubleshoot|report|shift|downtime|trend)/i,"ops"]];
 var S = null, LIVE = BOOT && BOOT.mode === "live", CSRF = BOOT && BOOT.csrf;
+// Which assistant hosts the skills: "claude" (Claude Code, /rungstone: commands) or "codex" (plain prompts).
+var APP = (BOOT && BOOT.app) || "claude";
+var HOST = APP === "codex" ? "Codex" : "Claude Code", ASSIST = APP === "codex" ? "Codex" : "Claude";
+var SKILL_OF = {understand:"rungstone-plc",translate:"rungstone-plc",verify:"rungstone-plc",dependencies:"rungstone-plc",
+  hmi:"rungstone-hmi-scada",alarms:"rungstone-hmi-scada",troubleshoot:"rungstone-ops",report:"rungstone-ops"};
+var VERB = {understand:"explain what %s does",translate:"translate %s",verify:"verify the translation of %s",
+  dependencies:"map the readers, writers and conflicts in %s",hmi:"explain %s",alarms:"run alarm cleanup on %s",
+  troubleshoot:"find why the equipment stopped, using %s",report:"build a shift and downtime report from %s"};
+function commandFor(wf, file, extra){
+  if(APP !== "codex") return "/rungstone:"+wf+" "+file+(extra||"");
+  return "Use the "+SKILL_OF[wf]+" skill to "+VERB[wf].replace("%s",file)+(extra||"")+".";
+}
 var current = "files", staticDecisions = {};
 
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
@@ -172,7 +184,7 @@ function renderChrome(){
   else pills+='<span class="pill live" id="livepill" title="The page checks for new results every few seconds">'+esc(window.__updated?"updated "+window.__updated:"live")+'</span>';
   el("pills").innerHTML=pills;
   var b='';
-  if(!LIVE) b+='<div class="banner static"><b>Static snapshot.</b> Buttons build an instruction line instead of saving. Copy it into the chat (for example <code>approve R1, R3; reject R2: reason</code>) and Claude will apply it to the project state.</div>';
+  if(!LIVE) b+='<div class="banner static"><b>Static snapshot.</b> Buttons build an instruction line instead of saving. Copy it into the chat (for example <code>approve R1, R3; reject R2: reason</code>) and '+ASSIST+' will apply it to the project state.</div>';
   var sf=S.excluded_safety||[];
   if(sf.length){
     var seen={},items=[];sf.forEach(function(e){var k=(e.name||"")+"|"+(e.kind||"");if(!seen[k]){seen[k]=1;items.push(e);}});
@@ -204,7 +216,7 @@ function viewFiles(){
        ["Path",function(s){return esc(s.path);},1],["Format",function(s){return esc(s.format||"");},1],
        ["SHA-256",function(s){return '<span title="'+esc(s.sha256)+'">'+esc(String(s.sha256||"").slice(0,12))+'…</span>';},1],
        ["Added",function(s){return esc(s.added||"");},1]],srcs);
-    h+='<div class="muted">To add or choose source files, ask Claude in chat (for example "use plc/Line2.L5X").</div>';
+    h+='<div class="muted">To add or choose source files, ask '+ASSIST+' in chat (for example "use plc/Line2.L5X").</div>';
   } else {
     var pend=window.__pending;
     if(!pend||!srcs.some(function(s){return s.path===pend;})) pend=window.__pending=sel[0]||"";
@@ -236,13 +248,15 @@ function viewEstimate(){
   var h='';
   if(e.confirm_before_running) h+='<div class="banner" style="margin:6px 0"><b>Large job.</b> Confirm scope with the engineer before running.</div>';
   var sc=e.scope||{};
-  h+='<div class="muted">Model <code>'+esc(e.model)+'</code> at $'+esc((e.price_per_mtok||{}).input)+' / $'+esc((e.price_per_mtok||{}).output)+
-     ' per MTok (prices as of '+esc(e.prices_as_of)+'). Scope: '+esc(sc.routines)+' routines, '+esc(sc.items)+' rungs/lines, '+esc(sc.signals)+' tags.</div>';
+  var priced=!!e.price_per_mtok;
+  h+='<div class="muted">'+(priced?'Model <code>'+esc(e.model)+'</code> at $'+esc(e.price_per_mtok.input)+' / $'+esc(e.price_per_mtok.output)+
+     ' per MTok (prices as of '+esc(e.prices_as_of)+'). ':'Token counts only; what they cost depends on your AI plan. ')+
+     'Scope: '+esc(sc.routines)+' routines, '+esc(sc.items)+' rungs/lines, '+esc(sc.signals)+' tags.</div>';
   h+=table([["Job",function(j){return esc(j.job);}],["Input tok",function(j){return esc((j.input_tokens||0).toLocaleString());},1],
     ["Output tok",function(j){return esc((j.output_tokens||0).toLocaleString());},1],["Passes",function(j){return esc(j.passes);},1],
     ["Cost (mid, band)",function(j){return '$'+esc(j.usd_mid)+' <span class="muted">('+esc(j.usd_low)+'–'+esc(j.usd_high)+')</span>';},1],
-    ["Notes",function(j){return esc(j.note||"");}]],e.jobs||[]);
-  if(e.total) h+='<div class="mono">Total ≈ $'+esc(e.total.usd_mid)+' ('+esc(e.total.usd_low)+'–'+esc(e.total.usd_high)+')</div>';
+    ["Notes",function(j){return esc(j.note||"");}]].filter(function(c){return priced||c[0].indexOf("Cost")<0;}),e.jobs||[]);
+  if(e.total&&priced) h+='<div class="mono">Total ≈ $'+esc(e.total.usd_mid)+' ('+esc(e.total.usd_low)+'–'+esc(e.total.usd_high)+')</div>';
   return h;
 }
 
@@ -285,11 +299,11 @@ function viewTranslateSetup(){
        TARGETS.map(function(o){return '<option value="'+o[0]+'"'+(o[0]===cur?' selected':'')+'>'+esc(o[1])+'</option>';}).join("")+'</select> '+
        '<button class="act primary" id="trset">Set target</button> <span class="err" id="trerr"></span></div></div>';
     h+='<div class="jobrow"><span class="muted">Saved</span><div>'+(t?'<span class="chip approved">'+esc(targetName(t))+'</span>':'<span class="muted">no target set yet</span>')+'</div></div>';
-    if(src&&t&&pf.plc){var cmd="/rungstone:translate "+src.path+" from "+pf.key+" to "+t;
-      h+='<div class="jobrow"><span class="muted">Next</span><span>Paste this into Claude Code to run the translation. Nothing runs until you do.</span></div>'+folderLine()+
+    if(src&&t&&pf.plc){var cmd=commandFor("translate",src.path," from "+pf.key+" to "+t);
+      h+='<div class="jobrow"><span class="muted">Next</span><span>Paste this into '+HOST+' to run the translation. Nothing runs until you do.</span></div>'+folderLine()+
          '<div class="cmd"><code id="trcmd">'+esc(cmd)+'</code><button class="act" id="trcopy" data-cmd="'+esc(cmd)+'">Copy</button></div>';}
   } else {
-    h+='<div class="jobrow"><span class="muted">To</span><div>'+(t?'<b>'+esc(targetName(t))+'</b>':'<span class="muted">not set; tell Claude the target in chat</span>')+'</div></div>';
+    h+='<div class="jobrow"><span class="muted">To</span><div>'+(t?'<b>'+esc(targetName(t))+'</b>':'<span class="muted">not set; tell '+ASSIST+' the target in chat</span>')+'</div></div>';
   }
   return h+'</div>';
 }
@@ -306,7 +320,7 @@ function wireTranslateSetup(){
 }
 function viewOutputs(){
   var o=(S.outputs||[]).filter(function(x){return !x.workflow||x.workflow==="translate";});
-  if(!o.length) return '<h2>Translated files</h2><div class="empty">None yet. They appear here as soon as Claude writes them.</div>';
+  if(!o.length) return '<h2>Translated files</h2><div class="empty">None yet. They appear here as soon as '+ASSIST+' writes them.</div>';
   var open=window.__openOut||{};
   return '<h2>Translated files <span class="muted">(drafts; import into the vendor IDE)</span></h2>'+o.map(function(x){
     var meta=[x.size!=null?(x.size/1024).toFixed(1)+" KB":"",x.added||""].filter(Boolean).join(" · ");
@@ -486,12 +500,12 @@ function fillWorkflows(){
   el("jobkind").textContent=k?"("+KIND_NAMES[k]+")":"(file type not recognised; all workflows shown)";
 }
 function folderLine(){
-  return '<div class="jobrow"><span class="muted">Where</span><span>Run it in Claude Code started in <code>'+esc(S.project_root||"the project folder")+
+  return '<div class="jobrow"><span class="muted">Where</span><span>Run it in '+HOST+' started in <code>'+esc(S.project_root||"the project folder")+
     '</code>. The path in the command is relative to that folder.</span></div>';
 }
 function jobCommand(){
   var f=window.__pending||"",wf=el("jobwf").value,t=el("jobtgt").value;
-  return "/rungstone:"+wf+" "+f+(wf==="translate"?" to "+t:"");
+  return commandFor(wf,f,wf==="translate"?" to "+t:"");
 }
 function wireJobCopy(){
   var b=el("jobcopy");if(!b) return;
@@ -536,7 +550,7 @@ function wireFiles(){
       .then(function(){
         window.__jobCmd=cmd;
         el("jobout").innerHTML=window.__jobHTML='<div class="banner ok"><b>Saved.</b> <code>'+esc(window.__pending)+'</code> is now the file in use.</div>'+
-          '<div class="jobrow"><span class="muted">Next</span><span>Paste this into Claude Code to run it. The workbench can\'t start Claude by itself, so nothing runs until you do.</span></div>'+
+          '<div class="jobrow"><span class="muted">Next</span><span>Paste this into '+HOST+' to run it. The workbench can\'t start '+ASSIST+' by itself, so nothing runs until you do.</span></div>'+
           folderLine()+
           '<div class="cmd"><code id="jobcmd">'+esc(cmd)+'</code><button class="act" id="jobcopy">Copy</button></div>';
         wireJobCopy();

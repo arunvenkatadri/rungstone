@@ -54,6 +54,8 @@ LOOPBACK = ("127.0.0.1",)
 MAX_BODY = 64 * 1024
 REPORT_MAX = 400 * 1024
 LABEL = "simulated, not hardware-tested"
+DEFAULT_APP = "claude"  # which assistant hosts the skills: "claude" or "codex" (the Codex build sets this)
+APPS = ("claude", "codex")
 SOURCE_FORMATS = {".l5x": "l5x", ".l5k": "l5k", ".scl": "siemens-scl", ".st": "iec-st", ".xml": "xml",
                   ".tcpou": "twincat", ".tcgvl": "twincat", ".tcdut": "twincat", ".txt": "text",
                   ".csv": "csv", ".xlsx": "xlsx", ".json": "json", ".awl": "siemens-stl", ".exp": "codesys-export"}
@@ -366,7 +368,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(403, {"error": "bad host"})
         path = self.path.split("?", 1)[0]
         if path in ("/", "/index.html"):
-            return self._send(200, render_app({"mode": "live", "csrf": self.server.csrf}),
+            return self._send(200, render_app({"mode": "live", "csrf": self.server.csrf, "app": self.server.app}),
                               "text/html; charset=utf-8")
         if path == "/api/state":
             return self._json(200, build_state(self.server.state_dir))
@@ -499,7 +501,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 class Workbench(HTTPServer):
-    def __init__(self, state_dir, host="127.0.0.1", port=0, verbose=False):
+    def __init__(self, state_dir, host="127.0.0.1", port=0, verbose=False, app=None):
         if host not in LOOPBACK:
             raise ValueError("workbench binds to 127.0.0.1 only; refused host %r" % host)
         HTTPServer.__init__(self, (host, port), Handler)
@@ -507,6 +509,7 @@ class Workbench(HTTPServer):
         self.csrf = os.urandom(32).hex()
         self.lock = threading.Lock()
         self.verbose = verbose
+        self.app = app if app in APPS else DEFAULT_APP
 
     @property
     def url(self):
@@ -519,6 +522,7 @@ def main(argv=None):
     ap.add_argument("--host", default="127.0.0.1", help="must be 127.0.0.1")
     ap.add_argument("--port", type=int, default=0, help="0 = pick a free port")
     ap.add_argument("--verbose", action="store_true")
+    ap.add_argument("--app", choices=APPS, help="assistant hosting the skills (default: %s)" % DEFAULT_APP)
     args = ap.parse_args(argv)
     d = args.state_dir or state.find_dir()
     if d and os.path.basename(os.path.normpath(d)) != state.STATE_DIR and \
@@ -528,7 +532,7 @@ def main(argv=None):
         print(json.dumps({"error": "no .rungstone/ folder found; run state.py init first"}))
         return 1
     try:
-        srv = Workbench(os.path.abspath(d), args.host, args.port, args.verbose)
+        srv = Workbench(os.path.abspath(d), args.host, args.port, args.verbose, args.app)
     except ValueError as e:
         print(json.dumps({"error": str(e)}))
         return 2

@@ -133,7 +133,7 @@ def jobs_for(m, jobs, target):
         else:  # depmap: the script does the heavy lifting locally; Claude reads its report
             material = 70 * m["signals"] + 400
             output = 35 * m["signals"] + 1200
-            note = "script runs locally (no tokens); Claude reads and explains the report"
+            note = "script runs locally (no tokens); the assistant reads and explains the report"
         passes = max(1, int(math.ceil(material / float(CHUNK_INPUT))))
         # each chunk re-reads the skill references; agentic overhead ~ +25% input for tool turns
         inp = int((material + ref_tok * passes) * 1.25)
@@ -160,6 +160,8 @@ def main(argv=None):
     ap.add_argument("--price-out", type=float, help="override USD per million output tokens")
     ap.add_argument("--target", choices=["siemens-scl", "iec-st", "rockwell"])
     ap.add_argument("--json", action="store_true", help="print JSON instead of a table")
+    ap.add_argument("--tokens-only", action="store_true",
+                    help="report tokens and scope without dollar prices (for hosts whose pricing this script doesn't know)")
     args = ap.parse_args(argv)
 
     projects = []
@@ -182,7 +184,9 @@ def main(argv=None):
         pin = args.price_in
     if args.price_out is not None:
         pout = args.price_out
-    if pin is None or pout is None:
+    if args.tokens_only:
+        pin = pout = 0.0
+    elif pin is None or pout is None:
         sys.exit("Unknown model %s; set prices with --price-in and --price-out." % args.model)
 
     m = measure(projects)
@@ -201,6 +205,15 @@ def main(argv=None):
                            "projects over %d tokens of material are split into passes; references are re-read each pass" % CHUNK_INPUT,
                            "API list prices; claude.ai / Claude Code subscriptions bill as plan usage, not dollars",
                            "safety-excluded logic is not counted (it is never processed)"]}
+    if args.tokens_only:
+        for k in ("model", "price_per_mtok", "prices_as_of"):
+            res.pop(k)
+        res["total"] = {k: v for k, v in res["total"].items() if not k.startswith("usd")}
+        for j in jobs:
+            for k in ("usd_mid", "usd_low", "usd_high"):
+                j.pop(k, None)
+        res["assumptions"] = [a for a in res["assumptions"] if not a.startswith("API list prices")]
+        res["assumptions"].append("token counts only; what they cost depends on your AI plan")
     if args.json:
         print(json.dumps(res, indent=2))
         return
@@ -211,6 +224,16 @@ def main(argv=None):
         print("Safety-excluded items (not counted, never processed): %d" % s["excluded_safety_items"])
     print("Project material: ~%d code tokens + ~%d declaration tokens" % (s["code_tokens"], s["decl_tokens"]))
     print("")
+    if args.tokens_only:
+        print("| Job | Input tok | Output tok | Passes | Notes |")
+        print("|---|---:|---:|---:|---|")
+        for j in jobs:
+            print("| %s | %s | %s | %d | %s |" % (j["job"], format(j["input_tokens"], ","), format(j["output_tokens"], ","), j["passes"], j["note"]))
+        print("")
+        print("Token counts only; what they cost depends on your AI plan.")
+        if large:
+            print("CONFIRM: this is a large job. Show this estimate and get the user's go-ahead (or a narrower scope) before running.")
+        return
     print("| Job | Input tok | Output tok | Passes | Cost (USD, %s @ $%g/$%g per MTok) | Notes |" % (args.model, pin, pout))
     print("|---|---:|---:|---:|---|---|")
     for j in jobs:
