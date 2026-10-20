@@ -34,7 +34,7 @@ import sqlite3
 import sys
 
 SERVER_NAME = "rungstone-historian"
-SERVER_VERSION = "0.1.5"
+SERVER_VERSION = "0.1.6"
 PROTOCOLS = ("2025-06-18", "2025-03-26", "2024-11-05")
 IDENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,63}$")
 DEFAULT_LIMITS = {"max_points": 2000, "max_tags": 20, "max_rows_scanned": 1000000, "max_list": 500}
