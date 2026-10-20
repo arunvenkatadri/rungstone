@@ -127,6 +127,8 @@ suction pressure when it tripped?", "is the tank level dropping faster than last
 If the project folder has a `.rungstone/` directory (created by the PLC skill or `/workbench`),
 record conclusions so the team keeps an audit trail:
 `python3 ${CLAUDE_SKILL_DIR}/scripts/_shared/state.py log ops.finding "P-101 02:29:44 low suction (evidence-supported)"`.
+Also save the full report you showed as `.rungstone/reports/troubleshoot-<equipment>-<date>.md` (or
+`shift-<date>.md` / `downtime-<period>.md` for reports) so the workbench's Operations tab shows it.
 Never write anything else to the user's project without asking.
 
 ## Output checklist

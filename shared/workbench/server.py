@@ -12,6 +12,8 @@ default and prints {"url": ...} as JSON.  It serves one self-contained page
   POST /api/queue/decide {"ids": [...], "action": "approve|reject|edit",
                           "note": "...", "fix": "..."}   (needs X-Rungstone-CSRF)
   GET  /api/candidates   project files that look like PLC/HMI/historian exports
+  GET  /api/version      a fingerprint of .rungstone/ and recorded outputs; the page
+                         polls it and reloads /api/state when it changes
   POST /api/source/add   {"path": "...", "format": "...", "use": true}  record a source
                          file (and, with "use", make it the one the workflow runs on)
   POST /api/source/remove {"path": "..."}
@@ -35,6 +37,7 @@ import csv
 import json
 import os
 import re
+import hashlib
 import hmac
 import sys
 import threading
@@ -197,6 +200,44 @@ def sniff_sources(d):
     return out
 
 
+OUTPUT_MAX = 400 * 1024
+
+
+def outputs(d):
+    """Generated files recorded with state.py output, with their text for display (never executed)."""
+    out = []
+    for o in (state.load(d, "project.json", {}) or {}).get("outputs", []):
+        p = resolve_in_project(d, o.get("path"))
+        item = dict(o, exists=bool(p))
+        if p:
+            size = os.path.getsize(p)
+            item["size"] = size
+            item["changed_since_recorded"] = state.sha256(p) != o.get("sha256")
+            if size <= OUTPUT_MAX:
+                with open(p, encoding="utf-8", errors="replace") as fh:
+                    item["text"] = fh.read()
+        out.append(item)
+    return out
+
+
+def version(d):
+    """Cheap change fingerprint: names, sizes and mtimes of state files, reports and outputs."""
+    parts = []
+    for base in (d, os.path.join(d, "reports")):
+        if os.path.isdir(base):
+            for fn in sorted(os.listdir(base)):
+                fp = os.path.join(base, fn)
+                if os.path.isfile(fp):
+                    st = os.stat(fp)
+                    parts.append("%s:%d:%d" % (fn, st.st_size, st.st_mtime_ns))
+    for o in (state.load(d, "project.json", {}) or {}).get("outputs", []):
+        p = resolve_in_project(d, o.get("path"))
+        if p:
+            st = os.stat(p)
+            parts.append("%s:%d:%d" % (o["path"], st.st_size, st.st_mtime_ns))
+    return hashlib.sha256("\n".join(parts).encode()).hexdigest()[:16]
+
+
 def build_state(d):
     """Everything the UI needs, as one JSON-serialisable dict."""
     files = {}
@@ -240,6 +281,8 @@ def build_state(d):
         "export": {"blocked": bool(open_high), "open_high": [i.get("id") for i in open_high]},
         "platforms": parsed_platforms(d),
         "sniffed": sniff_sources(d),
+        "outputs": outputs(d),
+        "version": version(d),
         "label": LABEL,
     }
 
@@ -296,6 +339,8 @@ class Handler(BaseHTTPRequestHandler):
                               "text/html; charset=utf-8")
         if path == "/api/state":
             return self._json(200, build_state(self.server.state_dir))
+        if path == "/api/version":
+            return self._json(200, {"version": version(self.server.state_dir)})
         if path == "/api/candidates":
             return self._json(200, {"files": candidates(self.server.state_dir)})
         return self._json(404, {"error": "not found"})

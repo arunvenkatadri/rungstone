@@ -153,6 +153,15 @@ def set_selected(d, paths):
     return []
 
 
+def add_output(d, path, workflow=None):
+    """Record a generated deliverable (translated code, tag table) so the workbench and export can show it."""
+    proj = load(d, "project.json")
+    rel = os.path.relpath(os.path.realpath(path), os.path.realpath(os.path.dirname(d)))
+    entry = {"path": rel, "sha256": sha256(path), "workflow": workflow, "added": now()}
+    proj["outputs"] = [o for o in proj.get("outputs", []) if o["path"] != rel] + [entry]
+    save(d, "project.json", proj)
+
+
 def remove_source(d, rel):
     proj = load(d, "project.json")
     before = len(proj["sources"])
@@ -234,6 +243,9 @@ def main(argv=None):
     p = sub.add_parser("source", help="record input files (path + sha256) in project.json")
     p.add_argument("files", nargs="+")
     p.add_argument("--format", help="format as reported by parse_project.py, e.g. l5x, ladder-text, siemens-scl")
+    p = sub.add_parser("output", help="record generated files (translated code, tag tables) for the workbench")
+    p.add_argument("files", nargs="+")
+    p.add_argument("--workflow", default="translate")
     p = sub.add_parser("select", help="choose which recorded sources the workflows run on")
     p.add_argument("paths", nargs="*", help="source paths as listed in project.json")
     p.add_argument("--all", action="store_true")
@@ -301,6 +313,16 @@ def main(argv=None):
         return 0
     if args.cmd == "log":
         log(d, args.action, args.detail)
+        return 0
+    if args.cmd == "output":
+        missing = [f for f in args.files if not os.path.isfile(f)]
+        if missing:
+            print(json.dumps({"error": "not a file", "files": missing}))
+            return 1
+        for f in args.files:
+            add_output(d, f, args.workflow)
+            log(d, "output.added", "%s (%s)" % (f, args.workflow))
+        print(json.dumps({"outputs": load(d, "project.json").get("outputs", [])}))
         return 0
     if args.cmd == "select":
         proj = load(d, "project.json")

@@ -84,6 +84,13 @@ Targets: S7-1500 SCL, Rockwell Logix (L5X partial export), IEC 61131-3 ST. Work 
 
 For deeper HMI/SCADA work (screens, scripts, alarms, rebinding), the `rungstone-hmi-scada` skill takes over using the same `.rungstone/` state; for "why did it stop" questions with historian data, `rungstone-ops`.
 
+## Results for the workbench
+
+The workbench (`/rungstone:workbench`) shows whatever is in `.rungstone/` and refreshes itself, so save every result there as you finish it:
+- the full answer you showed, as Markdown: `.rungstone/reports/understand-<source name>.md`, `translate-<source name>.md` or `verify-<source name>.md` (overwrite on a rerun);
+- every translated file you wrote: `state.py output out/<file> [...] --workflow translate` (the Translate tab shows the code);
+- the queue, mapping, verify results and dependency map through the scripts as above.
+
 ## Approvals and export
 
 - The engineer decides each review item: approve, edit (new fix), or reject (with reason). Apply decisions with `state.py queue approve R1 R3`, `queue edit R2 --fix "..."`, `queue reject R4 --note "..."`, then regenerate affected outputs. Every decision lands in `.rungstone/decisions.log`.

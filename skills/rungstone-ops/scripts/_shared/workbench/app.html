@@ -76,7 +76,7 @@ textarea{min-height:64px;resize:vertical}
 .row-high td:first-child{box-shadow:inset 3px 0 0 var(--red)}
 .row-medium td:first-child{box-shadow:inset 3px 0 0 var(--amber)}
 @media (max-width:640px){header,main,nav{padding-left:12px;padding-right:12px}.banner{margin:10px 12px 0}th,td{padding:6px}}
-.pick{cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;padding:4px 8px;margin:-4px -8px;border-radius:6px}.pick:hover{background:var(--panel2)}.pick input{width:16px;height:16px;margin:0}.pick input{accent-color:var(--amber,#f5a524)}.job{max-width:760px}.chg{margin-top:6px}.chg summary{cursor:pointer;color:var(--muted);font-size:13px}.chg select{margin-top:6px;background:var(--panel2);color:inherit;border:1px solid var(--line);border-radius:6px;padding:5px 8px}.jobrow{display:grid;grid-template-columns:90px 1fr;gap:10px;align-items:center;margin:8px 0}.jobrow select{max-width:360px;background:var(--panel2);color:inherit;border:1px solid var(--line);border-radius:6px;padding:5px 8px}.cmd{display:flex;gap:8px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:6px 0 2px 100px}.cmd code{flex:1;white-space:normal;word-break:break-all}.cmd button{flex:none}button.primary{background:var(--amber,#f5a524);color:#1a1300;border-color:var(--amber,#f5a524);font-weight:600}.job .banner{margin:8px 0}.banner.ok{border-color:#5fb35f;background:#1f2a1f;color:#cfe8cf}.addsrc{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 4px}.addsrc select{min-width:280px;max-width:100%;background:var(--panel,#161b22);color:inherit;border:1px solid var(--line,#30363d);border-radius:6px;padding:5px 8px}.addsrc .muted{flex-basis:100%}
+.pick{cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;padding:4px 8px;margin:-4px -8px;border-radius:6px}.pick:hover{background:var(--panel2)}.pick input{width:16px;height:16px;margin:0}.pick input{accent-color:var(--amber,#f5a524)}.job{max-width:760px}.out summary{cursor:pointer}.out pre.code{max-height:420px;overflow:auto;margin:8px 0 0;font-size:12.5px}.pill.live{border-color:var(--green);color:#c9f5d2}.newres{position:fixed;right:20px;bottom:20px;z-index:10;box-shadow:0 4px 16px rgba(0,0,0,.5)}.chg{margin-top:6px}.chg summary{cursor:pointer;color:var(--muted);font-size:13px}.chg select{margin-top:6px;background:var(--panel2);color:inherit;border:1px solid var(--line);border-radius:6px;padding:5px 8px}.jobrow{display:grid;grid-template-columns:90px 1fr;gap:10px;align-items:center;margin:8px 0}.jobrow select{max-width:360px;background:var(--panel2);color:inherit;border:1px solid var(--line);border-radius:6px;padding:5px 8px}.cmd{display:flex;gap:8px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:6px 0 2px 100px}.cmd code{flex:1;white-space:normal;word-break:break-all}.cmd button{flex:none}button.primary{background:var(--amber,#f5a524);color:#1a1300;border-color:var(--amber,#f5a524);font-weight:600}.job .banner{margin:8px 0}.banner.ok{border-color:#5fb35f;background:#1f2a1f;color:#cfe8cf}.addsrc{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 4px}.addsrc select{min-width:280px;max-width:100%;background:var(--panel,#161b22);color:inherit;border:1px solid var(--line,#30363d);border-radius:6px;padding:5px 8px}.addsrc .muted{flex-basis:100%}
 </style>
 </head>
 <body>
@@ -169,6 +169,7 @@ function renderChrome(){
   pills+='<span class="pill">'+open+' open review item'+(open===1?"":"s")+'</span>';
   pills+='<span class="pill warn">'+esc(LABEL)+'</span>';
   if(!LIVE) pills+='<span class="pill">static snapshot</span>';
+  else pills+='<span class="pill live" id="livepill" title="The page checks for new results every few seconds">'+esc(window.__updated?"updated "+window.__updated:"live")+'</span>';
   el("pills").innerHTML=pills;
   var b='';
   if(!LIVE) b+='<div class="banner static"><b>Static snapshot.</b> Buttons build an instruction line instead of saving. Copy it into the chat (for example <code>approve R1, R3; reject R2: reason</code>) and Claude will apply it to the project state.</div>';
@@ -225,7 +226,7 @@ function viewFiles(){
          [["siemens-scl","Siemens S7-1500 SCL"],["rockwell","Rockwell Logix (L5X)"],["iec-st","IEC 61131-3 Structured Text"]]
          .map(function(o){return '<option value="'+o[0]+'"'+((window.__tgt||(S.project||{}).target||"siemens-scl")===o[0]?' selected':'')+'>'+esc(o[1])+'</option>';}).join("")+'</select></div>'+
        '<div class="jobrow"><span></span><div><button class="act primary" id="jobgo">Use this file</button> <span class="err" id="joberr"></span></div></div>'+
-       '<div id="jobout"></div></div>';
+       '<div id="jobout">'+(window.__jobHTML||"")+'</div></div>';
   }
   h+='<h2>Cost estimate</h2>'+viewEstimate();
   h+=reportsFor("files");
@@ -306,11 +307,22 @@ function wireTranslateSetup(){
     (navigator.clipboard?navigator.clipboard.writeText(cmd):Promise.reject()).then(function(){c.textContent="Copied";},
       function(){var r=document.createRange();r.selectNodeContents(el("trcmd"));var x=getSelection();x.removeAllRanges();x.addRange(r);c.textContent="Press Cmd/Ctrl+C";});};
 }
+function viewOutputs(){
+  var o=(S.outputs||[]).filter(function(x){return !x.workflow||x.workflow==="translate";});
+  if(!o.length) return '<h2>Translated files</h2><div class="empty">None yet. They appear here as soon as Claude writes them.</div>';
+  var open=window.__openOut||{};
+  return '<h2>Translated files <span class="muted">(drafts; import into the vendor IDE)</span></h2>'+o.map(function(x){
+    var meta=[x.size!=null?(x.size/1024).toFixed(1)+" KB":"",x.added||""].filter(Boolean).join(" · ");
+    var warn=!x.exists?'<span class="chip high">missing</span>':(x.changed_since_recorded?'<span class="chip medium">edited since recorded</span>':'');
+    var body=x.text!=null?'<pre class="code">'+esc(x.text)+'</pre>':'<div class="muted">Too large to show here; open it in the vendor tool.</div>';
+    return '<details class="card out" data-out="'+esc(x.path)+'"'+(open[x.path]?' open':'')+'><summary><code>'+esc(x.path)+'</code> <span class="muted">'+esc(meta)+'</span> '+warn+'</summary>'+body+'</details>';
+  }).join("");
+}
 function viewTranslate(){
   var q=S.queue||[],filt=window.__qfilter||"open";
   var rows=q.filter(function(i){return filt==="all"||i.status===filt;}).sort(function(a,b){
     var r={high:0,medium:1,low:2};return (r[a.risk]-r[b.risk])||String(a.id).localeCompare(String(b.id),undefined,{numeric:true});});
-  var h=viewTranslateSetup()+'<h2>Review queue</h2><div class="muted">Nothing is final until the engineer approves it. Export stays blocked while any high-risk item is open.</div>';
+  var h=viewTranslateSetup()+viewOutputs()+'<h2>Review queue</h2><div class="muted">Nothing is final until the engineer approves it. Export stays blocked while any high-risk item is open.</div>';
   h+='<div class="toolbar"><label class="muted">Show <select id="qfilter">'+["open","approved","edited","rejected","all"].map(function(o){
     return '<option'+(o===filt?" selected":"")+'>'+o+'</option>';}).join("")+'</select></label></div>';
   h+=table([["ID",function(i){return '<b class="mono">'+esc(i.id)+'</b>';}],["Risk",function(i){return chip(i.risk);}],
@@ -456,13 +468,21 @@ function renderMain(){
   else if(current==="hmi") v=viewReports("hmi","HMI / SCADA","No HMI/SCADA reports yet. Save them as <code>.rungstone/reports/hmi-*.md</code> or <code>alarms-*.md</code>.");
   else v=viewOps();
   el("main").innerHTML='<section class="active" role="tabpanel" aria-labelledby="tab-'+current+'">'+v+'</section>';
-  if(current==="translate"){wireTranslate();wireTranslateSetup();}
+  if(current==="translate"){wireTranslate();wireTranslateSetup();
+    Array.prototype.forEach.call(document.querySelectorAll("details[data-out]"),function(d){
+      d.ontoggle=function(){(window.__openOut=window.__openOut||{})[d.getAttribute("data-out")]=d.open;};});}
   if(current==="deps") wireDeps();
   if(current==="files"&&LIVE) wireFiles();
 }
 function jobCommand(){
   var f=window.__pending||"",wf=el("jobwf").value,t=el("jobtgt").value;
   return "/rungstone:"+wf+" "+f+(wf==="translate"?" to "+t:"");
+}
+function wireJobCopy(){
+  var b=el("jobcopy");if(!b) return;
+  b.onclick=function(){var cmd=window.__jobCmd||"";
+    (navigator.clipboard?navigator.clipboard.writeText(cmd):Promise.reject()).then(function(){b.textContent="Copied";},
+      function(){var r=document.createRange();r.selectNodeContents(el("jobcmd"));var x=getSelection();x.removeAllRanges();x.addRange(r);b.textContent="Press Cmd/Ctrl+C";});};
 }
 function wireFiles(){
   var pick=el("srcpick"),add=el("srcadd");if(!pick) return;
@@ -476,17 +496,18 @@ function wireFiles(){
   pick.onchange=function(){window.__srcpick=pick.value;el("srcerr").textContent="";};
   add.onclick=function(){var o=pick.options[pick.selectedIndex];if(!o||!o.value){el("srcerr").textContent="Choose a file in the list first.";return;}
     add.disabled=true;window.__srcpick="";window.__pending=o.value;post({path:o.value,format:o.getAttribute("data-fmt")},"srcerr","/api/source/add");};
-  function choose(path){window.__pending=path;el("jobfile").textContent=path;el("jobout").innerHTML="";
+  function choose(path){window.__pending=path;el("jobfile").textContent=path;el("jobout").innerHTML=window.__jobHTML="";
     Array.prototype.forEach.call(document.querySelectorAll("input[data-src-sel]"),function(c){c.checked=c.getAttribute("data-src-sel")===path;});}
   Array.prototype.forEach.call(document.querySelectorAll("input[data-src-sel]"),function(c){c.onchange=function(){if(c.checked) choose(c.getAttribute("data-src-sel"));};});
   Array.prototype.forEach.call(document.querySelectorAll("[data-src-lbl]"),function(l){l.onclick=function(e){e.preventDefault();choose(l.getAttribute("data-src-lbl"));};});
   Array.prototype.forEach.call(document.querySelectorAll("button[data-src-rm]"),function(b){
     b.onclick=function(){b.disabled=true;post({path:b.getAttribute("data-src-rm")},"srcerr","/api/source/remove");};});
   var wf=el("jobwf"),tgt=el("jobtgt"),go=el("jobgo");
-  function syncTarget(){el("tgtrow").style.display=wf.value==="translate"?"":"none";el("jobout").innerHTML="";}
-  wf.onchange=function(){window.__wf=wf.value;syncTarget();};
-  tgt.onchange=function(){window.__tgt=tgt.value;el("jobout").innerHTML="";};
+  function syncTarget(){el("tgtrow").style.display=wf.value==="translate"?"":"none";}
+  wf.onchange=function(){window.__wf=wf.value;syncTarget();el("jobout").innerHTML=window.__jobHTML="";};
+  tgt.onchange=function(){window.__tgt=tgt.value;el("jobout").innerHTML=window.__jobHTML="";};
   syncTarget();
+  wireJobCopy();
   go.onclick=function(){
     if(!window.__pending){el("joberr").textContent="Pick a file in step 1 first.";return;}
     el("joberr").textContent="";go.disabled=true;
@@ -497,12 +518,11 @@ function wireFiles(){
         return fetch("/api/project/target",{method:"POST",headers:{"Content-Type":"application/json","X-Rungstone-CSRF":CSRF},body:JSON.stringify({target:el("jobtgt").value})});})
       .then(function(){return load();})
       .then(function(){
-        el("jobout").innerHTML='<div class="banner ok"><b>Saved.</b> <code>'+esc(window.__pending)+'</code> is now the file in use.</div>'+
+        window.__jobCmd=cmd;
+        el("jobout").innerHTML=window.__jobHTML='<div class="banner ok"><b>Saved.</b> <code>'+esc(window.__pending)+'</code> is now the file in use.</div>'+
           '<div class="jobrow"><span class="muted">Next</span><span>Paste this into Claude Code to run it. The workbench can\'t start Claude by itself, so nothing runs until you do.</span></div>'+
           '<div class="cmd"><code id="jobcmd">'+esc(cmd)+'</code><button class="act" id="jobcopy">Copy</button></div>';
-        el("jobcopy").onclick=function(){var b=el("jobcopy");
-          (navigator.clipboard?navigator.clipboard.writeText(cmd):Promise.reject()).then(function(){b.textContent="Copied";},
-            function(){var r=document.createRange();r.selectNodeContents(el("jobcmd"));var s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent="Press Cmd/Ctrl+C";});};
+        wireJobCopy();
       }).catch(function(e){el("joberr").textContent=String(e.message||e);go.disabled=false;});
   };
 }
@@ -511,7 +531,27 @@ function load(){
   return fetch("/api/state",{}).then(function(r){return r.json();}).then(function(j){S=j;render();})
     .catch(function(e){el("main").innerHTML='<div class="err">Could not load state: '+esc(e)+'</div>';});
 }
-if(LIVE) load();
+function busy(){  // don't redraw while the engineer is typing or choosing
+  var a=document.activeElement;
+  if(a&&/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)&&a.type!=="radio"&&a.type!=="button") return true;
+  return !!document.querySelector("#main textarea");
+}
+function refresh(){
+  var y=window.scrollY;
+  return load().then(function(){window.scrollTo(0,y);});
+}
+function poll(){
+  if(document.visibilityState!=="visible") return;
+  fetch("/api/version",{}).then(function(r){return r.json();}).then(function(j){
+    if(!S||j.version===S.version) return;
+    if(busy()){var n=el("newres");if(!n){n=document.createElement("button");n.id="newres";n.className="act primary newres";
+      n.textContent="New results: click to show";n.onclick=function(){n.remove();refresh();};document.body.appendChild(n);}return;}
+    var n2=el("newres");if(n2) n2.remove();
+    window.__updated=new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"});
+    refresh();
+  }).catch(function(){var p=el("livepill");if(p) p.textContent="offline";});
+}
+if(LIVE){load();setInterval(poll,3000);document.addEventListener("visibilitychange",poll);window.addEventListener("focus",poll);}
 else if(BOOT&&BOOT.state){S=BOOT.state;render();}
 else el("main").innerHTML='<div class="err">No state embedded. Open this page through server.py or generate it with static.py.</div>';
 </script>

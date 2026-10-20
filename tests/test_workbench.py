@@ -147,6 +147,27 @@ class WorkbenchServerTest(unittest.TestCase):
         self.assertIn("project.target", log)
         self.assertIn("source.platform", log)
 
+    def test_outputs_and_version(self):
+        v1 = json.loads(self.req("/api/version")[1])["version"]
+        self.assertEqual(json.loads(self.req("/api/state")[1])["version"], v1)
+        os.makedirs(os.path.join(self.tmp, "out"))
+        f = os.path.join(self.tmp, "out", "FB_Line.scl")
+        with open(f, "w") as fh:
+            fh.write("// DRAFT\nFUNCTION_BLOCK \"FB_Line\"\nEND_FUNCTION_BLOCK\n")
+        state.add_output(self.d, f, "translate")
+        v2 = json.loads(self.req("/api/version")[1])["version"]
+        self.assertNotEqual(v1, v2)
+        out = json.loads(self.req("/api/state")[1])["outputs"]
+        self.assertEqual((out[0]["path"], out[0]["workflow"], out[0]["changed_since_recorded"]),
+                         (os.path.join("out", "FB_Line.scl"), "translate", False))
+        self.assertIn("FUNCTION_BLOCK", out[0]["text"])
+        with open(f, "a") as fh:
+            fh.write("// edited\n")
+        self.assertTrue(json.loads(self.req("/api/state")[1])["outputs"][0]["changed_since_recorded"])
+        with open(os.path.join(self.d, "reports", "translate-Line.md"), "w") as fh:
+            fh.write("# Translation\n")
+        self.assertNotEqual(json.loads(self.req("/api/version")[1])["version"], v2)
+
     def test_source_add_refuses_paths_outside_project(self):
         h = {"X-Rungstone-CSRF": self.srv.csrf}
         outside = tempfile.NamedTemporaryFile(suffix=".L5X", delete=False)

@@ -57,6 +57,10 @@ judgement; `verify_results.json` gets simulation runs; `decisions.log` is the au
 `state.py queue approve R3`). If `.rungstone/` does not exist and the work produces review items, run
 `state.py init` first, then `state.py source FILE ...` for each HMI/SCADA export you read.
 
+If `.rungstone/` exists, save the full answer you showed as `.rungstone/reports/hmi-<subject>.md`
+(or `alarms-<subject>.md` for alarm cleanup), overwriting on a rerun, so the workbench's HMI/SCADA
+tab shows it, and record generated tag or alarm databases with `state.py output FILE --workflow hmi`.
+
 ## Which reference to read
 
 | Situation | Read |
