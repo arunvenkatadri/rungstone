@@ -65,6 +65,27 @@ These rules hold in every skill, command and script:
 7. **Parse only.** Nothing from customer files is ever executed. XML is parsed with defusedxml when
    available, otherwise with a guard that refuses any DTD/entity declaration.
 
+## Intended use and responsibility
+
+Rungstone is an engineering aid for **qualified controls engineers**. It is not a certified tool and does
+not replace engineering judgement, testing or commissioning.
+
+- **Everything it produces is a draft.** Translated code, rebinds, alarm rationalizations and troubleshooting
+  conclusions must be reviewed, compiled, tested offline and commissioned by a qualified engineer before
+  they are used. The engineer of record stays responsible for what is loaded into a controller or HMI and
+  for compliance with site procedures, codes and standards.
+- **Not for safety functions.** Safety-rated logic is excluded on purpose. Rungstone must not be used to
+  design, translate, verify or troubleshoot safety functions. Those need functional-safety engineering
+  (for example IEC 61508, IEC 62061, ISO 13849) and validation on the target by a qualified safety engineer.
+- **"Simulated" is not "tested".** The scan-cycle simulator models the logic, not the hardware, I/O, timing
+  or process. A match in simulation says nothing about behavior on a real machine.
+- **Your right to use the code.** Only use Rungstone on PLC, HMI and historian files you are allowed to
+  analyse, copy and modify. Projects often belong to the plant owner or an OEM, and contracts or source
+  protection may restrict them. Rungstone does not open source-protected routines or blocks; it reports
+  that they cannot be read.
+
+The software is provided under the MIT license, "as is", without warranty of any kind (see [LICENSE](LICENSE)).
+
 ## What's inside
 
 | Component | What it does |
@@ -146,9 +167,15 @@ the verification results and the dependency conflicts:
 
 ## What runs, and data handling
 
-- **Everything runs locally.** The skills run the Python scripts in `skills/*/scripts/` on files you
-  provide. They read those files, write results to `.rungstone/`, `out/` and `export/` in your project folder, and print JSON.
-- **No network access**, with one opt-in exception. No script opens an outbound connection, sends telemetry or fetches
+- **Claude sees your files.** Rungstone runs inside Claude. Any file content, script output or report that
+  Claude reads becomes part of your conversation and is sent to Anthropic for processing under the terms of
+  your Claude plan, like anything else you share with Claude. Before you use Rungstone on a project, check
+  that this is allowed by your customer contracts, NDAs, site rules and any export-control obligations
+  (for example defense, nuclear or other controlled work). If it isn't, don't load those files.
+- **The scripts run locally.** The Python scripts in `skills/*/scripts/` run on your machine on files you
+  provide. They write results to `.rungstone/`, `out/` and `export/` in your project folder and print compact
+  JSON, so Claude reads summaries rather than whole projects where it can.
+- **The scripts make no network connections**, with one opt-in exception. No script opens an outbound connection, sends telemetry or fetches
   anything. The exception is the historian connector, and only after you enable it in the plugin settings: it then makes read-only
   queries to the historian you configured, and to nothing else.
 - **The workbench** (`shared/workbench/server.py`) binds to `127.0.0.1` only (any other address is refused),
@@ -208,8 +235,19 @@ project, and all are released under this repository's MIT license:
 | `fixtures/hmi/*` | FactoryTalk, Ignition, WinCC-style exports, scripts, synthetic alarm history (seeded generator in `gen/`) | authored for Rungstone |
 | `fixtures/ops/*` | Pump-station L5X, synthetic historian, alarm and downtime logs (seeded generator in `gen/`) | authored for Rungstone |
 
-Vendor product names (Studio 5000, TIA Portal, FactoryTalk, Ignition, WinCC, CODESYS, TwinCAT) are used only to
-describe file formats. They are trademarks of their owners, and this project is not affiliated with them.
+### Standards
+
+Rungstone refers to ISA-18.2 / IEC 62682, EEMUA 191, IEC 61131-3 and functional-safety standards by name only.
+The guidance in `skills/*/references/` is written in our own words, and the alarm KPI targets are the commonly
+published values, which a site's alarm philosophy may override. No text from these standards is reproduced; get
+them from ISA, IEC or EEMUA.
+
+## Trademarks
+
+Product and company names used in this project, including the vendor and product names of the PLC, HMI, SCADA
+and historian platforms it reads and writes, are trademarks of their respective owners. They are used only to
+describe file formats and compatibility. Rungstone is an independent project and is not affiliated with,
+sponsored by or endorsed by any of these companies, or by Anthropic.
 
 ## License
 

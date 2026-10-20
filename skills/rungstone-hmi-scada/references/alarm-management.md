@@ -1,5 +1,8 @@
 # Alarm management (ISA-18.2 / IEC 62682 / EEMUA 191)
 
+A working summary in our own words; it does not reproduce the standards. Use the site's alarm philosophy and the
+published standards for anything binding.
+
 Read for the alarm cleanup workflow and whenever priorities, nuisance alarms or response text come up.
 Rungstone analyses exported history and proposes changes; the site alarm philosophy owner and the
 rationalization team decide. Never present a suggestion as a decision.
