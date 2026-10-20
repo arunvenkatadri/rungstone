@@ -184,6 +184,8 @@ class EstimateStateExportTests(unittest.TestCase):
             self.assertEqual(code, 0, out)
             folder = json.loads(out)["folder"]
             self.assertTrue(os.path.exists(os.path.join(folder, "MANIFEST.md")))
+            self.assertIn("Not for use on a production system without review and testing by a qualified engineer.",
+                          open(os.path.join(folder, "MANIFEST.md")).read())
             log = open(os.path.join(d, ".rungstone", "decisions.log")).read()
             self.assertIn("queue.approved", log)
             self.assertIn("export", log)

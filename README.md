@@ -8,6 +8,8 @@ across vendors, carry that work through to **HMI/SCADA** screens, tags and alarm
 It is read-only and offline by design. Rungstone produces files for the vendor IDE; the engineer
 reviews them, approves every flagged change, and loads them.
 
+> **Not for use on a production system without review and testing by a qualified engineer.** Provided as is, without warranty. See [Intended use and responsibility](#intended-use-and-responsibility).
+
 ```mermaid
 flowchart LR
     subgraph IN["Your exports (read-only)"]
@@ -68,7 +70,7 @@ These rules hold in every skill, command and script:
 ## Intended use and responsibility
 
 Rungstone is an engineering aid for **qualified controls engineers**. It is not a certified tool and does
-not replace engineering judgement, testing or commissioning.
+not replace engineering judgement, testing or commissioning. **Not for use on a production system without review and testing by a qualified engineer.**
 
 - **Everything it produces is a draft.** Translated code, rebinds, alarm rationalizations and troubleshooting
   conclusions must be reviewed, compiled, tested offline and commissioned by a qualified engineer before
