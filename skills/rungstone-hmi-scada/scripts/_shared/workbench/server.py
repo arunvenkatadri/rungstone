@@ -16,10 +16,14 @@ default and prints {"url": ...} as JSON.  It serves one self-contained page
                          file (and, with "use", make it the one the workflow runs on)
   POST /api/source/remove {"path": "..."}
   POST /api/source/select {"path": "..."}  the one source the workflows run on
+  POST /api/project/target {"target": "siemens-scl|rockwell|iec-st"}
+  POST /api/source/platform {"path": "...", "platform": "..."|""}  engineer's
+                         override of the detected source platform ("" = use detection)
                          (all POSTs need the token)
 
 Source paths must resolve inside the project folder (the parent of .rungstone/);
-the server only hashes them, it never parses or runs them.
+the server only hashes them and reads their first 16 KB as text to name the
+platform (sniff_platform); it never parses, imports or runs them.
 
 Every decision is written through state.queue_decide(), which appends to
 decisions.log.  The server never executes anything from project files and
@@ -30,6 +34,7 @@ import argparse
 import csv
 import json
 import os
+import re
 import hmac
 import sys
 import threading
@@ -51,6 +56,78 @@ SOURCE_FORMATS = {".l5x": "l5x", ".l5k": "l5k", ".scl": "siemens-scl", ".st": "i
                   ".csv": "csv", ".xlsx": "xlsx", ".json": "json", ".awl": "siemens-stl", ".exp": "codesys-export"}
 SKIP_DIRS = {".rungstone", ".git", "node_modules", "__pycache__", "export", ".venv", "venv"}
 MAX_CANDIDATES = 500
+TARGETS = ("siemens-scl", "rockwell", "iec-st")
+PARSED_MAX = 64 * 1024 * 1024
+
+
+SNIFF_BYTES = 16 * 1024
+SOURCE_PLATFORMS = ("rockwell-logix", "rockwell-slc500", "rockwell-plc5", "rockwell-micrologix", "siemens-tia",
+                    "siemens-step7", "codesys", "beckhoff-twincat", "iec-st", "other")
+_RX = re.compile
+
+
+def sniff_platform(path):
+    """Name the source platform from the file's first bytes. Returns {platform, detail, confidence, evidence}."""
+    try:
+        with open(path, "rb") as fh:
+            head = fh.read(SNIFF_BYTES).decode("utf-8", "replace")
+    except OSError:
+        return {"platform": None, "confidence": "unknown", "evidence": "file could not be read"}
+    ext = os.path.splitext(path)[1].lower()
+
+    def attr(name):
+        m = _RX(r'\b%s="([^"]{1,60})"' % name).search(head)
+        return m.group(1) if m else None
+    if "<RSLogix5000Content" in head:
+        proc, rev = attr("ProcessorType"), attr("SoftwareRevision")
+        return {"platform": "rockwell-logix", "confidence": "detected",
+                "detail": ", ".join(x for x in (proc, "exported from Studio 5000 v" + rev if rev else None) if x),
+                "evidence": "RSLogix5000Content header" + (" with ProcessorType" if proc else "")}
+    if "<TcPlcObject" in head:
+        return {"platform": "beckhoff-twincat", "confidence": "detected", "evidence": "TcPlcObject header"}
+    if "plcopen.org" in head:
+        prod = attr("productName")
+        return {"platform": "codesys" if prod and "codesys" in prod.lower() else "iec-st", "confidence": "detected",
+                "detail": "PLCopen XML" + (" from " + prod if prod else ""), "evidence": "PLCopen namespace"}
+    if "<Document" in head and ("SW.Blocks" in head or "<Engineering" in head):
+        ver = _RX(r'<Engineering version="([^"]+)"').search(head)
+        return {"platform": "siemens-tia", "confidence": "detected", "detail": "SimaticML" + (", TIA " + ver.group(1) if ver else ""),
+                "evidence": "SimaticML document"}
+    if ext in (".scl", ".awl") or _RX(r"(?im)^\s*(FUNCTION_BLOCK|ORGANIZATION_BLOCK|DATA_BLOCK)\s+\"").search(head):
+        return {"platform": "siemens-step7" if ext == ".awl" else "siemens-tia", "confidence": "detected",
+                "evidence": "Siemens source (%s)" % (ext or "block header")}
+    if _RX(r"\bSOR\b.*\bEOR\b").search(head) or _RX(r"(?m)^\s*\d+\s+SOR\b").search(head):
+        for rx, plat, why in ((r"\b17(61|62|63|64|66)-", "rockwell-micrologix", "176x MicroLogix catalog numbers"),
+                              (r"\bMicroLogix\b", "rockwell-micrologix", "MicroLogix in comments"),
+                              (r"\b1771-|\bPLC-?5\b", "rockwell-plc5", "PLC-5 / 1771 in comments"),
+                              (r"\b1746-|\b1747-|\bSLC\s*5/0\d|\bSLC\s*500\b", "rockwell-slc500", "SLC / 1746 in comments")):
+            m = _RX(rx, re.I).search(head)
+            if m:
+                return {"platform": plat, "confidence": "inferred", "evidence": why + " (" + m.group(0).strip() + ")"}
+        return {"platform": "rockwell-slc500", "confidence": "unsure",
+                "evidence": "RSLogix 500-style ladder text with no rack or processor hints; SLC 500, PLC-5 and MicroLogix look the same"}
+    if ext == ".st" or _RX(r"(?im)^\s*(FUNCTION_BLOCK|PROGRAM)\s+\w").search(head):
+        return {"platform": "iec-st", "confidence": "inferred", "evidence": "IEC Structured Text keywords"}
+    return {"platform": None, "confidence": "unknown", "evidence": "not a recognised PLC export"}
+
+
+def parsed_platforms(d):
+    """Platform facts per parsed file (format, controller, software revision) from .rungstone/parsed.json."""
+    p = os.path.join(d, "parsed.json")
+    if not os.path.isfile(p) or os.path.getsize(p) > PARSED_MAX:
+        return []
+    try:
+        data = state.load(d, "parsed.json") or {}
+    except (ValueError, OSError):
+        return []
+    root = project_root(d)
+    out = []
+    for pr in data.get("projects") or []:
+        f = pr.get("file") or ""
+        rel = os.path.relpath(os.path.realpath(os.path.join(root, f)), root)
+        out.append({"file": rel, "format": pr.get("format"), "controller": pr.get("controller"),
+                    "software": (pr.get("target") or {}).get("software_revision"), "stats": pr.get("stats")})
+    return out
 
 
 def project_root(d):
@@ -111,6 +188,15 @@ def _read_json(d, name):
         return {"error": "could not read %s" % name}
 
 
+def sniff_sources(d):
+    out = {}
+    for src in (state.load(d, "project.json", {}) or {}).get("sources", []):
+        p = resolve_in_project(d, src.get("path"))
+        if p:
+            out[src["path"]] = sniff_platform(p)
+    return out
+
+
 def build_state(d):
     """Everything the UI needs, as one JSON-serialisable dict."""
     files = {}
@@ -152,6 +238,8 @@ def build_state(d):
         "decisions": log_tail,
         "excluded_safety": safety,
         "export": {"blocked": bool(open_high), "open_high": [i.get("id") for i in open_high]},
+        "platforms": parsed_platforms(d),
+        "sniffed": sniff_sources(d),
         "label": LABEL,
     }
 
@@ -237,6 +325,10 @@ class Handler(BaseHTTPRequestHandler):
             return self._source(body, self.path.endswith("add"))
         if self.path == "/api/source/select":
             return self._select(body)
+        if self.path == "/api/project/target":
+            return self._target(body)
+        if self.path == "/api/source/platform":
+            return self._platform(body)
         return self._json(404, {"error": "not found"})
 
     def _source(self, body, add):
@@ -287,6 +379,36 @@ class Handler(BaseHTTPRequestHandler):
         return self._json(200, {"updated": done, "not_found": missing,
                                 "export": build_state(self.server.state_dir)["export"]})
 
+
+    def _platform(self, body):
+        d = self.server.state_dir
+        rel, plat = (body.get("path"), body.get("platform")) if isinstance(body, dict) else (None, None)
+        if plat not in SOURCE_PLATFORMS + ("",):
+            return self._json(400, {"error": "unknown platform"})
+        with self.server.lock:
+            proj = state.load(d, "project.json")
+            hit = [x for x in proj["sources"] if x["path"] == rel]
+            if not hit:
+                return self._json(404, {"error": "not a recorded source"})
+            if plat:
+                hit[0]["platform"] = plat
+            else:
+                hit[0].pop("platform", None)
+            state.save(d, "project.json", proj)
+            state.log(d, "source.platform", "%s -> %s (workbench)" % (rel, plat or "detected"))
+        return self._json(200, {"path": rel, "platform": plat or None})
+
+    def _target(self, body):
+        d = self.server.state_dir
+        t = body.get("target") if isinstance(body, dict) else None
+        if t not in TARGETS:
+            return self._json(400, {"error": "target must be one of " + ", ".join(TARGETS)})
+        with self.server.lock:
+            proj = state.load(d, "project.json")
+            proj["target"] = t
+            state.save(d, "project.json", proj)
+            state.log(d, "project.target", t + " (workbench)")
+        return self._json(200, {"target": t})
 
     def _select(self, body):
         d = self.server.state_dir

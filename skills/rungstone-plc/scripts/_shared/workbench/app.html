@@ -76,7 +76,7 @@ textarea{min-height:64px;resize:vertical}
 .row-high td:first-child{box-shadow:inset 3px 0 0 var(--red)}
 .row-medium td:first-child{box-shadow:inset 3px 0 0 var(--amber)}
 @media (max-width:640px){header,main,nav{padding-left:12px;padding-right:12px}.banner{margin:10px 12px 0}th,td{padding:6px}}
-.pick{cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;padding:4px 8px;margin:-4px -8px;border-radius:6px}.pick:hover{background:var(--panel2)}.pick input{width:16px;height:16px;margin:0}.pick input{accent-color:var(--amber,#f5a524)}.job{max-width:760px}.jobrow{display:grid;grid-template-columns:90px 1fr;gap:10px;align-items:center;margin:8px 0}.jobrow select{max-width:360px;background:var(--panel2);color:inherit;border:1px solid var(--line);border-radius:6px;padding:5px 8px}.cmd{display:flex;gap:8px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:6px 0 2px 100px;overflow-x:auto}.cmd code{flex:1;white-space:nowrap}button.primary{background:var(--amber,#f5a524);color:#1a1300;border-color:var(--amber,#f5a524);font-weight:600}.job .banner{margin:8px 0}.banner.ok{border-color:#5fb35f;background:#1f2a1f;color:#cfe8cf}.addsrc{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 4px}.addsrc select{min-width:280px;max-width:100%;background:var(--panel,#161b22);color:inherit;border:1px solid var(--line,#30363d);border-radius:6px;padding:5px 8px}.addsrc .muted{flex-basis:100%}
+.pick{cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;padding:4px 8px;margin:-4px -8px;border-radius:6px}.pick:hover{background:var(--panel2)}.pick input{width:16px;height:16px;margin:0}.pick input{accent-color:var(--amber,#f5a524)}.job{max-width:760px}.chg{margin-top:6px}.chg summary{cursor:pointer;color:var(--muted);font-size:13px}.chg select{margin-top:6px;background:var(--panel2);color:inherit;border:1px solid var(--line);border-radius:6px;padding:5px 8px}.jobrow{display:grid;grid-template-columns:90px 1fr;gap:10px;align-items:center;margin:8px 0}.jobrow select{max-width:360px;background:var(--panel2);color:inherit;border:1px solid var(--line);border-radius:6px;padding:5px 8px}.cmd{display:flex;gap:8px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:6px 0 2px 100px}.cmd code{flex:1;white-space:normal;word-break:break-all}.cmd button{flex:none}button.primary{background:var(--amber,#f5a524);color:#1a1300;border-color:var(--amber,#f5a524);font-weight:600}.job .banner{margin:8px 0}.banner.ok{border-color:#5fb35f;background:#1f2a1f;color:#cfe8cf}.addsrc{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 4px}.addsrc select{min-width:280px;max-width:100%;background:var(--panel,#161b22);color:inherit;border:1px solid var(--line,#30363d);border-radius:6px;padding:5px 8px}.addsrc .muted{flex-basis:100%}
 </style>
 </head>
 <body>
@@ -223,7 +223,7 @@ function viewFiles(){
          .map(function(o){return '<option value="'+o[0]+'"'+((window.__wf||"understand")===o[0]?' selected':'')+'>'+esc(o[1])+'</option>';}).join("")+'</select></div>'+
        '<div class="jobrow" id="tgtrow"><span class="muted">Target</span><select id="jobtgt">'+
          [["siemens-scl","Siemens S7-1500 SCL"],["rockwell","Rockwell Logix (L5X)"],["iec-st","IEC 61131-3 Structured Text"]]
-         .map(function(o){return '<option value="'+o[0]+'"'+((window.__tgt||"siemens-scl")===o[0]?' selected':'')+'>'+esc(o[1])+'</option>';}).join("")+'</select></div>'+
+         .map(function(o){return '<option value="'+o[0]+'"'+((window.__tgt||(S.project||{}).target||"siemens-scl")===o[0]?' selected':'')+'>'+esc(o[1])+'</option>';}).join("")+'</select></div>'+
        '<div class="jobrow"><span></span><div><button class="act primary" id="jobgo">Use this file</button> <span class="err" id="joberr"></span></div></div>'+
        '<div id="jobout"></div></div>';
   }
@@ -248,11 +248,69 @@ function viewEstimate(){
   return h;
 }
 
+var TARGETS=[["siemens-scl","Siemens S7-1500 SCL (TIA Portal)"],["rockwell","Rockwell Logix L5X (Studio 5000)"],["iec-st","IEC 61131-3 Structured Text (CODESYS, TwinCAT, PLCopen)"]];
+var FORMAT_NAMES={"rockwell-l5x":"Rockwell Logix (Studio 5000 L5X)","l5x":"Rockwell Logix (Studio 5000 L5X)","l5k":"Rockwell Logix (L5K)",
+  "ladder-text":"Rockwell ladder text (RSLogix 500 / PLC-5 ASCII, or neutral rung text)","text":"Text (ladder or ST; confirmed when parsed)",
+  "siemens-scl":"Siemens S7 SCL source","simaticml":"Siemens TIA Portal (SimaticML XML)","siemens-stl":"Siemens STL/AWL source",
+  "plcopen":"PLCopen XML (CODESYS, Beckhoff, Beremiz)","plcopen-xml":"PLCopen XML (CODESYS, Beckhoff, Beremiz)","twincat":"Beckhoff TwinCAT (TcPOU/TcGVL)",
+  "iec-st":"IEC 61131-3 Structured Text","codesys-export":"CODESYS export","xml":"XML (vendor confirmed when parsed)"};
+function targetName(t){var m=TARGETS.filter(function(x){return x[0]===t;})[0];return m?m[1]:(t||"");}
+function inUse(){var p=S.project||{},sel=p.selected||(p.sources||[]).map(function(s){return s.path;});
+  return (p.sources||[]).filter(function(s){return s.path===sel[0];})[0]||null;}
+var PLATFORMS=[["rockwell-logix","Rockwell ControlLogix / CompactLogix (Studio 5000)"],["rockwell-slc500","Rockwell SLC 500 (RSLogix 500)"],
+  ["rockwell-plc5","Rockwell PLC-5 (RSLogix 5)"],["rockwell-micrologix","Rockwell MicroLogix (RSLogix 500)"],["siemens-tia","Siemens S7-1200/1500 (TIA Portal)"],
+  ["siemens-step7","Siemens S7-300/400 (STEP 7 classic)"],["codesys","CODESYS"],["beckhoff-twincat","Beckhoff TwinCAT"],["iec-st","IEC 61131-3 (generic)"],["other","Other"]];
+function platformName(k){var m=PLATFORMS.filter(function(x){return x[0]===k;})[0];return m?m[1]:(k||"unknown");}
+function platformOf(src){
+  if(!src) return null;
+  var sn=(S.sniffed||{})[src.path]||{},hit=(S.platforms||[]).filter(function(x){return x.file===src.path;})[0],c=(hit&&hit.controller)||{};
+  var detail=sn.detail||[c.processor,c.revision?"v"+c.revision:""].filter(Boolean).join(", ");
+  if(src.platform) return {key:src.platform,name:platformName(src.platform),detail:detail,conf:"set by engineer",evidence:"chosen in the workbench",plc:src.platform!=="other"};
+  if(!sn.platform) return {key:"",name:"Not detected",detail:"",conf:"unknown",evidence:sn.evidence||"not a recognised PLC export",plc:false};
+  return {key:sn.platform,name:platformName(sn.platform),detail:detail,conf:sn.confidence,evidence:sn.evidence,plc:true};
+}
+function viewTranslateSetup(){
+  var src=inUse(),pf=platformOf(src),t=(S.project||{}).target||"";
+  var h='<h2>Translation</h2><div class="card job">';
+  var confChip={"detected":"approved","inferred":"medium","unsure":"high","unknown":"high","set by engineer":"approved"}[pf?pf.conf:""]||"low";
+  h+='<div class="jobrow"><span class="muted">From</span><div>'+(src?'<code>'+esc(src.path)+'</code><br><b>'+esc(pf.name)+'</b>'+
+     (pf.detail?' &middot; '+esc(pf.detail):'')+' <span class="chip '+confChip+'">'+esc(pf.conf)+'</span>'+
+     '<div class="muted">'+esc(pf.evidence)+(pf.conf==="unsure"||pf.conf==="unknown"?'. Please confirm below.':'')+'</div>'+
+     (LIVE?'<details class="chg"'+(pf.conf==="unsure"||pf.conf==="unknown"?' open':'')+'><summary>Not right? Change the source platform</summary>'+
+       '<select id="srcplat"><option value="">Use the detected platform</option>'+PLATFORMS.map(function(o){
+         return '<option value="'+o[0]+'"'+(src.platform===o[0]?' selected':'')+'>'+esc(o[1])+'</option>';}).join("")+'</select> '+
+       '<button class="act" id="srcplatset">Save</button></details>':'')
+     :'<span class="err">No file in use. Pick one on the Project files tab.</span>')+'</div></div>';
+  if(LIVE){
+    var cur=window.__tgt||t||"";
+    h+='<div class="jobrow"><span class="muted">To</span><div><select id="trtgt"><option value="">Choose the target platform…</option>'+
+       TARGETS.map(function(o){return '<option value="'+o[0]+'"'+(o[0]===cur?' selected':'')+'>'+esc(o[1])+'</option>';}).join("")+'</select> '+
+       '<button class="act primary" id="trset">Set target</button> <span class="err" id="trerr"></span></div></div>';
+    h+='<div class="jobrow"><span class="muted">Saved</span><div>'+(t?'<span class="chip approved">'+esc(targetName(t))+'</span>':'<span class="muted">no target set yet</span>')+'</div></div>';
+    if(src&&t&&pf.plc){var cmd="/rungstone:translate "+src.path+" from "+pf.key+" to "+t;
+      h+='<div class="jobrow"><span class="muted">Next</span><span>Paste this into Claude Code to run the translation. Nothing runs until you do.</span></div>'+
+         '<div class="cmd"><code id="trcmd">'+esc(cmd)+'</code><button class="act" id="trcopy" data-cmd="'+esc(cmd)+'">Copy</button></div>';}
+  } else {
+    h+='<div class="jobrow"><span class="muted">To</span><div>'+(t?'<b>'+esc(targetName(t))+'</b>':'<span class="muted">not set; tell Claude the target in chat</span>')+'</div></div>';
+  }
+  return h+'</div>';
+}
+function wireTranslateSetup(){
+  var ps=el("srcplatset");if(ps) ps.onclick=function(){var src=inUse();if(!src) return;ps.disabled=true;
+    post({path:src.path,platform:el("srcplat").value},"trerr","/api/source/platform");};
+  var sel=el("trtgt"),btn=el("trset");if(!sel) return;
+  sel.onchange=function(){window.__tgt=sel.value;el("trerr").textContent="";};
+  btn.onclick=function(){if(!sel.value){el("trerr").textContent="Choose a target first.";return;}
+    btn.disabled=true;post({target:sel.value},"trerr","/api/project/target");};
+  var c=el("trcopy");if(c) c.onclick=function(){var cmd=c.getAttribute("data-cmd");
+    (navigator.clipboard?navigator.clipboard.writeText(cmd):Promise.reject()).then(function(){c.textContent="Copied";},
+      function(){var r=document.createRange();r.selectNodeContents(el("trcmd"));var x=getSelection();x.removeAllRanges();x.addRange(r);c.textContent="Press Cmd/Ctrl+C";});};
+}
 function viewTranslate(){
   var q=S.queue||[],filt=window.__qfilter||"open";
   var rows=q.filter(function(i){return filt==="all"||i.status===filt;}).sort(function(a,b){
     var r={high:0,medium:1,low:2};return (r[a.risk]-r[b.risk])||String(a.id).localeCompare(String(b.id),undefined,{numeric:true});});
-  var h='<h2>Review queue</h2><div class="muted">Nothing is final until the engineer approves it. Export stays blocked while any high-risk item is open.</div>';
+  var h=viewTranslateSetup()+'<h2>Review queue</h2><div class="muted">Nothing is final until the engineer approves it. Export stays blocked while any high-risk item is open.</div>';
   h+='<div class="toolbar"><label class="muted">Show <select id="qfilter">'+["open","approved","edited","rejected","all"].map(function(o){
     return '<option'+(o===filt?" selected":"")+'>'+o+'</option>';}).join("")+'</select></label></div>';
   h+=table([["ID",function(i){return '<b class="mono">'+esc(i.id)+'</b>';}],["Risk",function(i){return chip(i.risk);}],
@@ -398,7 +456,7 @@ function renderMain(){
   else if(current==="hmi") v=viewReports("hmi","HMI / SCADA","No HMI/SCADA reports yet. Save them as <code>.rungstone/reports/hmi-*.md</code> or <code>alarms-*.md</code>.");
   else v=viewOps();
   el("main").innerHTML='<section class="active" role="tabpanel" aria-labelledby="tab-'+current+'">'+v+'</section>';
-  if(current==="translate") wireTranslate();
+  if(current==="translate"){wireTranslate();wireTranslateSetup();}
   if(current==="deps") wireDeps();
   if(current==="files"&&LIVE) wireFiles();
 }
@@ -435,6 +493,8 @@ function wireFiles(){
     var cmd=jobCommand();
     fetch("/api/source/select",{method:"POST",headers:{"Content-Type":"application/json","X-Rungstone-CSRF":CSRF},body:JSON.stringify({path:window.__pending})})
       .then(function(r){return r.json().then(function(j){if(!r.ok) throw new Error(j.error||r.status);return j;});})
+      .then(function(){if(el("jobwf").value!=="translate") return;
+        return fetch("/api/project/target",{method:"POST",headers:{"Content-Type":"application/json","X-Rungstone-CSRF":CSRF},body:JSON.stringify({target:el("jobtgt").value})});})
       .then(function(){return load();})
       .then(function(){
         el("jobout").innerHTML='<div class="banner ok"><b>Saved.</b> <code>'+esc(window.__pending)+'</code> is now the file in use.</div>'+

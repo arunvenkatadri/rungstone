@@ -1,6 +1,6 @@
 ---
 description: Translate PLC code to S7-1500 SCL, Rockwell Logix L5X, or IEC Structured Text with a mapping table and a ranked review queue
-argument-hint: "<files> to <siemens-scl | rockwell | iec-st>"
+argument-hint: "<files> [from <source platform>] to <siemens-scl | rockwell | iec-st>"
 ---
 Use the **rungstone-plc** skill, Workflow 2 (Translate), on: $ARGUMENTS
 

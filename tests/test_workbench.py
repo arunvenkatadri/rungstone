@@ -104,6 +104,49 @@ class WorkbenchServerTest(unittest.TestCase):
         for word in ("source.added", "source.selected", "source.removed"):
             self.assertIn(word, log)
 
+    def test_sniff_platform(self):
+        fx = os.path.join(ROOT, "fixtures", "plc")
+        cases = {os.path.join(fx, "estop", "Conveyor_Cell.L5X"): ("rockwell-logix", "detected"),
+                 os.path.join(fx, "two_tank", "two_tank_slc.txt"): ("rockwell-slc500", "inferred"),
+                 os.path.join(fx, "two_tank", "sim", "FB_TwoTank.scl"): ("siemens-tia", "detected"),
+                 os.path.join(fx, "unwritten_bit", "Mixer_PLCopen.xml"): ("codesys", "detected"),
+                 os.path.join(fx, "timers_hmi", "FTView_Fill_tags.csv"): (None, "unknown")}
+        for f, want in cases.items():
+            r = server.sniff_platform(f)
+            self.assertEqual((r["platform"], r["confidence"]), want, f)
+        self.assertIn("1756-L83ES", server.sniff_platform(os.path.join(fx, "estop", "Conveyor_Cell.L5X"))["detail"])
+        samples = {"plc5.txt": ("// PLC-5/40, rack 1771-IBD\n0 SOR XIC I:001/00 OTE O:002/00 EOR\n", "rockwell-plc5"),
+                   "ml.txt": ("// MicroLogix 1400 1766-L32BXB\n0 SOR XIC I:0/0 OTE O:0/0 EOR\n", "rockwell-micrologix"),
+                   "bare.txt": ("0 SOR XIC B3:0/0 OTE B3:0/1 EOR\n", "rockwell-slc500"),
+                   "fb.xml": ('<Document><Engineering version="V19" /><SW.Blocks.FB ID="0"/></Document>', "siemens-tia"),
+                   "x.TcPOU": ('<TcPlcObject Version="1.1.0.1"><POU Name="P"/></TcPlcObject>', "beckhoff-twincat")}
+        for name, (text, plat) in samples.items():
+            p = os.path.join(self.tmp, name)
+            with open(p, "w") as f:
+                f.write(text)
+            self.assertEqual(server.sniff_platform(p)["platform"], plat, name)
+        self.assertEqual(server.sniff_platform(os.path.join(self.tmp, "bare.txt"))["confidence"], "unsure")
+
+    def test_target_and_platform_override(self):
+        h = {"X-Rungstone-CSRF": self.srv.csrf}
+        self.assertEqual(self.req("/api/project/target", {"target": "siemens-scl"})[0], 403)  # no token
+        self.assertEqual(self.req("/api/project/target", {"target": "s7-200"}, h)[0], 400)
+        self.assertEqual(self.req("/api/project/target", {"target": "rockwell"}, h)[0], 200)
+        self.assertEqual(state.load(self.d, "project.json")["target"], "rockwell")
+        with open(os.path.join(self.tmp, "a.txt"), "w") as f:
+            f.write("0 SOR XIC B3:0/0 OTE B3:0/1 EOR\n")
+        self.req("/api/source/add", {"path": "a.txt"}, h)
+        st = json.loads(self.req("/api/state")[1])
+        self.assertEqual(st["sniffed"]["a.txt"]["confidence"], "unsure")
+        self.assertEqual(self.req("/api/source/platform", {"path": "a.txt", "platform": "nope"}, h)[0], 400)
+        self.assertEqual(self.req("/api/source/platform", {"path": "a.txt", "platform": "rockwell-plc5"}, h)[0], 200)
+        self.assertEqual(state.load(self.d, "project.json")["sources"][0]["platform"], "rockwell-plc5")
+        self.assertEqual(self.req("/api/source/platform", {"path": "a.txt", "platform": ""}, h)[0], 200)
+        self.assertNotIn("platform", state.load(self.d, "project.json")["sources"][0])
+        log = open(os.path.join(self.d, "decisions.log")).read()
+        self.assertIn("project.target", log)
+        self.assertIn("source.platform", log)
+
     def test_source_add_refuses_paths_outside_project(self):
         h = {"X-Rungstone-CSRF": self.srv.csrf}
         outside = tempfile.NamedTemporaryFile(suffix=".L5X", delete=False)
