@@ -11,6 +11,15 @@ default and prints {"url": ...} as JSON.  It serves one self-contained page
   GET  /api/state        project, queue, mapping, verify results, deps, reports
   POST /api/queue/decide {"ids": [...], "action": "approve|reject|edit",
                           "note": "...", "fix": "..."}   (needs X-Rungstone-CSRF)
+  GET  /api/candidates   project files that look like PLC/HMI/historian exports
+  POST /api/source/add   {"path": "...", "format": "...", "use": true}  record a source
+                         file (and, with "use", make it the one the workflow runs on)
+  POST /api/source/remove {"path": "..."}
+  POST /api/source/select {"path": "..."}  the one source the workflows run on
+                         (all POSTs need the token)
+
+Source paths must resolve inside the project folder (the parent of .rungstone/);
+the server only hashes them, it never parses or runs them.
 
 Every decision is written through state.queue_decide(), which appends to
 decisions.log.  The server never executes anything from project files and
@@ -37,6 +46,46 @@ LOOPBACK = ("127.0.0.1",)
 MAX_BODY = 64 * 1024
 REPORT_MAX = 400 * 1024
 LABEL = "simulated, not hardware-tested"
+SOURCE_FORMATS = {".l5x": "l5x", ".l5k": "l5k", ".scl": "siemens-scl", ".st": "iec-st", ".xml": "xml",
+                  ".tcpou": "twincat", ".tcgvl": "twincat", ".tcdut": "twincat", ".txt": "text",
+                  ".csv": "csv", ".xlsx": "xlsx", ".json": "json", ".awl": "siemens-stl", ".exp": "codesys-export"}
+SKIP_DIRS = {".rungstone", ".git", "node_modules", "__pycache__", "export", ".venv", "venv"}
+MAX_CANDIDATES = 500
+
+
+def project_root(d):
+    return os.path.realpath(os.path.dirname(os.path.abspath(d)))
+
+
+def resolve_in_project(d, rel):
+    """Real path of rel if it is a file inside the project folder, else None."""
+    if not isinstance(rel, str) or not rel.strip() or "\x00" in rel:
+        return None
+    root = project_root(d)
+    p = os.path.realpath(os.path.join(root, rel.strip()))
+    if os.path.commonpath([root, p]) != root or not os.path.isfile(p):
+        return None
+    return p
+
+
+def candidates(d):
+    root = project_root(d)
+    have = set(s.get("path") for s in (state.load(d, "project.json", {}) or {}).get("sources", []))
+    out = []
+    for cur, dirs, files in os.walk(root):
+        dirs[:] = sorted(x for x in dirs if x not in SKIP_DIRS and not x.startswith("."))
+        if cur[len(root):].count(os.sep) >= 6:
+            dirs[:] = []
+        for fn in sorted(files):
+            ext = os.path.splitext(fn)[1].lower()
+            if ext not in SOURCE_FORMATS or fn.startswith("."):
+                continue
+            rel = os.path.relpath(os.path.join(cur, fn), root)
+            if rel not in have:
+                out.append({"path": rel, "format": SOURCE_FORMATS[ext]})
+            if len(out) >= MAX_CANDIDATES:
+                return out
+    return out
 
 
 def _collect_safety(obj, out, source):
@@ -159,6 +208,8 @@ class Handler(BaseHTTPRequestHandler):
                               "text/html; charset=utf-8")
         if path == "/api/state":
             return self._json(200, build_state(self.server.state_dir))
+        if path == "/api/candidates":
+            return self._json(200, {"files": candidates(self.server.state_dir)})
         return self._json(404, {"error": "not found"})
 
     def do_POST(self):
@@ -180,9 +231,37 @@ class Handler(BaseHTTPRequestHandler):
             body = json.loads(self.rfile.read(n).decode("utf-8"))
         except (ValueError, UnicodeDecodeError):
             return self._json(400, {"error": "invalid JSON"})
-        if self.path != "/api/queue/decide":
-            return self._json(404, {"error": "not found"})
-        return self._decide(body)
+        if self.path == "/api/queue/decide":
+            return self._decide(body)
+        if self.path in ("/api/source/add", "/api/source/remove"):
+            return self._source(body, self.path.endswith("add"))
+        if self.path == "/api/source/select":
+            return self._select(body)
+        return self._json(404, {"error": "not found"})
+
+    def _source(self, body, add):
+        d = self.server.state_dir
+        rel = body.get("path") if isinstance(body, dict) else None
+        if add:
+            p = resolve_in_project(d, rel)
+            if p is None:
+                return self._json(400, {"error": "not a file inside the project folder"})
+            fmt = (body.get("format") or "").strip()[:40] or SOURCE_FORMATS.get(os.path.splitext(p)[1].lower())
+            rel = os.path.relpath(p, project_root(d))
+            with self.server.lock:
+                state.add_source(d, p, fmt)
+                state.log(d, "source.added", rel + " (workbench)")
+                if body.get("use") is True:
+                    state.set_selected(d, [rel])
+                    state.log(d, "source.selected", rel + " (workbench)")
+        else:
+            if not isinstance(rel, str) or not rel:
+                return self._json(400, {"error": "path required"})
+            with self.server.lock:
+                if not state.remove_source(d, rel):
+                    return self._json(404, {"error": "not a recorded source"})
+                state.log(d, "source.removed", rel + " (workbench)")
+        return self._json(200, {"sources": (state.load(d, "project.json", {}) or {}).get("sources", [])})
 
     def _decide(self, body):
         ids = body.get("ids")
@@ -207,6 +286,18 @@ class Handler(BaseHTTPRequestHandler):
             done, missing = state.queue_decide(self.server.state_dir, set(ids), status, note, fix)
         return self._json(200, {"updated": done, "not_found": missing,
                                 "export": build_state(self.server.state_dir)["export"]})
+
+
+    def _select(self, body):
+        d = self.server.state_dir
+        rel = body.get("path") if isinstance(body, dict) else None
+        if not isinstance(rel, str) or not rel:
+            return self._json(400, {"error": "path required"})
+        with self.server.lock:
+            if state.set_selected(d, [rel]):
+                return self._json(404, {"error": "not a recorded source"})
+            state.log(d, "source.selected", rel + " (workbench)")
+        return self._json(200, {"selected": state.selected_sources(state.load(d, "project.json", {}))})
 
 
 class Workbench(HTTPServer):

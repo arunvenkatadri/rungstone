@@ -129,7 +129,38 @@ def add_source(d, path, fmt=None):
     rel = os.path.relpath(os.path.realpath(path), os.path.realpath(os.path.dirname(d)))
     entry = {"path": rel, "sha256": sha256(path), "format": fmt, "added": now()}
     proj["sources"] = [s for s in proj["sources"] if s["path"] != entry["path"]] + [entry]
+    if not selected_sources(proj):
+        proj["selected"] = [rel]  # the first source goes through the workflow until another is chosen
     save(d, "project.json", proj)
+
+
+def selected_sources(proj):
+    """Paths the workflows run on when the user names no files (recorded sources only)."""
+    have = [s["path"] for s in proj.get("sources", [])]
+    if "selected" not in proj:
+        return have  # projects from before selection existed: all sources
+    return [p for p in proj["selected"] if p in have]
+
+
+def set_selected(d, paths):
+    proj = load(d, "project.json")
+    have = set(s["path"] for s in proj["sources"])
+    unknown = [p for p in paths if p not in have]
+    if unknown:
+        return unknown
+    proj["selected"] = [s["path"] for s in proj["sources"] if s["path"] in set(paths)]
+    save(d, "project.json", proj)
+    return []
+
+
+def remove_source(d, rel):
+    proj = load(d, "project.json")
+    before = len(proj["sources"])
+    proj["sources"] = [s for s in proj["sources"] if s["path"] != rel]
+    if "selected" in proj:
+        proj["selected"] = [p for p in proj["selected"] if p != rel]
+    save(d, "project.json", proj)
+    return before != len(proj["sources"])
 
 
 def write_mapping(d, rows):
@@ -203,6 +234,10 @@ def main(argv=None):
     p = sub.add_parser("source", help="record input files (path + sha256) in project.json")
     p.add_argument("files", nargs="+")
     p.add_argument("--format", help="format as reported by parse_project.py, e.g. l5x, ladder-text, siemens-scl")
+    p = sub.add_parser("select", help="choose which recorded sources the workflows run on")
+    p.add_argument("paths", nargs="*", help="source paths as listed in project.json")
+    p.add_argument("--all", action="store_true")
+    p.add_argument("--none", action="store_true")
     sub.add_parser("status")
     sub.add_parser("gate-export")
     p = sub.add_parser("log")
@@ -249,6 +284,9 @@ def main(argv=None):
         counts = dict(("%s_%s" % (r, s), sum(1 for i in q if i["risk"] == r and i["status"] == s))
                       for r in RISKS for s in STATUSES)
         print(json.dumps({"state_dir": d, "project": load(d, "project.json", {}).get("name"),
+                          "target": load(d, "project.json", {}).get("target"),
+                          "sources": [s["path"] for s in load(d, "project.json", {}).get("sources", [])],
+                          "selected": selected_sources(load(d, "project.json", {})),
                           "mapping_rows": len(read_mapping(d)),
                           "tagmap_entries": len(load(d, "tagmap.json", {}).get("tags", {})),
                           "queue": counts, "export_blocked": bool(open_items(d, "high"))}, indent=2))
@@ -263,6 +301,16 @@ def main(argv=None):
         return 0
     if args.cmd == "log":
         log(d, args.action, args.detail)
+        return 0
+    if args.cmd == "select":
+        proj = load(d, "project.json")
+        paths = [] if args.none else ([s["path"] for s in proj["sources"]] if args.all else args.paths)
+        unknown = set_selected(d, paths)
+        if unknown:
+            print(json.dumps({"error": "not recorded sources; add them with state.py source", "paths": unknown}))
+            return 1
+        log(d, "source.selected", ", ".join(paths) or "(none)")
+        print(json.dumps({"selected": selected_sources(load(d, "project.json"))}))
         return 0
     if args.cmd == "source":
         missing = [f for f in args.files if not os.path.isfile(f)]

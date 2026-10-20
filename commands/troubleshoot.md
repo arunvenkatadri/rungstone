@@ -4,4 +4,6 @@ argument-hint: "<historian CSV> [alarm/event log] [PLC project] [time or signal,
 ---
 Use the **rungstone-ops** skill, Troubleshoot-a-stop workflow, on: $ARGUMENTS
 
+If no files were named, use the source marked in use in the workbench (`state.py status` → `selected`); if none is chosen, ask which file to use.
+
 Pick the relevant signals and time window, run the trip/first-out analysis, pull the logic that writes the stopped output via the dependency map, and report: likely cause (labelled confirmed / evidence-supported / inferred / unknown), evidence, logic cited with locations, what to check first, and what was not checked. This works on exported data only - there is no live monitoring.

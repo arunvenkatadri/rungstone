@@ -139,6 +139,10 @@ class EstimateStateExportTests(unittest.TestCase):
             self.assertEqual([(s["path"], s["format"], len(s["sha256"])) for s in proj["sources"]], [("a.L5X", "l5x", 64)])
             self.assertIn("source.added", open(os.path.join(d, ".rungstone", "decisions.log")).read())
             self.assertEqual(run(st, "source", os.path.join(d, "missing.xml"), cwd=d)[0], 1)
+            self.assertEqual(json.loads(run(st, "status", cwd=d)[1])["selected"], ["a.L5X"])
+            self.assertEqual(json.loads(run(st, "select", "--none", cwd=d)[1])["selected"], [])
+            self.assertEqual(run(st, "select", "b.L5X", cwd=d)[0], 1)
+            self.assertEqual(json.loads(run(st, "select", "a.L5X", cwd=d)[1])["selected"], ["a.L5X"])
 
     def test_export_gate(self):
         st = os.path.join(SCRIPTS, "_shared", "state.py")

@@ -77,6 +77,46 @@ class WorkbenchServerTest(unittest.TestCase):
         self.assertEqual(st["label"], "simulated, not hardware-tested")
         self.assertIn("understand-main.md", st["reports"])
 
+    def test_sources_add_select_remove(self):
+        h = {"X-Rungstone-CSRF": self.srv.csrf}
+        os.makedirs(os.path.join(self.tmp, "plc"))
+        for n in ("Line3.L5X", "Line4.L5X"):
+            with open(os.path.join(self.tmp, "plc", n), "w") as f:
+                f.write("<RSLogix5000Content/>")
+        with open(os.path.join(self.tmp, "notes.docx"), "w") as f:
+            f.write("x")
+        files = [c["path"] for c in json.loads(self.req("/api/candidates")[1])["files"]]
+        self.assertEqual(files, [os.path.join("plc", "Line3.L5X"), os.path.join("plc", "Line4.L5X")])
+        self.assertEqual(self.req("/api/source/add", {"path": "plc/Line3.L5X"})[0], 403)  # no token
+        self.assertEqual(self.req("/api/source/add", {"path": "plc/Line3.L5X"}, h)[0], 200)
+        proj = state.load(self.d, "project.json")
+        self.assertEqual(proj["sources"][0]["format"], "l5x")
+        self.assertEqual(state.selected_sources(proj), ["plc/Line3.L5X"])  # first source is in use
+        self.assertEqual(self.req("/api/source/add", {"path": "plc/Line4.L5X", "use": True}, h)[0], 200)
+        self.assertEqual(state.selected_sources(state.load(self.d, "project.json")), ["plc/Line4.L5X"])  # one at a time
+        code, body = self.req("/api/source/select", {"path": "plc/Line3.L5X"}, h)
+        self.assertEqual((code, json.loads(body)["selected"]), (200, ["plc/Line3.L5X"]))
+        self.assertEqual(self.req("/api/source/select", {"path": "nope.L5X"}, h)[0], 404)
+        self.assertEqual(self.req("/api/source/remove", {"path": "plc/Line3.L5X"}, h)[0], 200)
+        proj = state.load(self.d, "project.json")
+        self.assertEqual(([s["path"] for s in proj["sources"]], state.selected_sources(proj)), (["plc/Line4.L5X"], []))
+        log = open(os.path.join(self.d, "decisions.log")).read()
+        for word in ("source.added", "source.selected", "source.removed"):
+            self.assertIn(word, log)
+
+    def test_source_add_refuses_paths_outside_project(self):
+        h = {"X-Rungstone-CSRF": self.srv.csrf}
+        outside = tempfile.NamedTemporaryFile(suffix=".L5X", delete=False)
+        outside.close()
+        try:
+            for p in (outside.name, "../" + os.path.basename(outside.name), "/etc/hosts", "", ".rungstone/../../x"):
+                self.assertEqual(self.req("/api/source/add", {"path": p}, h)[0], 400, p)
+            os.symlink(outside.name, os.path.join(self.tmp, "link.L5X"))
+            self.assertEqual(self.req("/api/source/add", {"path": "link.L5X"}, h)[0], 400)
+        finally:
+            os.unlink(outside.name)
+        self.assertEqual(state.load(self.d, "project.json")["sources"], [])
+
     def test_approve_with_csrf_unblocks_export_and_logs(self):
         code, body = self.req("/api/queue/decide", {"ids": ["R1"], "action": "approve"}, {"X-Rungstone-CSRF": self.srv.csrf})
         self.assertEqual(code, 200, body)

@@ -76,6 +76,7 @@ textarea{min-height:64px;resize:vertical}
 .row-high td:first-child{box-shadow:inset 3px 0 0 var(--red)}
 .row-medium td:first-child{box-shadow:inset 3px 0 0 var(--amber)}
 @media (max-width:640px){header,main,nav{padding-left:12px;padding-right:12px}.banner{margin:10px 12px 0}th,td{padding:6px}}
+.pick{cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;padding:4px 8px;margin:-4px -8px;border-radius:6px}.pick:hover{background:var(--panel2)}.pick input{width:16px;height:16px;margin:0}.pick input{accent-color:var(--amber,#f5a524)}.job{max-width:760px}.jobrow{display:grid;grid-template-columns:90px 1fr;gap:10px;align-items:center;margin:8px 0}.jobrow select{max-width:360px;background:var(--panel2);color:inherit;border:1px solid var(--line);border-radius:6px;padding:5px 8px}.cmd{display:flex;gap:8px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:6px 0 2px 100px;overflow-x:auto}.cmd code{flex:1;white-space:nowrap}button.primary{background:var(--amber,#f5a524);color:#1a1300;border-color:var(--amber,#f5a524);font-weight:600}.job .banner{margin:8px 0}.banner.ok{border-color:#5fb35f;background:#1f2a1f;color:#cfe8cf}.addsrc{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 4px}.addsrc select{min-width:280px;max-width:100%;background:var(--panel,#161b22);color:inherit;border:1px solid var(--line,#30363d);border-radius:6px;padding:5px 8px}.addsrc .muted{flex-basis:100%}
 </style>
 </head>
 <body>
@@ -195,9 +196,37 @@ function viewFiles(){
     '<div class="stat"><b>'+esc((S.mapping||[]).length)+'</b><span>mapping rows</span></div>'+
     '<div class="stat"><b>'+esc((S.queue||[]).length)+'</b><span>review items</span></div></div>';
   h+='<div class="muted mono" style="margin-top:6px">state: '+esc(S.state_dir||"")+'</div>';
-  h+='<h2>Source files</h2>'+table([["Path",function(s){return esc(s.path);},1],["Format",function(s){return esc(s.format||"");},1],
-     ["SHA-256",function(s){return '<span title="'+esc(s.sha256)+'">'+esc(String(s.sha256||"").slice(0,12))+'…</span>';},1],
-     ["Added",function(s){return esc(s.added||"");},1]],p.sources||[]);
+  var sel=p.selected||(p.sources||[]).map(function(s){return s.path;});
+  var srcs=p.sources||[];
+  if(!LIVE){
+    h+='<h2>Source files</h2>'+table([["In use",function(s){return sel.indexOf(s.path)>=0?'<span class="chip approved">in use</span>':'';}],
+       ["Path",function(s){return esc(s.path);},1],["Format",function(s){return esc(s.format||"");},1],
+       ["SHA-256",function(s){return '<span title="'+esc(s.sha256)+'">'+esc(String(s.sha256||"").slice(0,12))+'…</span>';},1],
+       ["Added",function(s){return esc(s.added||"");},1]],srcs);
+    h+='<div class="muted">To add or choose source files, ask Claude in chat (for example "use plc/Line2.L5X").</div>';
+  } else {
+    var pend=window.__pending;
+    if(!pend||!srcs.some(function(s){return s.path===pend;})) pend=window.__pending=sel[0]||"";
+    h+='<h2>1. Pick the file to work on</h2>';
+    h+=table([["",function(s){return '<label class="pick"><input type="radio" name="srcuse" data-src-sel="'+esc(s.path)+'"'+(s.path===pend?' checked':'')+'></label>';}],
+       ["Path",function(s){return '<label class="pick" for="" data-src-lbl="'+esc(s.path)+'">'+esc(s.path)+'</label>'+(sel.indexOf(s.path)>=0?' <span class="chip approved">in use</span>':'');},1],
+       ["Format",function(s){return esc(s.format||"");},1],
+       ["SHA-256",function(s){return '<span title="'+esc(s.sha256)+'">'+esc(String(s.sha256||"").slice(0,12))+'…</span>';},1],
+       ["",function(s){return '<button class="act" data-src-rm="'+esc(s.path)+'">Remove</button>';}]],srcs);
+    h+='<div class="addsrc"><select id="srcpick" aria-label="File to add"><option value="">Loading project files…</option></select>'+
+       '<button class="act" id="srcadd">Add to list</button><div class="err" id="srcerr"></div></div>';
+    h+='<h2>2. Choose what to do with it</h2><div class="card job">'+
+       '<div class="jobrow"><span class="muted">File</span><code id="jobfile">'+(pend?esc(pend):'(pick a file above)')+'</code></div>'+
+       '<div class="jobrow"><span class="muted">Workflow</span><select id="jobwf">'+
+         [["understand","Understand: explain what it does"],["translate","Translate to another platform"],["verify","Verify the translation (simulator)"],
+          ["dependencies","Dependency map"],["hmi","HMI/SCADA: explain or rebind"],["alarms","Alarm cleanup"],["troubleshoot","Troubleshoot a stop"]]
+         .map(function(o){return '<option value="'+o[0]+'"'+((window.__wf||"understand")===o[0]?' selected':'')+'>'+esc(o[1])+'</option>';}).join("")+'</select></div>'+
+       '<div class="jobrow" id="tgtrow"><span class="muted">Target</span><select id="jobtgt">'+
+         [["siemens-scl","Siemens S7-1500 SCL"],["rockwell","Rockwell Logix (L5X)"],["iec-st","IEC 61131-3 Structured Text"]]
+         .map(function(o){return '<option value="'+o[0]+'"'+((window.__tgt||"siemens-scl")===o[0]?' selected':'')+'>'+esc(o[1])+'</option>';}).join("")+'</select></div>'+
+       '<div class="jobrow"><span></span><div><button class="act primary" id="jobgo">Use this file</button> <span class="err" id="joberr"></span></div></div>'+
+       '<div id="jobout"></div></div>';
+  }
   h+='<h2>Cost estimate</h2>'+viewEstimate();
   h+=reportsFor("files");
   h+='<h2>Decisions log</h2>'+((S.decisions||[]).length?'<pre>'+esc(S.decisions.slice(-60).join("\n"))+'</pre>':'<div class="empty">No decisions yet.</div>');
@@ -278,8 +307,8 @@ function inlineForm(id,kind,initial,onSave){
   el("cancel-"+id).onclick=function(){f.innerHTML="";};
   el("save-"+id).onclick=function(){var v=el("ta-"+id).value.trim();if(!v){el("err-"+id).textContent=kind==="reject"?"A reason is required.":"Enter the new fix.";return;}onSave(v);};
 }
-function post(body,errId){
-  return fetch("/api/queue/decide",{method:"POST",headers:{"Content-Type":"application/json","X-Rungstone-CSRF":CSRF},
+function post(body,errId,url){
+  return fetch(url||"/api/queue/decide",{method:"POST",headers:{"Content-Type":"application/json","X-Rungstone-CSRF":CSRF},
     body:JSON.stringify(body)}).then(function(r){return r.json().then(function(j){if(!r.ok) throw new Error(j.error||r.status);return j;});})
     .then(function(){return load();}).catch(function(e){var x=errId&&el(errId);if(x) x.textContent=String(e.message||e);});
 }
@@ -371,6 +400,51 @@ function renderMain(){
   el("main").innerHTML='<section class="active" role="tabpanel" aria-labelledby="tab-'+current+'">'+v+'</section>';
   if(current==="translate") wireTranslate();
   if(current==="deps") wireDeps();
+  if(current==="files"&&LIVE) wireFiles();
+}
+function jobCommand(){
+  var f=window.__pending||"",wf=el("jobwf").value,t=el("jobtgt").value;
+  return "/rungstone:"+wf+" "+f+(wf==="translate"?" to "+t:"");
+}
+function wireFiles(){
+  var pick=el("srcpick"),add=el("srcadd");if(!pick) return;
+  fetch("/api/candidates",{}).then(function(r){return r.json();}).then(function(j){
+    var f=j.files||[],keep=window.__srcpick||"";
+    pick.innerHTML=f.length?'<option value="">Add another file from the project folder…</option>'+f.map(function(x){
+      return '<option value="'+esc(x.path)+'" data-fmt="'+esc(x.format)+'">'+esc(x.path)+'  ('+esc(x.format)+')</option>';}).join("")
+      :'<option value="">No other PLC/HMI/historian files found in the project folder</option>';
+    if(keep&&f.some(function(x){return x.path===keep;})) pick.value=keep;  // survive re-renders
+  }).catch(function(e){el("srcerr").textContent=String(e.message||e);});
+  pick.onchange=function(){window.__srcpick=pick.value;el("srcerr").textContent="";};
+  add.onclick=function(){var o=pick.options[pick.selectedIndex];if(!o||!o.value){el("srcerr").textContent="Choose a file in the list first.";return;}
+    add.disabled=true;window.__srcpick="";window.__pending=o.value;post({path:o.value,format:o.getAttribute("data-fmt")},"srcerr","/api/source/add");};
+  function choose(path){window.__pending=path;el("jobfile").textContent=path;el("jobout").innerHTML="";
+    Array.prototype.forEach.call(document.querySelectorAll("input[data-src-sel]"),function(c){c.checked=c.getAttribute("data-src-sel")===path;});}
+  Array.prototype.forEach.call(document.querySelectorAll("input[data-src-sel]"),function(c){c.onchange=function(){if(c.checked) choose(c.getAttribute("data-src-sel"));};});
+  Array.prototype.forEach.call(document.querySelectorAll("[data-src-lbl]"),function(l){l.onclick=function(e){e.preventDefault();choose(l.getAttribute("data-src-lbl"));};});
+  Array.prototype.forEach.call(document.querySelectorAll("button[data-src-rm]"),function(b){
+    b.onclick=function(){b.disabled=true;post({path:b.getAttribute("data-src-rm")},"srcerr","/api/source/remove");};});
+  var wf=el("jobwf"),tgt=el("jobtgt"),go=el("jobgo");
+  function syncTarget(){el("tgtrow").style.display=wf.value==="translate"?"":"none";el("jobout").innerHTML="";}
+  wf.onchange=function(){window.__wf=wf.value;syncTarget();};
+  tgt.onchange=function(){window.__tgt=tgt.value;el("jobout").innerHTML="";};
+  syncTarget();
+  go.onclick=function(){
+    if(!window.__pending){el("joberr").textContent="Pick a file in step 1 first.";return;}
+    el("joberr").textContent="";go.disabled=true;
+    var cmd=jobCommand();
+    fetch("/api/source/select",{method:"POST",headers:{"Content-Type":"application/json","X-Rungstone-CSRF":CSRF},body:JSON.stringify({path:window.__pending})})
+      .then(function(r){return r.json().then(function(j){if(!r.ok) throw new Error(j.error||r.status);return j;});})
+      .then(function(){return load();})
+      .then(function(){
+        el("jobout").innerHTML='<div class="banner ok"><b>Saved.</b> <code>'+esc(window.__pending)+'</code> is now the file in use.</div>'+
+          '<div class="jobrow"><span class="muted">Next</span><span>Paste this into Claude Code to run it. The workbench can\'t start Claude by itself, so nothing runs until you do.</span></div>'+
+          '<div class="cmd"><code id="jobcmd">'+esc(cmd)+'</code><button class="act" id="jobcopy">Copy</button></div>';
+        el("jobcopy").onclick=function(){var b=el("jobcopy");
+          (navigator.clipboard?navigator.clipboard.writeText(cmd):Promise.reject()).then(function(){b.textContent="Copied";},
+            function(){var r=document.createRange();r.selectNodeContents(el("jobcmd"));var s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent="Press Cmd/Ctrl+C";});};
+      }).catch(function(e){el("joberr").textContent=String(e.message||e);go.disabled=false;});
+  };
 }
 function render(){renderChrome();renderTabs();renderMain();}
 function load(){

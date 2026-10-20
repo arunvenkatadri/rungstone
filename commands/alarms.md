@@ -4,4 +4,6 @@ argument-hint: "<alarm history CSV> [alarm config export]"
 ---
 Use the **rungstone-hmi-scada** skill, alarm cleanup workflow, on: $ARGUMENTS
 
+If no files were named, use the source marked in use in the workbench (`state.py status` → `selected`); if none is chosen, ask which file to use.
+
 Run alarm_analysis.py on the history, then present KPIs, bad actors, nuisance alarms (chattering, fleeting, standing), duplicates/consequential alarms, and suggested priorities and operator response text. Everything suggested is for the alarm philosophy owner to approve.
