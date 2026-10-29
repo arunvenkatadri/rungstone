@@ -2,7 +2,7 @@
 
 The Codex directory takes skills-only plugins: no hooks and no local MCP
 servers. So the package carries the three skills (with their scripts and
-references), the icon, README, LICENSE and PRIVACY, and a plugin.json with
+references), the icon, README, LICENSE and PRIVACY, and a .codex-plugin/plugin.json with
 the OpenAI listing fields. The skills are adapted on the way:
 
   ${CLAUDE_SKILL_DIR}   -> <skill-dir> (explained at the top of each SKILL.md)
@@ -12,7 +12,7 @@ the OpenAI listing fields. The skills are adapted on the way:
   workbench             -> Codex mode (plain prompts instead of /rungstone: commands)
 
 Output:
-  dist/codex/rungstone/                      the plugin folder
+  dist/codex/rungstone/                      the plugin folder (manifest in .codex-plugin/)
   dist/codex/.agents/plugins/marketplace.json  a local marketplace for testing
   dist/codex/rungstone-codex-<version>.zip    the upload for the submission portal
 """
@@ -54,6 +54,7 @@ LISTING = {
     "category": "Developer Tools",
     "capabilities": ["Read", "Write"],
     "websiteURL": "https://github.com/arunvenkatadri/rungstone",
+    "supportURL": "https://github.com/arunvenkatadri/rungstone/issues",
     "privacyPolicyURL": "https://github.com/arunvenkatadri/rungstone/blob/main/PRIVACY.md",
     "termsOfServiceURL": "https://github.com/arunvenkatadri/rungstone/blob/main/LICENSE",
     "defaultPrompt": [
@@ -148,7 +149,6 @@ def main():
     with open(os.path.join(PLUGIN, "README.md"), "w", encoding="utf-8") as f:
         f.write(readme(version))
     manifest = {
-        "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
         "name": "rungstone",
         "version": version,
         "description": claude["description"],
@@ -157,9 +157,11 @@ def main():
         "repository": claude.get("repository"),
         "license": claude.get("license"),
         "keywords": claude.get("keywords", []),
-        "extensions": {"com.openai": {"interface": LISTING}},
+        "skills": "./skills/",
+        "interface": LISTING,
     }
-    with open(os.path.join(PLUGIN, "plugin.json"), "w", encoding="utf-8") as f:
+    os.makedirs(os.path.join(PLUGIN, ".codex-plugin"))
+    with open(os.path.join(PLUGIN, ".codex-plugin", "plugin.json"), "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2)
         f.write("\n")
     os.makedirs(os.path.join(OUT, ".agents", "plugins"))
