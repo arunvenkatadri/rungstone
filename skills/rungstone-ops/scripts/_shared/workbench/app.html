@@ -77,6 +77,11 @@ textarea{min-height:64px;resize:vertical}
 .row-medium td:first-child{box-shadow:inset 3px 0 0 var(--amber)}
 @media (max-width:640px){header,main,nav{padding-left:12px;padding-right:12px}.banner{margin:10px 12px 0}th,td{padding:6px}}
 .pick{cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;padding:4px 8px;margin:-4px -8px;border-radius:6px}.pick:hover{background:var(--panel2)}.pick input{width:16px;height:16px;margin:0}.pick input{accent-color:var(--amber,#f5a524)}.beta{display:inline-block;font:700 10px var(--mono);letter-spacing:.06em;padding:2px 6px;border-radius:4px;border:1px solid var(--blue,#58a6ff);color:var(--blue,#58a6ff);vertical-align:2px}.job{max-width:760px}.out summary{cursor:pointer}.out pre.code{max-height:420px;overflow:auto;margin:8px 0 0;font-size:12.5px}.pill.live{border-color:var(--green);color:#c9f5d2}.newres{position:fixed;right:20px;bottom:20px;z-index:10;box-shadow:0 4px 16px rgba(0,0,0,.5)}.chg{margin-top:6px}.chg summary{cursor:pointer;color:var(--muted);font-size:13px}.chg select{margin-top:6px;background:var(--panel2);color:inherit;border:1px solid var(--line);border-radius:6px;padding:5px 8px}.jobrow{display:grid;grid-template-columns:90px 1fr;gap:10px;align-items:center;margin:8px 0}.jobrow select{max-width:360px;background:var(--panel2);color:inherit;border:1px solid var(--line);border-radius:6px;padding:5px 8px}.cmd{display:flex;gap:8px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:6px 0 2px 100px}.cmd code{flex:1;white-space:normal;word-break:break-all}.cmd button{flex:none}button.primary{background:var(--amber,#f5a524);color:#1a1300;border-color:var(--amber,#f5a524);font-weight:600}.job .banner{margin:8px 0}.banner.ok{border-color:#5fb35f;background:#1f2a1f;color:#cfe8cf}.addsrc{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 4px}.addsrc select{min-width:280px;max-width:100%;background:var(--panel,#161b22);color:inherit;border:1px solid var(--line,#30363d);border-radius:6px;padding:5px 8px}.addsrc .muted{flex-basis:100%}
+.rate{display:inline-block;border-radius:4px;padding:1px 6px;font:600 11px var(--mono);border:1px solid var(--line);white-space:nowrap}
+.rate.portable{color:#c9f5d2;background:var(--green-bg);border-color:var(--green)}.rate.rework{color:#ffe3b0;background:var(--amber-bg);border-color:var(--amber)}
+.rate.no_equivalent{color:#ffd6d4;background:var(--red-bg);border-color:var(--red)}
+pre.diff{padding:0;overflow-x:auto}pre.diff div{padding:1px 10px;white-space:pre}pre.diff .del{background:#3b1414;color:#ffd6d4}pre.diff .add{background:#10301a;color:#c9f5d2}pre.diff .ctx{color:var(--muted)}
+.lk summary{cursor:pointer}.lk dl{display:grid;grid-template-columns:180px 1fr;gap:4px 12px;margin:8px 0}.lk dt{color:var(--muted)}.lk dd{margin:0}
 </style>
 </head>
 <body>
@@ -92,20 +97,20 @@ textarea{min-height:64px;resize:vertical}
 var BOOT = /*__BOOT__*/null;
 var LABEL = "simulated, not hardware-tested";
 var TABS = [
-  ["files","Project files"],["understand","Understand"],["translate","Translate"],["verify","Verify"],
-  ["deps","Dependency map"],["hmi","HMI/SCADA"],["ops","Operations"]];
+  ["files","Project files"],["understand","Understand"],["check","Check & tests"],["translate","Translate"],["verify","Verify"],
+  ["deps","Dependency map"],["lockin","Lock-in"],["diff","Diff"],["hmi","HMI/SCADA"],["ops","Operations"]];
 var REPORT_TAB = [
-  [/^understand/i,"understand"],[/^(translate|review|mapping)/i,"translate"],[/^(verify|scenario|sim)/i,"verify"],
+  [/^understand/i,"understand"],[/^(check|lint|tests?)[-_.]/i,"check"],[/^(portability|lock-?in)/i,"lockin"],[/^diff/i,"diff"],[/^(translate|review|mapping)/i,"translate"],[/^(verify|scenario|sim)/i,"verify"],
   [/^(dep|conflict)/i,"deps"],[/^(hmi|scada|alarm|retarget|binding)/i,"hmi"],
   [/^(ops|operation|troubleshoot|report|shift|downtime|trend)/i,"ops"]];
 var S = null, LIVE = BOOT && BOOT.mode === "live", CSRF = BOOT && BOOT.csrf;
 // Which assistant hosts the skills: "claude" (Claude Code, /rungstone: commands) or "codex" (plain prompts).
 var APP = (BOOT && BOOT.app) || "claude";
 var HOST = APP === "codex" ? "Codex" : "Claude Code", ASSIST = APP === "codex" ? "Codex" : "Claude";
-var SKILL_OF = {understand:"rungstone-plc",translate:"rungstone-plc",verify:"rungstone-plc",dependencies:"rungstone-plc",portability:"rungstone-plc",check:"rungstone-plc",tests:"rungstone-plc",
+var SKILL_OF = {understand:"rungstone-plc",translate:"rungstone-plc",verify:"rungstone-plc",dependencies:"rungstone-plc",portability:"rungstone-plc",check:"rungstone-plc",tests:"rungstone-plc",diff:"rungstone-plc",
   hmi:"rungstone-hmi-scada",alarms:"rungstone-hmi-scada",troubleshoot:"rungstone-ops",report:"rungstone-ops"};
 var VERB = {understand:"explain what %s does",translate:"translate %s",verify:"verify the translation of %s",
-  dependencies:"map the readers, writers and conflicts in %s",portability:"write a lock-in report for %s",check:"run a static analysis of %s",tests:"generate unit tests for a function block in %s",hmi:"explain %s",alarms:"run alarm cleanup on %s",
+  dependencies:"map the readers, writers and conflicts in %s",portability:"write a lock-in report for %s",check:"run a static analysis of %s",tests:"generate unit tests for a function block in %s",diff:"compare two versions of the same project, old then new: %s",hmi:"explain %s",alarms:"run alarm cleanup on %s",
   troubleshoot:"find why the equipment stopped, using %s",report:"build a shift and downtime report from %s"};
 function commandFor(wf, file, extra){
   if(APP !== "codex") return "/rungstone:"+wf+" "+file+(extra||"");
@@ -234,6 +239,7 @@ function viewFiles(){
        '<div class="jobrow" id="tgtrow"><span class="muted">Target</span><select id="jobtgt">'+
          [["siemens-scl","Siemens S7-1500 SCL"],["rockwell","Rockwell Logix (L5X)"],["iec-st","IEC 61131-3 Structured Text"],["openplc","OpenPLC / Beremiz"],["iec61499","IEC 61499 (Eclipse 4diac)"]]
          .map(function(o){return '<option value="'+o[0]+'"'+((window.__tgt||(S.project||{}).target||"siemens-scl")===o[0]?' selected':'')+'>'+esc(o[1])+'</option>';}).join("")+'</select></div>'+
+       '<div class="jobrow" id="oldrow"><span class="muted">Older version</span><select id="jobold"></select></div>'+
        '<div class="jobrow"><span></span><div><button class="act primary" id="jobgo">Use this file</button> <span class="err" id="joberr"></span></div></div>'+
        '<div id="jobout">'+(window.__jobHTML||"")+'</div></div>';
   }
@@ -460,6 +466,116 @@ function tagTable(t){
 function wireDeps(){var q=el("tagq");if(q) q.oninput=function(){var s=q.value.toLowerCase();el("tagtable").innerHTML=tagTable(((S.dependencies||{}).tags||[]).filter(function(r){
   return !s||JSON.stringify(r).toLowerCase().indexOf(s)>=0;}));};}
 
+var RATE_NAMES={portable:"as-is",rework:"rework",no_equivalent:"no equivalent"};
+function rate(r){return '<span class="rate '+esc(r)+'">'+esc(RATE_NAMES[r]||r||"-")+'</span>';}
+function hrs(h){return h&&h[1]?esc(h[0])+"–"+esc(h[1])+" h":"";}
+function noneYet(what,cmd,tab){return '<div class="empty">No '+what+' yet. Pick a PLC file on the Project files tab and choose this workflow, or run <code>'+esc(commandFor(cmd,"<file>"))+'</code>.</div>'+reportsFor(tab);}
+function viewLockin(){
+  var p=S.portability;
+  if(!p||p.error) return noneYet("lock-in report","portability","lockin");
+  var h='<h2>Lock-in report: '+esc(p.source_platform_name||p.source_platform||"")+' project</h2>';
+  if(p.supported===false) return h+'<div class="banner" style="margin:0">'+esc(p.message||"This source platform is not scored.")+'</div>'+reportsFor("lockin");
+  h+='<div class="muted">'+esc(p.basis||"")+'</div>';
+  if((p.not_assessed||[]).length) h+='<div class="banner safety" style="margin:10px 0"><b>Not assessed (safety logic, excluded):</b> '+
+    p.not_assessed.map(function(n){return '<code>'+esc(n.name)+'</code> <span class="muted">('+esc(n.reason)+')</span>';}).join(", ")+'</div>';
+  var T=p.targets||[],sm=p.summary||{};
+  h+='<h2>What moving costs, per target</h2>'+table([["Target",function(t){return '<b>'+esc(sm[t].name)+'</b>';}],
+    ["Moves as-is",function(t){return esc(sm[t].portable_line_pct)+'% of code lines <span class="muted">('+esc(sm[t].portable_units)+' POU'+(sm[t].portable_units===1?'':'s')+')</span>';}],
+    ["Needs rework",function(t){return esc(sm[t].rework_units)+' POU'+(sm[t].rework_units===1?'':'s');}],
+    ["No equivalent",function(t){var b=sm[t].blockers||[];return b.length?b.map(function(x){return rate("no_equivalent")+' '+esc(x.replace(/\s*\(.*$/,""));}).join("<br>"):'<span class="muted">none</span>';}],
+    ["Rough effort",function(t){return '<span class="mono">'+hrs(sm[t].hours)+'</span>';}]],T.filter(function(t){return sm[t];}));
+  var F=p.findings||[];
+  h+='<h2>What ties it to '+esc(p.source_platform_name||"the platform")+' <span class="muted">('+F.length+' findings, costliest first)</span></h2>';
+  h+=table([["#",function(f){return esc(F.indexOf(f)+1);},1],["Finding",function(f){return esc(f.title);}],
+    ["Found in",function(f){return '<span class="mono">'+esc((f.units||[]).map(function(u){return u.name+" ("+u.count+")";}).join(", "))+'</span>';}]]
+    .concat(T.map(function(t){return [(sm[t]||{}).name||t,function(f){return rate((f.ratings||{})[t])+'<br><span class="muted mono">'+hrs((f.hours||{})[t])+'</span>';}];})),F);
+  var openLk=window.__openLk||{};
+  if(F.length) h+='<h2>How to move each one <span class="muted">(click to open)</span></h2>';
+  h+=F.map(function(f,i){
+    return '<details class="card lk" data-lk="'+esc(f.rule)+'"'+(openLk[f.rule]?' open':'')+'><summary><b>'+(i+1)+'. '+esc(f.title)+'</b> <span class="muted">'+esc(f.category||"")+'</span></summary><dl>'+
+      T.map(function(t){return '<dt>'+esc((sm[t]||{}).name||t)+'</dt><dd>'+rate((f.ratings||{})[t])+' '+esc((f.advice||{})[t]||"")+'</dd>';}).join("")+
+      '</dl><div class="muted">Found at:</div><pre>'+esc((f.units||[]).map(function(u){return (u.where||[]).join("\n");}).join("\n"))+'</pre></details>';}).join("");
+  var U=p.units||[];
+  if(U.length) h+='<h2>Per POU</h2>'+table([["POU",function(u){return '<span class="mono">'+esc(u.name)+'</span>';}],["Kind",function(u){return esc(u.kind||"");}],["Lines",function(u){return esc(u.lines);},1]]
+    .concat(T.map(function(t){return [(sm[t]||{}).name||t,function(u){return rate((u.ratings||{})[t]);}];})),U);
+  if((p.tasks||[]).length) h+='<h2>Tasks</h2>'+table([["Task",function(t){return '<span class="mono">'+esc(t.name)+'</span>';}],["Interval",function(t){return esc(t.interval||"");},1],
+    ["Priority",function(t){return esc(t.priority||"");},1],["Programs",function(t){return esc((t.programs||[]).join(", "));},1]],p.tasks);
+  if((p.warnings||[]).length) h+='<h2>Warnings</h2><ul>'+p.warnings.map(function(w){return '<li>'+esc(typeof w==="string"?w:(w.message||JSON.stringify(w)))+'</li>';}).join("")+'</ul>';
+  if((p.limits||[]).length) h+='<h2>Limits</h2><ul class="muted">'+p.limits.map(function(w){return '<li>'+esc(w)+'</li>';}).join("")+'</ul>';
+  return h+reportsFor("lockin");
+}
+function checkTable(f){
+  return table([["Severity",function(x){return chip(x.severity);}],["Finding",function(x){return '<b>'+esc(x.title)+'</b><div class="muted mono">'+esc(x.rule)+'</div>';}],
+    ["Where",function(x){return '<span class="mono">'+esc(x.where)+'</span>';}],["Detail",function(x){return esc(x.detail||"");}],
+    ["Why it matters / fix",function(x){return esc(x.why||"")+(x.fix?'<div><b>Fix:</b> '+esc(x.fix)+'</div>':'');}]],f,function(x){return "row-"+x.severity;});
+}
+function viewCheck(){
+  var c=S.check,h='';
+  if(!c||c.error) h+='<h2>Check: static analysis</h2>'+noneYet("check results","check","none");
+  else {
+    var sm=c.summary||{},r={high:0,medium:1,low:2};
+    var f=(c.findings||[]).slice().sort(function(a,b){return (r[a.severity]-r[b.severity]);});
+    h+='<h2>Check: static analysis</h2><div class="muted">Things to check, not proof of a bug. Nothing was run.</div>'+
+      '<div class="grid" style="margin-top:8px"><div class="stat"><b>'+esc(sm.high||0)+'</b><span>high</span></div><div class="stat"><b>'+esc(sm.medium||0)+'</b><span>medium</span></div><div class="stat"><b>'+esc(sm.low||0)+'</b><span>low</span></div></div>';
+    if((c.not_assessed||[]).length) h+='<div class="banner safety" style="margin:10px 0"><b>Not assessed (safety logic, excluded):</b> '+c.not_assessed.map(function(n){return '<code>'+esc(n.name||n)+'</code>';}).join(", ")+'</div>';
+    h+='<div class="toolbar"><input type="search" id="chkq" placeholder="filter findings"></div><div id="chktable">'+checkTable(f)+'</div>';
+    if((c.limits||[]).length) h+='<ul class="muted">'+c.limits.map(function(w){return '<li>'+esc(w)+'</li>';}).join("")+'</ul>';
+    window.__chk=f;
+  }
+  var o=(S.outputs||[]).filter(function(x){return x.workflow==="tests";});
+  h+='<h2>Unit tests <span class="muted">(characterisation tests: they lock in what the code does today)</span></h2>';
+  h+=o.length?o.map(function(x){
+    var warn=!x.exists?'<span class="chip high">missing</span>':(x.changed_since_recorded?'<span class="chip medium">edited since recorded</span>':'');
+    return '<details class="card out"><summary><code>'+esc(x.path)+'</code> '+warn+'</summary>'+(x.text!=null?'<pre class="code">'+esc(x.text)+'</pre>':'<div class="muted">Too large to show here.</div>')+'</details>';}).join("")
+    :'<div class="empty">No tests yet. Run <code>'+esc(commandFor("tests","<file>"))+'</code>.</div>';
+  return h+reportsFor("check");
+}
+function wireCheck(){var q=el("chkq");if(q) q.oninput=function(){var s=q.value.toLowerCase();el("chktable").innerHTML=checkTable((window.__chk||[]).filter(function(x){
+  return !s||JSON.stringify(x).toLowerCase().indexOf(s)>=0;}));};}
+function diffBlock(hk){
+  var L=[],T=function(l){return l.text!=null?l.text:"(* comment *) "+(l.comment||"");};(hk.context_before||[]).forEach(function(l){L.push(['ctx',"  "+l.number+"  "+T(l)]);});
+  (hk.old||[]).forEach(function(l){L.push(['del',"- "+l.number+"  "+T(l)]);});
+  (hk.new||[]).forEach(function(l){L.push(['add',"+ "+l.number+"  "+T(l)]);});
+  (hk.context_after||[]).forEach(function(l){L.push(['ctx',"  "+l.number+"  "+T(l)]);});
+  return '<pre class="diff">'+L.map(function(x){return '<div class="'+x[0]+'">'+esc(x[1])+'</div>';}).join("")+'</pre>';
+}
+function viewDiff(){
+  var d=S.diff;
+  if(!d||d.error) return '<h2>Diff</h2>'+noneYet("diff","diff","diff");
+  var sm=d.summary||{},R=d.routines||{},base=function(p){return String(p||"").split(/[\\/]/).pop();};
+  var h='<h2>Diff: <code>'+esc(base(d.old))+'</code> → <code>'+esc(base(d.new))+'</code></h2>';
+  h+='<div class="grid"><div class="stat"><b>'+esc(sm.routines_changed||0)+'</b><span>routines changed</span></div><div class="stat"><b>'+esc(sm.items_changed||0)+'</b><span>rungs/lines changed</span></div>'+
+    '<div class="stat"><b>'+esc((sm.routines_added||0)+" / "+(sm.routines_removed||0))+'</b><span>routines added / removed</span></div>'+
+    '<div class="stat"><b>'+esc((sm.tags_added||0)+" / "+(sm.tags_removed||0)+" / "+(sm.tags_changed||0))+'</b><span>tags added / removed / changed</span></div></div>';
+  if((d.safety||[]).length) h+='<div class="banner safety" style="margin:10px 0"><b>Safety logic not compared:</b> '+d.safety.map(function(x){return '<code>'+esc(x.name)+'</code> <span class="muted">('+esc(x.change)+')</span>';}).join(", ")+'</div>';
+  (R.added||[]).length&&(h+='<h2>Routines added</h2><ul>'+R.added.map(function(r){return '<li><code>'+esc(r.routine||r.name||r)+'</code></li>';}).join("")+'</ul>');
+  (R.removed||[]).length&&(h+='<h2>Routines removed</h2><ul>'+R.removed.map(function(r){return '<li><code>'+esc(r.routine||r.name||r)+'</code></li>';}).join("")+'</ul>');
+  if((R.changed||[]).length){
+    h+='<h2>Changed logic</h2>';
+    R.changed.forEach(function(r){
+      h+='<div class="card"><b class="mono">'+esc(r.routine)+'</b>';
+      (r.hunks||[]).forEach(function(hk){
+        h+='<div class="muted" style="margin-top:8px">'+esc(hk.op)+' '+esc(hk.kind||"")+(hk.writes&&hk.writes.length?' · writes <code>'+esc(hk.writes.join(", "))+'</code>':'')+
+          (hk.reads&&hk.reads.length?' · reads <code>'+esc(hk.reads.join(", "))+'</code>':'')+
+          ((hk.writes_added||[]).length?' · <b>new writes</b> <code>'+esc(hk.writes_added.join(", "))+'</code>':'')+
+          ((hk.writes_removed||[]).length?' · <b>no longer writes</b> <code>'+esc(hk.writes_removed.join(", "))+'</code>':'')+'</div>'+diffBlock(hk);});
+      if((r.interface||[]).length) h+='<div class="muted">Interface: '+esc(r.interface.map(function(x){return typeof x==="string"?x:JSON.stringify(x);}).join("; "))+'</div>';
+      h+='</div>';});
+  }
+  if((d.affects||[]).length) h+='<h2>What else it affects</h2><div class="muted">Tags written by changed logic, and the other places that read them.</div>'+
+    table([["Tag",function(a){return '<b class="mono">'+esc(a.tag)+'</b>';}],["Changed in",function(a){return '<span class="mono">'+esc((a.changed_in||[]).join("; "))+'</span>';}],
+      ["Read by",function(a){return '<span class="mono">'+esc((a.read_by||[]).join("; "))+'</span>';}]],d.affects);
+  var tg=d.tags||{},trow=[];
+  (tg.added||[]).forEach(function(t){trow.push({c:"added",t:t});});(tg.removed||[]).forEach(function(t){trow.push({c:"removed",t:t});});(tg.changed||[]).forEach(function(t){trow.push({c:"changed",t:t});});
+  if(trow.length) h+='<h2>Tags</h2>'+table([["Change",function(x){return chip(x.c);}],["Tag",function(x){return '<span class="mono">'+esc(x.t.name)+'</span>';}],["Scope",function(x){return esc(x.t.scope||"");}],
+    ["Type",function(x){return esc(x.t.data_type||"");},1],["Detail",function(x){return esc(x.t.description||(x.t.changes?JSON.stringify(x.t.changes):""));}]],trow);
+  var dt=d.data_types||{},dn=(dt.added||[]).length+(dt.removed||[]).length+(dt.changed||[]).length;
+  if(dn) h+='<h2>Data types</h2><ul>'+["added","removed","changed"].map(function(k){return (dt[k]||[]).map(function(x){return '<li>'+esc(k)+': <code>'+esc(x.name||x)+'</code></li>';}).join("");}).join("")+'</ul>';
+  if((d.tasks||[]).length) h+='<h2>Tasks</h2><ul>'+d.tasks.map(function(x){return '<li><code>'+esc(x.name||"")+'</code> '+esc(x.change||JSON.stringify(x))+'</li>';}).join("")+'</ul>';
+  if((d.not_compared||[]).length) h+='<h2>Not compared</h2><ul class="muted">'+d.not_compared.map(function(w){return '<li>'+esc(w)+'</li>';}).join("")+'</ul>';
+  return h+reportsFor("diff");
+}
+
 function viewReports(tab,title,empty){
   var r=reportsFor(tab);
   return '<h2>'+esc(title)+'</h2>'+(r||'<div class="empty">'+empty+'</div>');
@@ -476,6 +592,9 @@ function renderMain(){
   else if(current==="translate") v=viewTranslate();
   else if(current==="verify") v=viewVerify();
   else if(current==="deps") v=viewDeps();
+  else if(current==="lockin") v=viewLockin();
+  else if(current==="check") v=viewCheck();
+  else if(current==="diff") v=viewDiff();
   else if(current==="hmi") v=viewReports("hmi","HMI / SCADA","No HMI/SCADA reports yet. Save them as <code>.rungstone/reports/hmi-*.md</code> or <code>alarms-*.md</code>.");
   else v=viewOps();
   el("main").innerHTML='<section class="active" role="tabpanel" aria-labelledby="tab-'+current+'">'+v+'</section>';
@@ -483,12 +602,15 @@ function renderMain(){
     Array.prototype.forEach.call(document.querySelectorAll("details[data-out]"),function(d){
       d.ontoggle=function(){(window.__openOut=window.__openOut||{})[d.getAttribute("data-out")]=d.open;};});}
   if(current==="deps") wireDeps();
+  if(current==="check") wireCheck();
+  Array.prototype.forEach.call(document.querySelectorAll("details[data-lk]"),function(d){
+    d.ontoggle=function(){(window.__openLk=window.__openLk||{})[d.getAttribute("data-lk")]=d.open;};});
   if(current==="files"&&LIVE) wireFiles();
 }
 var WORKFLOWS={understand:"Understand: explain what it does",translate:"Translate to another platform",verify:"Verify the translation (simulator)",
-  dependencies:"Dependency map (PLC + HMI readers and writers)",portability:"Lock-in report (what ties it to its platform)",check:"Check: static analysis (likely bugs)",tests:"Unit tests for a function block",hmi:"HMI/SCADA: explain or rebind",alarms:"Alarm cleanup (ISA-18.2 style)",
+  dependencies:"Dependency map (PLC + HMI readers and writers)",portability:"Lock-in report (what ties it to its platform)",check:"Check: static analysis (likely bugs)",tests:"Unit tests for a function block",diff:"Diff: compare with an older version",hmi:"HMI/SCADA: explain or rebind",alarms:"Alarm cleanup (ISA-18.2 style)",
   troubleshoot:"Troubleshoot a stop",report:"Shift / downtime report"};
-var KIND_WORKFLOWS={plc:["understand","check","translate","verify","dependencies","portability","tests"],hmi:["hmi","dependencies"],
+var KIND_WORKFLOWS={plc:["understand","check","translate","verify","dependencies","portability","diff","tests"],hmi:["hmi","dependencies"],
   alarms:["alarms","troubleshoot","report"],historian:["troubleshoot","report"]};
 var KIND_NAMES={plc:"PLC program",hmi:"HMI/SCADA export",alarms:"alarm/event log",historian:"historian data"};
 function kindOf(path){var k=((S.sniffed||{})[path]||{}).kind;return k||null;}
@@ -499,12 +621,25 @@ function fillWorkflows(){
   wf.innerHTML=list.map(function(o){return '<option value="'+o+'"'+(window.__wf===o?' selected':'')+'>'+esc(WORKFLOWS[o])+'</option>';}).join("");
   el("jobkind").textContent=k?"("+KIND_NAMES[k]+")":"(file type not recognised; all workflows shown)";
 }
+function fillOld(){  // diff: the picked file is the new version; choose the old one from the other PLC sources
+  var row=el("oldrow"),sel=el("jobold");if(!row) return;
+  var on=el("jobwf").value==="diff";row.style.display=on?"":"none";if(!on) return;
+  var others=((S.project||{}).sources||[]).map(function(x){return x.path;}).filter(function(p){return p!==window.__pending&&kindOf(p)!=="hmi"&&kindOf(p)!=="alarms"&&kindOf(p)!=="historian";});
+  var fmt=function(p){var x=(((S.project||{}).sources||[]).filter(function(q){return q.path===p;})[0]||{});return x.format||"";};
+  var near=function(p){var a=String(p).split("/").pop(),b=String(window.__pending).split("/").pop(),n=0;while(n<a.length&&a[n]===b[n]) n++;
+    return (fmt(p)===fmt(window.__pending)?1000:0)+n;};  // likeliest older export first: same format, longest shared name
+  others.sort(function(x,y){return near(y)-near(x);});
+  if(others.indexOf(window.__old)<0) window.__old=others[0]||"";
+  sel.innerHTML=others.length?others.map(function(p){return '<option value="'+esc(p)+'"'+(p===window.__old?' selected':'')+'>'+esc(p)+'</option>';}).join("")
+    :'<option value="">No other PLC file in the list: add the older export in step 1</option>';
+}
 function folderLine(){
   return '<div class="jobrow"><span class="muted">Where</span><span>Run it in '+HOST+' started in <code>'+esc(S.project_root||"the project folder")+
     '</code>. The path in the command is relative to that folder.</span></div>';
 }
 function jobCommand(){
   var f=window.__pending||"",wf=el("jobwf").value,t=el("jobtgt").value;
+  if(wf==="diff") return commandFor(wf,el("jobold").value+" "+f);
   return commandFor(wf,f,wf==="translate"?" to "+t:"");
 }
 function wireJobCopy(){
@@ -533,13 +668,15 @@ function wireFiles(){
     b.onclick=function(){b.disabled=true;post({path:b.getAttribute("data-src-rm")},"srcerr","/api/source/remove");};});
   var wf=el("jobwf"),tgt=el("jobtgt"),go=el("jobgo");
   fillWorkflows();
-  function syncTarget(){el("tgtrow").style.display=wf.value==="translate"?"":"none";}
+  function syncTarget(){el("tgtrow").style.display=wf.value==="translate"?"":"none";fillOld();}
   wf.onchange=function(){window.__wf=wf.value;syncTarget();el("jobout").innerHTML=window.__jobHTML="";};
+  el("jobold").onchange=function(){window.__old=el("jobold").value;el("jobout").innerHTML=window.__jobHTML="";};
   tgt.onchange=function(){window.__tgt=tgt.value;el("jobout").innerHTML=window.__jobHTML="";};
   syncTarget();
   wireJobCopy();
   go.onclick=function(){
     if(!window.__pending){el("joberr").textContent="Pick a file in step 1 first.";return;}
+    if(wf.value==="diff"&&!el("jobold").value){el("joberr").textContent="Add the older export to the list in step 1, then choose it as the older version.";return;}
     el("joberr").textContent="";go.disabled=true;
     var cmd=jobCommand();
     fetch("/api/source/select",{method:"POST",headers:{"Content-Type":"application/json","X-Rungstone-CSRF":CSRF},body:JSON.stringify({path:window.__pending})})

@@ -77,6 +77,19 @@ class WorkbenchServerTest(unittest.TestCase):
         self.assertEqual(st["label"], "simulated, not hardware-tested")
         self.assertIn("understand-main.md", st["reports"])
 
+    def test_lockin_check_diff_results(self):
+        state.save(self.d, "portability.json", {"supported": True, "targets": ["openplc"], "findings": []})
+        state.save(self.d, "check.json", {"summary": {"high": 1}, "findings": []})
+        state.save(self.d, "diff.json", {"summary": {"routines_changed": 1}})
+        st = json.loads(self.req("/api/state")[1])
+        self.assertEqual(st["portability"]["targets"], ["openplc"])
+        self.assertEqual(st["check"]["summary"]["high"], 1)
+        self.assertEqual(st["diff"]["summary"]["routines_changed"], 1)
+        html = self.req("/")[1]
+        for tab in ('["lockin","Lock-in"]', '["check","Check & tests"]', '["diff","Diff"]'):
+            self.assertIn(tab, html)
+        self.assertIn('"dependencies","portability","diff","tests"]', html)
+
     def test_sources_add_select_remove(self):
         h = {"X-Rungstone-CSRF": self.srv.csrf}
         os.makedirs(os.path.join(self.tmp, "plc"))

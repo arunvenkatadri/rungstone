@@ -277,7 +277,7 @@ def build_state(d):
     """Everything the UI needs, as one JSON-serialisable dict."""
     files = {}
     for name in ("project.json", "tagmap.json", "review_queue.json", "verify_results.json",
-                 "dependencies.json", "estimate.json"):
+                 "dependencies.json", "estimate.json", "portability.json", "check.json", "diff.json"):
         files[name] = _read_json(d, name)
     try:
         mapping = state.read_mapping(d)
@@ -311,6 +311,9 @@ def build_state(d):
         "verify": files["verify_results.json"] or {},
         "dependencies": files["dependencies.json"] or {},
         "estimate": files["estimate.json"],
+        "portability": files["portability.json"],
+        "check": files["check.json"],
+        "diff": files["diff.json"],
         "reports": reports,
         "decisions": log_tail,
         "excluded_safety": safety,

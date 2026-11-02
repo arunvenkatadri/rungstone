@@ -129,7 +129,8 @@ For deeper HMI/SCADA work (screens, scripts, alarms, rebinding), the `rungstone-
 
 The workbench is **beta**: say so when you open it, and treat chat as the reliable path for approvals if it misbehaves. It (`/rungstone:workbench`) shows whatever is in `.rungstone/` and refreshes itself, so save every result there as you finish it:
 - the full answer you showed, as Markdown: `.rungstone/reports/understand-<source name>.md`, `translate-<source name>.md`, `verify-<source name>.md`, `portability-<source name>.md`, `check-<source name>.md` or `diff-<new name>.md` (overwrite on a rerun);
-- every translated file you wrote: `state.py output out/<file> [...] --workflow translate` (the Translate tab shows the code);
+- every translated file you wrote: `state.py output out/<file> [...] --workflow translate` (the Translate tab shows the code), and generated tests with `--workflow tests` (the Check & tests tab);
+- the JSON from Lock-in, Check and Diff at the paths in their workflows (`.rungstone/portability.json`, `check.json`, `diff.json`): the Lock-in, Check & tests and Diff tabs draw their tables from them;
 - the queue, mapping, verify results and dependency map through the scripts as above.
 
 ## Approvals and export

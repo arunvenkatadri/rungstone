@@ -166,7 +166,9 @@ flowchart LR
 ```
 
 The workbench (**beta**) is a local page (127.0.0.1 only) that shows the review queue, the mapping table,
-the verification results and the dependency conflicts:
+the verification results and the dependency conflicts, plus tabs for the lock-in report (per-target summary and
+ranked findings), Check & tests (static-analysis findings by severity, generated test files) and Diff (changed
+rungs/lines side by side with what else reads the changed tags):
 
 ![Workbench review queue and mapping table](docs/images/workbench-review.png)
 
