@@ -48,6 +48,12 @@ MatIEC generates from them. Every PROGRAM needs an instance in the resource or i
 ## 3. Language: what MatIEC takes
 
 - Comments: `(* ... *)` only. Don't write `//`.
+- Located (`AT %...`) and plain variables go in **separate** `VAR ... END_VAR` blocks; MatIEC
+  rejects a block that mixes them.
+- Don't name a POU, type or variable like a standard function or block (`TON`, `MID`, `LIMIT`,
+  `INT_TO_REAL`...); `TON` as a program name crashes the compiler. Don't name a POU or type like
+  their parameters (`IN`, `P`, `L`, `N`, `K`, `Q`, `G`, `MN`, `MX`, `CLK`): use `prog_...` /
+  `FB_...` names.
 - No `{...}` anywhere. MatIEC treats braces as pragmas and passes their contents into the
   generated C code.
 - Edition 2 ST plus references: `REF_TO`, `REF()`, `^` and `NULL` are accepted (OpenPLC compiles
@@ -56,6 +62,7 @@ MatIEC generates from them. Every PROGRAM needs an instance in the resource or i
   `CONTINUE`.
 - Standard blocks: TON, TOF, TP, R_TRIG, F_TRIG, CTU, CTD, CTUD, SR, RS, and the standard
   conversion functions (`INT_TO_REAL`, `REAL_TO_INT`...). REAL to integer conversions round.
+  MatIEC's library also has PID, RAMP, HYSTERESIS, INTEGRAL, DERIVATIVE, RTC and SEMA.
 - Literals: `T#500ms`, `16#FF`, `TRUE`/`FALSE`.
 - `openplc_check.py` enforces all of the above; fix its errors rather than arguing with them.
 

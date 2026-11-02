@@ -12,7 +12,10 @@ Checks:
   syntax       only (* *) comments; no {...} pragmas (MatIEC passes them through as C code); no
                CODESYS/TwinCAT extensions (OOP, POINTER TO/ADR, __NEW, __TRY, S=/R=, bit access x.3,
                __XWORD, LTIME...). REF_TO / REF() are accepted: OpenPLC compiles with references on.
-  located vars %IX/%QX a.b (b 0-7), %IB/%IW/%ID/%IL, %QB/%QW/%QD/%QL, %MW/%MD/%ML, index 0-1023; no
+  names        no POU, type or variable named like a standard function/block (TON, MID, INT_TO_REAL...);
+               no POU or type named like their parameters (IN, P, L, N, K, Q...)
+  located vars located (AT %...) and plain variables in separate VAR blocks;
+               %IX/%QX a.b (b 0-7), %IB/%IW/%ID/%IL, %QB/%QW/%QD/%QL, %MW/%MD/%ML, index 0-1023; no
                %MX/%MB; type width matches the size letter; no duplicates; only in PROGRAM or
                CONFIGURATION (not in FUNCTION_BLOCK/FUNCTION)
   behaviour    VAR RETAIN is not kept by OpenPLC (only %MW/%MD/%ML with Persistent Storage on);
@@ -48,6 +51,25 @@ LOCATED_RE = re.compile(r"^\s*(\w+)\s+AT\s+(%\S+?)\s*:\s*([\w\[\]. ]+?)\s*(?::=[
 BLOCK_RE = re.compile(r"^\s*(PROGRAM|FUNCTION_BLOCK|FUNCTION|TYPE|CONFIGURATION|RESOURCE)\b\s*(\w+)?", re.I)
 END_RE = re.compile(r"^\s*END_(PROGRAM|FUNCTION_BLOCK|FUNCTION|TYPE|CONFIGURATION|RESOURCE)\b", re.I)
 VAR_RE = re.compile(r"^\s*(VAR\w*)\b([^;]*)$", re.I)
+
+# Names in MatIEC's standard library (OpenPLC's lib/*.txt). A POU, type or variable with one of these
+# names fails to compile (TON as a program name crashes the compiler). Type-suffixed and _TO_
+# conversion variants (ADD_INT, INT_TO_REAL...) are matched by STD_VARIANT_RE.
+STD_NAMES = set("""ABS ACOS ADD AND ASIN ATAN CONCAT COS CTD CTU CTUD DELETE DIV DIVTIME EQ EXP EXPT FIND F_TRIG GE
+GT HYSTERESIS INSERT LE LEFT LEN LIMIT LN LOG LT MAX MID MIN MOD MOVE MUL MULTIME MUX NE NOT OR REPLACE RIGHT ROL
+ROR RS RTC R_TRIG SEL SEMA SHL SHR SIN SQRT SR SUB TAN TOF TON TP TRUNC XOR DERIVATIVE INTEGRAL PID RAMP""".split())
+ELEMENTARY_RE = r"(BOOL|SINT|INT|DINT|LINT|USINT|UINT|UDINT|ULINT|REAL|LREAL|TIME|DATE|TOD|DT|BYTE|WORD|DWORD|LWORD|STRING)"
+STD_VARIANT_RE = re.compile(r"^(%s_TO_%s|(BYTE|WORD|DWORD|LWORD)_BCD_TO_\w+|\w+_TO_BCD_\w+|(%s)_%s|(%s)_(DATE_TOD|DT_TIME|TOD_TIME)|"
+                            r"DATE_AND_TIME_TO_\w+)$" % (ELEMENTARY_RE, ELEMENTARY_RE, "|".join(sorted(STD_NAMES)), ELEMENTARY_RE,
+                                                        "|".join(sorted(STD_NAMES))), re.I)
+# Parameter names of the standard functions: a POU or type with one of these names breaks the library.
+STD_PARAMS = set("CLK G IN IN0 IN1 IN2 K L MN MX N P Q".split())
+
+
+def std_clash(name):
+    u = name.upper()
+    return u in STD_NAMES or bool(STD_VARIANT_RE.match(u))
+
 
 # Syntax MatIEC doesn't take, with the reason. Comments and strings are blanked before matching.
 FORBIDDEN = [
@@ -219,6 +241,7 @@ def check(text):
         vm = VAR_RE.match(ln)
         if vm and ln.strip().upper().startswith("VAR"):
             var_section = (vm.group(1).upper() + " " + vm.group(2).upper()).strip()
+            section_kinds = {"located": None, "plain": None}
             if "RETAIN" in var_section and "NON_RETAIN" not in var_section:
                 warnings.append({"line": no, "rule": "retain",
                                  "message": "VAR RETAIN: OpenPLC does not keep these through a restart. Values that must "
@@ -227,6 +250,22 @@ def check(text):
         if re.match(r"^\s*END_VAR\b", ln, re.I):
             var_section = None
             continue
+        if var_section:
+            dm = re.match(r"^\s*(\w+(?:\s*,\s*\w+)*)\s*(AT\s+\S+\s*)?:", ln)
+            if dm:
+                kind = "located" if dm.group(2) else "plain"
+                section_kinds[kind] = section_kinds[kind] or (dm.group(1), no)
+                if section_kinds["located"] and section_kinds["plain"] and kind == ("plain" if section_kinds["plain"][1] == no else "located"):
+                    other = section_kinds["located" if kind == "plain" else "plain"]
+                    errors.append({"line": no, "rule": "mixed_var_block",
+                                   "message": "%s and %s (line %d) are in the same VAR block. MatIEC needs located "
+                                              "(AT %%...) and plain variables in separate VAR ... END_VAR blocks."
+                                              % (dm.group(1), other[0], other[1])})
+                for n in re.split(r"\s*,\s*", dm.group(1)):
+                    if std_clash(n):
+                        errors.append({"line": no, "rule": "name_clash",
+                                       "message": "Variable %s has the name of a standard function or block; MatIEC "
+                                                  "rejects it. Rename it." % n})
         lm = LOCATED_RE.match(ln)
         if lm and var_section:
             owner = stack[-1][0] if stack else None
@@ -246,6 +285,17 @@ def check(text):
     for kind, name, no in stack:
         errors.append({"line": no, "rule": "structure", "message": "%s %s is never closed (END_%s)." % (kind, name or "", kind)})
 
+    for b in blocks:
+        if b["kind"] in ("PROGRAM", "FUNCTION_BLOCK", "FUNCTION") and b["name"] and \
+                (std_clash(b["name"]) or b["name"].upper() in STD_PARAMS):
+            errors.append({"line": b["line"], "rule": "name_clash",
+                           "message": "%s %s clashes with a name in the standard library (a function, block or one of "
+                                      "their parameters: %s). Rename it, e.g. prog_%s / FB_%s."
+                                      % (b["kind"], b["name"], " ".join(sorted(STD_PARAMS)), b["name"], b["name"])})
+    for no, ln in enumerate(lines, 1):
+        tm = re.match(r"^\s*(\w+)\s*:\s*(STRUCT\b|\()", ln)
+        if tm and (std_clash(tm.group(1)) or tm.group(1).upper() in STD_PARAMS):
+            errors.append({"line": no, "rule": "name_clash", "message": "Type %s clashes with a standard library name." % tm.group(1)})
     programs = {b["name"].lower() for b in blocks if b["kind"] == "PROGRAM" and b["name"]}
     configs = [b for b in blocks if b["kind"] == "CONFIGURATION"]
     resources = [b for b in blocks if b["kind"] == "RESOURCE"]

@@ -14,6 +14,8 @@ PROGRAM prog_TwoTank
     Valve2_AO AT %QW1 : UINT;      (* was O:6.0 tank 2 drain valve analog output *)
     Level_Cutoff AT %MW0 : INT;    (* was N7:1 drain cutoff 0..1000, written by the HMI over Modbus (holding register 1024) *)
     Drain_Cmd AT %MW1 : UINT;      (* was N7:2 drain valve command, written by the HMI (holding register 1025) *)
+  END_VAR
+  VAR
     Level_Pct : INT;               (* was N7:0 scaled level 0..1000 *)
   END_VAR
 

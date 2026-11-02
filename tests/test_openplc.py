@@ -85,6 +85,20 @@ class CheckTests(unittest.TestCase):
         self.assertIn("TwinCAT-style", msgs)
         self.assertEqual({w["rule"] for w in res["warnings"]}, {"retain", "unused_program", "header"})
 
+    def test_rules_found_with_the_real_compiler(self):
+        # each of these was rejected by OpenPLC's MatIEC build (tools/compile_openplc.py)
+        cfg = ("\nCONFIGURATION Config0\n  RESOURCE Res0 ON PLC\n    TASK Main(INTERVAL := T#20ms,PRIORITY := 0);\n"
+               "    PROGRAM Inst0 WITH Main : %s;\n  END_RESOURCE\nEND_CONFIGURATION\n")
+        mixed = "PROGRAM prog0\n  VAR\n    a AT %IX0.0 : BOOL;\n    b : INT;\n  END_VAR\n  b := 1;\nEND_PROGRAM" + cfg % "prog0"
+        split = mixed.replace("    b : INT;\n", "  END_VAR\n  VAR\n    b : INT;\n")
+        self.assertIn("mixed_var_block", {e["rule"] for e in openplc_check.check(mixed)["errors"]})
+        self.assertTrue(openplc_check.check(split)["ok"])
+        for prog, var in (("TON", "x"), ("IN", "x"), ("prog0", "MID"), ("prog0", "INT_TO_REAL")):
+            st = "PROGRAM %s\n  VAR\n    %s : INT;\n  END_VAR\n  %s := 1;\nEND_PROGRAM" % (prog, var, var) + cfg % prog
+            self.assertIn("name_clash", {e["rule"] for e in openplc_check.check(st)["errors"]}, (prog, var))
+        ok = "PROGRAM prog0\n  VAR\n    P : INT;\n  END_VAR\n  P := 1;\nEND_PROGRAM" + cfg % "prog0"
+        self.assertTrue(openplc_check.check(ok)["ok"])
+
     def test_strings_and_comments_not_flagged(self):
         with open(OPENPLC_ST) as f:
             text = f.read()
@@ -158,6 +172,15 @@ class ConvertAndSimulateTests(unittest.TestCase):
         self.assertEqual(runs["S4"]["verdict"], "differs")
         div = runs["S4"]["first_divergence"]
         self.assertEqual((div["signal"], div["source"], div["target"]), ("N7:0", -250, 0))
+
+
+@unittest.skipUnless(os.environ.get("RUNGSTONE_COMPILE") == "1",
+                     "set RUNGSTONE_COMPILE=1 with the rungstone-matiec Docker image built (tools/matiec)")
+class RealCompilerTests(unittest.TestCase):
+    def test_fixture_compiles_with_matiec_and_gcc(self):
+        p = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "compile_openplc.py"), OPENPLC_ST],
+                           capture_output=True, text=True, timeout=600)
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
 
 
 class HmiModbusTests(unittest.TestCase):
