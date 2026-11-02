@@ -19,7 +19,7 @@ flowchart LR
     end
 
     subgraph RS["Rungstone"]
-        P["rungstone-plc<br/>understand · translate<br/>verify · dependencies"]
+        P["rungstone-plc<br/>understand · translate<br/>verify · dependencies · lock-in"]
         H["rungstone-hmi-scada<br/>rebind · migrate · alarms"]
         O["rungstone-ops<br/>why did it stop? · reports"]
         Q{{"Review queue<br/>engineer approves"}}
@@ -94,10 +94,10 @@ The software is provided under the MIT license, "as is", without warranty of any
 
 | Component | What it does |
 |---|---|
-| `skills/rungstone-plc` | **Phases 1–2: PLC.** Understand (summary, machine sequence by rung, signal table with evidence, open questions). Translate to S7-1500 SCL, Rockwell Logix L5X, or IEC Structured Text, with `mapping.csv` and a ranked review queue. Verify with scenario plans plus a pure-Python scan-cycle simulator that compares source and target scan by scan. Dependency map of readers, writers and conflicts across PLC + HMI + SCADA. |
+| `skills/rungstone-plc` | **Phases 1–2: PLC.** Understand (summary, machine sequence by rung, signal table with evidence, open questions). Translate to S7-1500 SCL, Rockwell Logix L5X, or IEC Structured Text, with `mapping.csv` and a ranked review queue. Verify with scenario plans plus a pure-Python scan-cycle simulator that compares source and target scan by scan. Dependency map of readers, writers and conflicts across PLC + HMI + SCADA. Lock-in report for CODESYS, TwinCAT and IEC ST projects: what ties the code to its platform, rated per target (OpenPLC/Beremiz, plain IEC ST, S7-1500, Logix) with rough hours. |
 | `skills/rungstone-hmi-scada` | **Phase 3: HMI/SCADA.** Explain screens, buttons, indicators and scripts. Retarget bindings with `mapping.csv`. Migrate tag databases, scripts and alarms (screens as draft layouts only). Verify bindings. Check consistency across PLC + HMI + SCADA. Clean up alarms from alarm history (ISA-18.2 style: floods, chattering, standing alarms, priorities, response text). |
 | `skills/rungstone-ops` | **Phase 4: operations, offline.** Find why a line stopped from historian/alarm exports plus the PLC logic (cause, evidence, logic cited, what to check first, what wasn't checked). Answer plant questions with a chart. Build shift and downtime reports. |
-| `commands/` | `/rungstone:understand` `/rungstone:translate` `/rungstone:verify` `/rungstone:dependencies` `/rungstone:hmi` `/rungstone:alarms` `/rungstone:troubleshoot` `/rungstone:report` `/rungstone:workbench` (beta) `/rungstone:export` |
+| `commands/` | `/rungstone:understand` `/rungstone:translate` `/rungstone:verify` `/rungstone:dependencies` `/rungstone:portability` `/rungstone:hmi` `/rungstone:alarms` `/rungstone:troubleshoot` `/rungstone:report` `/rungstone:workbench` (beta) `/rungstone:export` |
 | `hooks/` | Guardrails: block `/rungstone:export` while high-risk items are open; block device/network write actions; warn when a file read or written looks like safety logic. |
 | `shared/` | Safe XML parsing, `.rungstone/` state, export, workbench UI, JSON schemas. Vendored into each skill's `scripts/_shared/` so every skill also works standalone. |
 | `mcp/historian` | **Optional** read-only historian connector (SQLite, CSV, ODBC, OPC UA). **Off until you configure it** in the plugin settings. See below. |
@@ -235,6 +235,8 @@ project, and all are released under this repository's MIT license:
 | `fixtures/plc/timers_hmi` | Fill-station L5X, FactoryTalk-style tag CSV, IEC ST translation for simulation | authored for Rungstone |
 | `fixtures/plc/estop` | GuardLogix-style conveyor cell L5X with a safety program and an e-stop routine | authored for Rungstone |
 | `fixtures/plc/unwritten_bit` | CODESYS-style PLCopen XML mixer program | authored for Rungstone |
+| `fixtures/plc/codesys_palletizer` | CODESYS-style PLCopen XML palletizer cell (inheritance, interfaces, motion, file logging, CFC, a safety POU) | authored for Rungstone |
+| `fixtures/plc/twincat_gripper` | TwinCAT-style `.TcPOU` gripper block | authored for Rungstone |
 | `fixtures/plc/two_tank` | SLC 500 two-tank ladder (RSLogix 500 ASCII style), SCL translation, scenarios | authored for Rungstone |
 | `fixtures/hmi/*` | FactoryTalk, Ignition, WinCC-style exports, scripts, synthetic alarm history (seeded generator in `gen/`) | authored for Rungstone |
 | `fixtures/ops/*` | Pump-station L5X, synthetic historian, alarm and downtime logs (seeded generator in `gen/`) | authored for Rungstone |

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_Gripper" Id="{3f0c6a2e-9a51-4d7b-8e1c-2b4f6d8a0c13}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Gripper EXTENDS FB_Device IMPLEMENTS I_Device
+VAR_INPUT
+	bClose : BOOL; // Close command
+END_VAR
+VAR_OUTPUT
+	bClosed : BOOL;
+END_VAR
+VAR
+	bClosedSensor AT %I* : BOOL; // Jaw closed sensor
+	bValve AT %Q* : BOOL; // Close valve
+	fbSysTime : NT_GetTime;
+	tClose : TON;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[bValve := bClose AND NOT bFault;
+tClose(IN := bValve AND NOT bClosedSensor, PT := T#2S);
+IF tClose.Q THEN
+	bFault := TRUE;
+END_IF
+bClosed := bClosedSensor;]]></ST>
+    </Implementation>
+    <Method Name="Release" Id="{9b1d2c3e-4f50-4a6b-8c7d-0e1f2a3b4c5d}">
+      <Declaration><![CDATA[METHOD Release : BOOL]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[bValve := FALSE;
+Release := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

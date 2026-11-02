@@ -778,11 +778,55 @@ def parse_simaticml(path_, root, ctx):
 
 BLOCK_START_RE = re.compile(
     r'^\s*(FUNCTION_BLOCK|FUNCTION|ORGANIZATION_BLOCK|DATA_BLOCK|TYPE|PROGRAM|INTERFACE|METHOD|ACTION|PROPERTY)\s+'
+    r'(?:(?:ABSTRACT|FINAL|PUBLIC|PRIVATE|PROTECTED|INTERNAL)\s+)*'
     r'("[^"]+"|[A-Za-z_][\w.]*)', re.I | re.M)
 VAR_START_RE = re.compile(r"^\s*(VAR_INPUT|VAR_OUTPUT|VAR_IN_OUT|VAR_TEMP|VAR_GLOBAL|VAR_EXTERNAL|VAR_STAT|VAR_INST|VAR)\b(.*)$", re.I)
 DECL_RE = re.compile(
-    r'^\s*("[^"]+"|[A-Za-z_]\w*)\s*(\{[^}]*\})?\s*(?:AT\s+(%[A-Z]+[\d.]+))?\s*:\s*([^;:=]+?)\s*(?::=\s*[^;]*)?;\s*(?://\s*(.*)|\(\*\s*(.*?)\s*\*\))?\s*$',
+    r'^\s*("[^"]+"|[A-Za-z_]\w*)\s*(\{[^}]*\})?\s*(?:AT\s+(%[A-Z]+(?:[\d.]+|\*)))?\s*:\s*([^;:=]+?)\s*(?::=\s*[^;]*)?;\s*(?://\s*(.*)|\(\*\s*(.*?)\s*\*\))?\s*$',
     re.I)
+
+
+PRAGMA_RE = re.compile(r"\{[^{}\n]*\}")
+HEADER_OOP_RE = re.compile(r"\bEXTENDS\s+([\w.]+(?:\s*,\s*[\w.]+)*)|\bIMPLEMENTS\s+([\w.]+(?:\s*,\s*[\w.]+)*)", re.I)
+
+
+def decl_meta(text):
+    """Header facts from a declaration: EXTENDS / IMPLEMENTS and {pragmas}.
+
+    Only names and pragma text are kept (no initial values). Used by the lock-in report:
+    inheritance, interfaces and attribute pragmas are what tie code to CODESYS-style runtimes.
+    """
+    out = {}
+    if not text:
+        return out
+    up = text.upper()
+    decl_part = text[:up.rfind("END_VAR")] if "END_VAR" in up else text
+    m = BLOCK_START_RE.search(text)
+    if m:
+        line_end = text.find("\n", m.start())
+        header = text[m.start():line_end if line_end >= 0 else len(text)].strip()
+        out["header"] = re.sub(r"\s*(//.*|\(\*.*?\*\))\s*$", "", header)
+        for em in HEADER_OOP_RE.finditer(out["header"]):
+            if em.group(1):
+                out["extends"] = [x.strip() for x in em.group(1).split(",")]
+            if em.group(2):
+                out["implements"] = [x.strip() for x in em.group(2).split(",")]
+    pr = [p for p in PRAGMA_RE.findall(decl_part) if not p.startswith("{*")]
+    if pr:
+        out["pragmas"] = sorted(set(pr))
+    return out
+
+
+def type_kind(text):
+    """struct / union / enum / alias for a TYPE ... END_TYPE declaration."""
+    body = re.sub(r"\{[^{}]*\}|//[^\n]*|\(\*.*?\*\)", "", text, flags=re.S)
+    if re.search(r"\bUNION\b", body, re.I):
+        return "union"
+    if re.search(r"\bSTRUCT\b", body, re.I):
+        return "struct"
+    if re.search(r":\s*\(", body):
+        return "enum"
+    return "alias"
 
 
 def parse_decls(text):
@@ -819,6 +863,7 @@ def parse_decls(text):
             out.append((section, compact({"name": ".".join(struct_stack + [dm.group(1)]), "data_type": dm.group(4).strip(),
                                           "address": dm.group(3), "description": dm.group(5) or dm.group(6),
                                           "retain": "RETAIN" in section or None,
+                                          "persistent": "PERSISTENT" in section or None,
                                           "constant": "CONSTANT" in section or None})))
     return out
 
@@ -850,7 +895,9 @@ def parse_iec_text(path_, text, ctx, fmt):
     for kind, name, chunk, first_line in starts_text:
         decls = parse_decls(chunk)
         if kind == "TYPE":
-            project["data_types"].append(compact({"name": name, "members": [d for _, d in decls]}))
+            project["data_types"].append(compact({"name": name, "kind": type_kind(chunk),
+                                                  "members": [d for _, d in decls],
+                                                  "pragmas": decl_meta(chunk).get("pragmas")}))
             continue
         if kind == "DATA_BLOCK":
             for _, d in decls:
@@ -886,10 +933,14 @@ def parse_iec_text(path_, text, ctx, fmt):
         for s, d in decls:
             if not s.startswith("VAR_GLOBAL"):
                 sections.setdefault(s, []).append(d)
-        project["routines"].append(compact({"id": name, "program": None, "name": name, "kind": kind.lower(),
-                                            "language": "SCL" if fmt == "siemens-scl" else "ST",
-                                            "interface": [{"section": s, "members": ms} for s, ms in sections.items()],
-                                            "lines": body}))
+        entry = {"id": name, "program": None, "name": name, "kind": kind.lower(),
+                 "language": "SCL" if fmt == "siemens-scl" else "ST",
+                 "interface": [{"section": s, "members": ms} for s, ms in sections.items()],
+                 "lines": body}
+        entry.update(decl_meta("\n".join(lines[:body_start]) if body_start else chunk.split("\n", 1)[0]))
+        if kind == "INTERFACE":
+            entry.pop("lines", None)
+        project["routines"].append(compact(entry))
     return project
 
 
@@ -911,6 +962,8 @@ def po_type(var):
         return "ARRAY[%s] OF %s" % (dims, base)
     if n in ("string", "wstring"):
         return n.upper() + ("[%s]" % inner.attrib["length"] if inner.attrib.get("length") else "")
+    if n == "pointer":
+        return "POINTER TO %s" % po_type_from(kid(inner, "baseType"))
     return n
 
 
@@ -939,6 +992,7 @@ def po_vars(iface):
             ms.append(compact({"name": v.attrib.get("name"), "data_type": po_type(v), "address": v.attrib.get("address"),
                                "description": po_doc(v),
                                "retain": sec.attrib.get("retain") == "true" or sec.attrib.get("persistent") == "true" or None,
+                               "persistent": sec.attrib.get("persistent") == "true" or None,
                                "constant": sec.attrib.get("constant") == "true" or None}))
         sections.append({"section": n, "members": ms})
     return sections
@@ -950,6 +1004,11 @@ def po_body(body):
         return None, None
     lang_el = list(body)[0]
     lang = lname(lang_el)
+    if lang == "addData":
+        cfc = [d for d in kids(lang_el, "data") if (d.attrib.get("name") or "").lower().endswith("/cfc")]
+        if cfc:
+            return "CFC", [po_graphic(cfc[0])]
+        return None, None
     if lang in ("ST", "IL"):
         txt = text_of(lang_el) or ""
         return lang, [{"number": i + 1, "text": l.rstrip()} for i, l in enumerate(txt.splitlines())]
@@ -1022,6 +1081,43 @@ def po_graphic(g):
     return {"number": 1, "text": "  ".join(parts), "refs": refs, "summarized": True}
 
 
+def po_attributes(el):
+    """CODESYS attribute pragmas exported as addData Attributes, rendered as {attribute 'x'}."""
+    out = []
+    for ad in kids(el, "addData"):
+        for a in descendants(ad, "Attribute"):
+            n, v = a.attrib.get("Name"), a.attrib.get("Value")
+            if n:
+                out.append("{attribute '%s'%s}" % (n, " := '%s'" % v if v else ""))
+    return sorted(set(out)) or None
+
+
+def po_codesys_meta(pou, iface):
+    """EXTENDS / IMPLEMENTS / pragmas from CODESYS addData (inheritance, attributes, plain-text interface)."""
+    meta = {}
+    for holder in [x for x in (pou, iface) if x is not None]:
+        for ad in kids(holder, "addData"):
+            for d in kids(ad, "data"):
+                dn = (d.attrib.get("name") or "").lower()
+                if dn.endswith("/pouinheritance") or dn.endswith("/interfaceinheritance"):
+                    ext = [text_of(e) for e in descendants(d, "Extends") if text_of(e)]
+                    imp = [text_of(e) for e in descendants(d, "Implements") if text_of(e)]
+                    if ext:
+                        meta["extends"] = ext
+                    if imp:
+                        meta["implements"] = imp
+                elif dn.endswith("/interfaceasplaintext"):
+                    for k, v in decl_meta(text_of(d) or "").items():
+                        if k == "pragmas":
+                            meta["pragmas"] = sorted(set(meta.get("pragmas", []) + v))
+                        else:
+                            meta.setdefault(k, v)
+        attrs = po_attributes(holder)
+        if attrs:
+            meta["pragmas"] = sorted(set(meta.get("pragmas", []) + attrs))
+    return meta
+
+
 def parse_plcopen(path_, root, ctx):
     project = new_project(path_, "plcopen-xml")
     hdr = kid(root, "fileHeader")
@@ -1034,7 +1130,10 @@ def parse_plcopen(path_, root, ctx):
         if bt is not None:
             for v in descendants(bt, "variable"):
                 members.append(compact({"name": v.attrib.get("name"), "data_type": po_type(v), "description": po_doc(v)}))
-        project["data_types"].append(compact({"name": dt.attrib.get("name"), "members": members, "description": po_doc(dt)}))
+        bk = lname(list(bt)[0]) if bt is not None and len(bt) else None
+        bk = {"struct": "struct", "union": "union", "enum": "enum"}.get(bk, "alias" if bk else None)
+        project["data_types"].append(compact({"name": dt.attrib.get("name"), "kind": bk, "members": members,
+                                              "description": po_doc(dt), "pragmas": po_attributes(dt)}))
 
     for pou in descendants(root, "pou"):
         name = pou.attrib.get("name")
@@ -1046,11 +1145,25 @@ def parse_plcopen(path_, root, ctx):
         lang, content = po_body(kid(pou, "body"))
         entry = {"id": name, "program": None, "name": name, "kind": ptype, "language": lang,
                  "description": po_doc(pou), "interface": [s for s in po_vars(iface) if s["members"]]}
+        entry.update(po_codesys_meta(pou, iface))
         if lang in ("ST", "IL"):
             entry["lines"] = content
         elif content:
             entry["networks"] = content
         project["routines"].append(compact(entry))
+        # CODESYS properties: Get/Set accessors
+        for prop in descendants(pou, "Property"):
+            for acc_name in ("GetAccessor", "SetAccessor"):
+                acc = kid(prop, acc_name)
+                if acc is None:
+                    continue
+                slang, scontent = po_body(kid(acc, "body"))
+                sid = "%s.%s.%s" % (name, prop.attrib.get("name"), acc_name[:3])
+                se = {"id": sid, "program": name, "name": "%s.%s" % (prop.attrib.get("name"), acc_name[:3]),
+                      "kind": "property", "language": slang}
+                if slang in ("ST", "IL"):
+                    se["lines"] = scontent
+                project["routines"].append(compact(se))
         # actions, transitions, CODESYS methods
         for sub_name in ("action", "transition", "Method", "method"):
             for sub in descendants(pou, sub_name):
@@ -1060,19 +1173,33 @@ def parse_plcopen(path_, root, ctx):
                 slang, scontent = po_body(b)
                 sid = "%s.%s" % (name, sub.attrib.get("name"))
                 se = {"id": sid, "program": name, "name": sub.attrib.get("name"), "kind": sub_name.lower(), "language": slang}
+                if sub_name in ("Method", "method"):
+                    se.update(po_codesys_meta(sub, kid(sub, "interface")))
+                    se.pop("header", None)
                 if slang in ("ST", "IL"):
                     se["lines"] = scontent
                 elif scontent:
                     se["networks"] = scontent
                 project["routines"].append(compact(se))
 
+    # CODESYS interfaces (INTERFACE objects) live in vendor addData, outside <pous>
+    for itf in descendants(root, "Interface"):
+        if not itf.attrib.get("name"):
+            continue
+        meta = po_codesys_meta(itf, kid(itf, "interface"))
+        methods = sorted(m.attrib.get("name") for m in descendants(itf, "Method") if m.attrib.get("name"))
+        project["routines"].append(compact({"id": itf.attrib["name"], "program": None, "name": itf.attrib["name"],
+                                            "kind": "interface", "methods": methods, "extends": meta.get("extends")}))
     for gv in descendants(root, "globalVars"):
         scope = "global:" + (gv.attrib.get("name") or "")
+        gv_attrs = po_attributes(gv)
         for v in kids(gv, "variable"):
             project["tags"].append(compact({"name": v.attrib.get("name"), "scope": scope, "data_type": po_type(v),
                                             "address": v.attrib.get("address"), "description": po_doc(v),
-                                            "retain": gv.attrib.get("retain") == "true" or None,
-                                            "constant": gv.attrib.get("constant") == "true" or None}))
+                                            "retain": gv.attrib.get("retain") == "true" or gv.attrib.get("persistent") == "true" or None,
+                                            "persistent": gv.attrib.get("persistent") == "true" or None,
+                                            "constant": gv.attrib.get("constant") == "true" or None,
+                                            "pragmas": gv_attrs}))
     for task in descendants(root, "task"):
         progs = [pi.attrib.get("typeName") for pi in descendants(task, "pouInstance")]
         project["tasks"].append(compact({"name": task.attrib.get("name"), "interval": task.attrib.get("interval"),
@@ -1097,7 +1224,15 @@ def parse_twincat(path_, root, ctx):
                 project["tags"].append(t)
             continue
         if kind == "DUT":
-            project["data_types"].append(compact({"name": name, "members": [d for _, d in parse_decls(decl)]}))
+            project["data_types"].append(compact({"name": name, "kind": type_kind(decl),
+                                                  "members": [d for _, d in parse_decls(decl)],
+                                                  "pragmas": decl_meta(decl).get("pragmas")}))
+            continue
+        if kind == "Itf":
+            meta = decl_meta(decl)
+            methods = sorted(m.attrib.get("Name") for m in kids(obj, "Method") if m.attrib.get("Name"))
+            project["routines"].append(compact({"id": name, "program": None, "name": name, "kind": "interface",
+                                                "methods": methods, "extends": meta.get("extends")}))
             continue
         if kind != "POU":
             continue
@@ -1114,6 +1249,9 @@ def parse_twincat(path_, root, ctx):
                 sections.setdefault(s, []).append(dd)
             e = {"id": rid, "program": name if rid != name else None, "name": el.attrib.get("Name"), "kind": sub_kind,
                  "interface": [{"section": s, "members": ms} for s, ms in sections.items()]}
+            e.update(decl_meta(d))
+            if rid != name:
+                e.pop("header", None)
             if st is not None:
                 e["language"] = "ST"
                 e["lines"] = [{"number": i + 1, "text": l.rstrip()} for i, l in enumerate((text_of(st) or "").splitlines())]

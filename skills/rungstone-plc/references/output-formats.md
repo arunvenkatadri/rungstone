@@ -139,6 +139,30 @@ Conflict types: `label_mismatch`, `competing_writers`, `read_never_written`, `br
 plain-English consequence ("the HMI shows elapsed fill time from Fill_Timer.ACC; after
 translation that value no longer exists — rebind to Fill_Elapsed_ms").
 
+## 5. Lock-in report
+
+Use `portability.py --md` output as the base, then put your reading on top:
+
+```
+# Lock-in report: <project>
+<Safety notice>
+> Rough planning estimate from static analysis ... Not a quote.   (keep this line)
+
+## What drives the effort
+3-5 bullets, biggest first: finding, where, what moving it involves, hours per target.
+
+## Summary
+| Target | Moves as-is | Needs rework | No equivalent | Rough effort |
+## What ties it to <platform>     (full findings table from the script)
+## How to move each one
+## By POU
+## Libraries referenced
+## Tasks
+## What this report does not see
+```
+Ratings are `as-is`, `rework` or `no equivalent`. Hours are always a range ("40-150 h") and
+never a single number. Don't add a recommendation row.
+
 ## Export
 
 `/rungstone:export` (or `export.py`) copies approved deliverables to `export/<timestamp>/`

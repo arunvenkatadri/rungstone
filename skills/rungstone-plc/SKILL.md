@@ -1,6 +1,6 @@
 ---
 name: rungstone-plc
-description: Understand, translate, verify, and dependency-map industrial PLC code across vendors (Rockwell/Allen-Bradley Studio 5000, RSLogix 5000/500, L5X, SLC 500, PLC-5, Siemens TIA Portal SCL/S7/SimaticML, CODESYS, Beckhoff TwinCAT, PLCopen XML, IEC 61131-3 Structured Text, ladder logic). Use this skill whenever the user mentions PLC code, ladder logic, rungs, Structured Text, Rockwell, Allen-Bradley, Studio 5000, RSLogix, L5X, Siemens, TIA Portal, SCL, S7, CODESYS, Beckhoff, TwinCAT, PLCopen, PLC migration, legacy controls code, I/O lists, or wants to understand, explain, document, convert, migrate, test, or verify control logic, even if they never say "translate" and even if they just paste a few rungs.
+description: Understand, translate, verify, and dependency-map industrial PLC code across vendors (Rockwell/Allen-Bradley Studio 5000, RSLogix 5000/500, L5X, SLC 500, PLC-5, Siemens TIA Portal SCL/S7/SimaticML, CODESYS, Beckhoff TwinCAT, PLCopen XML, IEC 61131-3 Structured Text, ladder logic). Use this skill whenever the user mentions PLC code, ladder logic, rungs, Structured Text, Rockwell, Allen-Bradley, Studio 5000, RSLogix, L5X, Siemens, TIA Portal, SCL, S7, CODESYS, Beckhoff, TwinCAT, PLCopen, PLC migration, legacy controls code, I/O lists, vendor lock-in, portability, moving off CODESYS or TwinCAT, OpenPLC, or wants to understand, explain, document, convert, migrate, test, or verify control logic, even if they never say "translate" and even if they just paste a few rungs.
 license: MIT
 ---
 
@@ -30,6 +30,7 @@ Scripts live in `${CLAUDE_SKILL_DIR}/scripts/` (when not running as a plugin, us
 | `estimate.py FILES [--target ...]` | tokens and cost per job, CONFIRM flag for large jobs |
 | `dependency_map.py --plc FILES [--hmi FILES] [--target T] [--mapping M] --md out.md -o deps.json` | every tag: readers, writers, conflicts, open questions |
 | `simulate.py run|compare ...` | pure-Python scan-cycle simulator; compares source vs target scan by scan |
+| `portability.py FILES [--targets ...] --md out.md -o out.json` | lock-in report for CODESYS, TwinCAT and IEC ST sources: what ties the code to its platform, rated per target with rough hours |
 | `_shared/state.py` | `.rungstone/` project state: init, review queue (add/approve/edit/reject), export gate, decision log |
 | `_shared/export.py FILES` | package approved deliverables + MANIFEST; refuses while high-risk items are open |
 | `_shared/workbench/server.py` / `static.py` | local workbench UI (beta) (Claude Code) or one self-contained HTML page (elsewhere) |
@@ -83,12 +84,22 @@ Targets: S7-1500 SCL, Rockwell Logix (L5X partial export), IEC 61131-3 ST. Work 
 2. Present conflicts most severe first with one sentence of consequence each: `label_mismatch` (descriptions disagree or contradict between PLC, I/O map, HMI), `competing_writers` (double coils, PLC vs HMI, same timer twice), `read_never_written` (also an open question), `broken_link` (HMI points at a tag that doesn't exist), `translation_break` (link that breaks after translation).
 3. Note the blind spots: indirect addressing, pointers, MSG/comms, and anything in files not supplied.
 
+## Workflow 5 — Lock-in report
+
+Goal: the engineer (or their manager) sees what ties a CODESYS, TwinCAT or IEC ST project to its platform, what moving it to each target would involve, and a rough effort range, before anyone commits to a migration.
+
+1. `portability.py <files or .rungstone/parsed.json> --md .rungstone/reports/portability-<source name>.md -o .rungstone/portability.json` (add `--targets openplc,siemens-scl` if the user named targets). If the result says `supported: false`, tell the user what it says (Rockwell and Siemens sources aren't scored yet) and offer Translate instead.
+2. Read `references/portability.md` before presenting: what each rating means, the limits, and how to word the effort range.
+3. Present it in the Lock-in format from `references/output-formats.md`: the summary table first, then the three to five findings that drive the effort with one sentence each on what moving them involves, then the full findings table and the per-POU view. Keep the report's "rough planning estimate, not a quote" line.
+4. Libraries: every namespace the report lists is code that isn't in the export. Say that each needs an equivalent on the target, or a license that allows using it there; don't guess what the library does beyond its name.
+5. Don't recommend a platform. The report shows the cost of each; the choice is the engineer's. If they ask which is cheapest, point to the hours and the blockers, and say what the hours leave out.
+
 For deeper HMI/SCADA work (screens, scripts, alarms, rebinding), the `rungstone-hmi-scada` skill takes over using the same `.rungstone/` state; for "why did it stop" questions with historian data, `rungstone-ops`.
 
 ## Results for the workbench
 
 The workbench is **beta**: say so when you open it, and treat chat as the reliable path for approvals if it misbehaves. It (`/rungstone:workbench`) shows whatever is in `.rungstone/` and refreshes itself, so save every result there as you finish it:
-- the full answer you showed, as Markdown: `.rungstone/reports/understand-<source name>.md`, `translate-<source name>.md` or `verify-<source name>.md` (overwrite on a rerun);
+- the full answer you showed, as Markdown: `.rungstone/reports/understand-<source name>.md`, `translate-<source name>.md`, `verify-<source name>.md` or `portability-<source name>.md` (overwrite on a rerun);
 - every translated file you wrote: `state.py output out/<file> [...] --workflow translate` (the Translate tab shows the code);
 - the queue, mapping, verify results and dependency map through the scripts as above.
 

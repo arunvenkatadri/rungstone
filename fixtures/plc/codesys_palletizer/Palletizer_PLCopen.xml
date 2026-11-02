@@ -1,0 +1,407 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project xmlns="http://www.plcopen.org/xml/tc6_0200">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP19 Patch 2" creationDateTime="2026-10-30T09:14:22.5521931" />
+  <contentHeader name="Palletizer_Cell4.project" modificationDateTime="2026-10-30T09:13:58.1180274">
+    <coordinateInfo><fbd><scaling x="1" y="1" /></fbd><ld><scaling x="1" y="1" /></ld><sfc><scaling x="1" y="1" /></sfc></coordinateInfo>
+    <addData><data name="http://www.3s-software.com/plcopenxml/projectinformation" handleUnknown="implementation"><ProjectInformation /></data></addData>
+  </contentHeader>
+  <types>
+    <dataTypes>
+      <dataType name="E_CellState">
+        <baseType>
+          <enum>
+            <values><value name="Idle" value="0" /><value name="Homing" value="1" /><value name="Picking" value="2" /><value name="Placing" value="3" /><value name="Faulted" value="99" /></values>
+            <baseType><INT /></baseType>
+          </enum>
+        </baseType>
+        <addData><data name="http://www.3s-software.com/plcopenxml/attributes" handleUnknown="implementation"><Attributes><Attribute Name="strict" Value="" /></Attributes></data></addData>
+        <documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">Palletizer cell state</xhtml></documentation>
+      </dataType>
+      <dataType name="ST_Recipe">
+        <baseType>
+          <struct>
+            <variable name="sName"><type><string length="40" /></type><documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">Recipe name</xhtml></documentation></variable>
+            <variable name="iLayers"><type><INT /></type><documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">Layers per pallet</xhtml></documentation></variable>
+            <variable name="iBoxesPerLayer"><type><INT /></type></variable>
+            <variable name="lrLayerHeight"><type><LREAL /></type><documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">mm</xhtml></documentation></variable>
+            <variable name="ltSettle"><type><LTIME /></type><documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">Settle time after place</xhtml></documentation></variable>
+          </struct>
+        </baseType>
+      </dataType>
+      <dataType name="U_StatusWord">
+        <baseType>
+          <union>
+            <variable name="wRaw"><type><WORD /></type></variable>
+            <variable name="abBytes"><type><array><dimension lower="0" upper="1" /><baseType><BYTE /></baseType></array></type></variable>
+          </union>
+        </baseType>
+      </dataType>
+    </dataTypes>
+    <pous>
+      <pou name="FB_Station" pouType="functionBlock">
+        <interface>
+          <inputVars>
+            <variable name="bEnable"><type><BOOL /></type></variable>
+          </inputVars>
+          <outputVars>
+            <variable name="bReady"><type><BOOL /></type></variable>
+            <variable name="nErrorId"><type><UDINT /></type></variable>
+          </outputVars>
+          <localVars>
+            <variable name="bFaulted"><type><BOOL /></type></variable>
+          </localVars>
+          <addData>
+            <data name="http://www.3s-software.com/plcopenxml/interfaceasplaintext" handleUnknown="implementation">
+              <InterfaceAsPlainText><xhtml xmlns="http://www.w3.org/1999/xhtml">FUNCTION_BLOCK ABSTRACT FB_Station IMPLEMENTS I_Station
+VAR_INPUT
+	bEnable : BOOL;
+END_VAR
+VAR_OUTPUT
+	bReady : BOOL;
+	nErrorId : UDINT;
+END_VAR
+VAR
+	bFaulted : BOOL;
+END_VAR
+</xhtml></InterfaceAsPlainText>
+            </data>
+            <data name="http://www.3s-software.com/plcopenxml/pouinheritance" handleUnknown="implementation">
+              <Inheritance><Implements>I_Station</Implements></Inheritance>
+            </data>
+          </addData>
+        </interface>
+        <body><ST><xhtml xmlns="http://www.w3.org/1999/xhtml">bReady := bEnable AND NOT bFaulted;</xhtml></ST></body>
+        <addData>
+          <data name="http://www.3s-software.com/plcopenxml/method" handleUnknown="implementation">
+            <Method name="Reset" ObjectId="7a1c0f2e-1b4d-4c55-9a77-0f1e2d3c4b5a">
+              <interface><returnType><BOOL /></returnType></interface>
+              <body><ST><xhtml xmlns="http://www.w3.org/1999/xhtml">THIS^.bFaulted := FALSE;
+THIS^.nErrorId := 0;
+Reset := TRUE;</xhtml></ST></body>
+              <addData />
+            </Method>
+          </data>
+          <data name="http://www.3s-software.com/plcopenxml/property" handleUnknown="implementation">
+            <Property name="IsFaulted" ObjectId="0c4e1a9b-77d2-4f19-8b0e-3e5f6a7b8c9d">
+              <interface><returnType><BOOL /></returnType></interface>
+              <GetAccessor><interface /><body><ST><xhtml xmlns="http://www.w3.org/1999/xhtml">IsFaulted := bFaulted;</xhtml></ST></body></GetAccessor>
+            </Property>
+          </data>
+        </addData>
+      </pou>
+      <pou name="FB_Conveyor" pouType="functionBlock">
+        <interface>
+          <inputVars>
+            <variable name="bBoxAtEnd"><type><BOOL /></type><documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">Photo-eye at discharge end</xhtml></documentation></variable>
+            <variable name="bRunReq"><type><BOOL /></type></variable>
+          </inputVars>
+          <outputVars>
+            <variable name="bMotorOn"><type><BOOL /></type></variable>
+          </outputVars>
+          <localVars>
+            <variable name="tJam"><type><derived name="TON" /></type></variable>
+            <variable name="uStatus"><type><derived name="U_StatusWord" /></type></variable>
+            <variable name="fbBlink"><type><derived name="Util.BLINK" /></type></variable>
+          </localVars>
+          <addData>
+            <data name="http://www.3s-software.com/plcopenxml/interfaceasplaintext" handleUnknown="implementation">
+              <InterfaceAsPlainText><xhtml xmlns="http://www.w3.org/1999/xhtml">FUNCTION_BLOCK FB_Conveyor EXTENDS FB_Station
+VAR_INPUT
+	bBoxAtEnd : BOOL; // Photo-eye at discharge end
+	bRunReq : BOOL;
+END_VAR
+VAR_OUTPUT
+	bMotorOn : BOOL;
+END_VAR
+VAR
+	tJam : TON;
+	uStatus : U_StatusWord;
+	fbBlink : Util.BLINK;
+END_VAR
+</xhtml></InterfaceAsPlainText>
+            </data>
+            <data name="http://www.3s-software.com/plcopenxml/pouinheritance" handleUnknown="implementation">
+              <Inheritance><Extends>FB_Station</Extends></Inheritance>
+            </data>
+          </addData>
+        </interface>
+        <body><ST><xhtml xmlns="http://www.w3.org/1999/xhtml">SUPER^();
+
+// Jam: motor running but box never leaves the photo-eye
+tJam(IN := bMotorOn AND bBoxAtEnd, PT := T#8S);
+bFaulted S= tJam.Q;
+
+bMotorOn := bReady AND bRunReq AND NOT bBoxAtEnd;
+
+uStatus.wRaw.0 := bMotorOn;
+uStatus.wRaw.1 := bFaulted;
+uStatus.wRaw.3 := tJam.Q;
+
+fbBlink(ENABLE := bFaulted, TIMELOW := T#500MS, TIMEHIGH := T#500MS);</xhtml></ST></body>
+      </pou>
+      <pou name="FB_PickAxis" pouType="functionBlock">
+        <interface>
+          <inputVars>
+            <variable name="lrTargetPos"><type><LREAL /></type><documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">mm</xhtml></documentation></variable>
+            <variable name="bMove"><type><BOOL /></type></variable>
+          </inputVars>
+          <outputVars>
+            <variable name="bInPos"><type><BOOL /></type></variable>
+          </outputVars>
+          <inOutVars>
+            <variable name="Axis"><type><derived name="AXIS_REF_SM3" /></type></variable>
+          </inOutVars>
+          <localVars>
+            <variable name="fbPower"><type><derived name="MC_Power" /></type></variable>
+            <variable name="fbHome"><type><derived name="MC_Home" /></type></variable>
+            <variable name="fbMove"><type><derived name="MC_MoveAbsolute" /></type></variable>
+          </localVars>
+          <addData>
+            <data name="http://www.3s-software.com/plcopenxml/interfaceasplaintext" handleUnknown="implementation">
+              <InterfaceAsPlainText><xhtml xmlns="http://www.w3.org/1999/xhtml">FUNCTION_BLOCK FB_PickAxis EXTENDS FB_Station
+VAR_INPUT
+	lrTargetPos : LREAL; // mm
+	bMove : BOOL;
+END_VAR
+VAR_OUTPUT
+	bInPos : BOOL;
+END_VAR
+VAR_IN_OUT
+	Axis : AXIS_REF_SM3;
+END_VAR
+VAR
+	fbPower : MC_Power;
+	fbHome : MC_Home;
+	fbMove : MC_MoveAbsolute;
+END_VAR
+</xhtml></InterfaceAsPlainText>
+            </data>
+            <data name="http://www.3s-software.com/plcopenxml/pouinheritance" handleUnknown="implementation">
+              <Inheritance><Extends>FB_Station</Extends></Inheritance>
+            </data>
+          </addData>
+        </interface>
+        <body><ST><xhtml xmlns="http://www.w3.org/1999/xhtml">SUPER^();
+fbPower(Axis := Axis, Enable := bEnable, bRegulatorOn := bEnable, bDriveStart := bEnable);
+fbHome(Axis := Axis, Execute := fbPower.Status AND NOT fbHome.Done, Position := 0);
+fbMove(Axis := Axis, Execute := bMove AND fbHome.Done, Position := lrTargetPos, Velocity := 400, Acceleration := 2000, Deceleration := 2000);
+bInPos := fbMove.Done;
+IF fbMove.Error OR fbPower.Error THEN
+	bFaulted := TRUE;
+	nErrorId := fbMove.ErrorID;
+END_IF</xhtml></ST></body>
+      </pou>
+      <pou name="FB_CycleLogger" pouType="functionBlock">
+        <interface>
+          <inputVars>
+            <variable name="bLog"><type><BOOL /></type></variable>
+            <variable name="sLine"><type><string length="80" /></type></variable>
+          </inputVars>
+          <localVars>
+            <variable name="hFile"><type><derived name="FILE.CAA.HANDLE" /></type></variable>
+            <variable name="fbOpen"><type><derived name="FILE.Open" /></type></variable>
+            <variable name="fbWrite"><type><derived name="FILE.Write" /></type></variable>
+            <variable name="pBuffer"><type><pointer><baseType><BYTE /></baseType></pointer></type></variable>
+            <variable name="udiLen"><type><UDINT /></type></variable>
+            <variable name="dtNow"><type><DT /></type></variable>
+            <variable name="rtLog"><type><derived name="R_TRIG" /></type></variable>
+          </localVars>
+          <addData>
+            <data name="http://www.3s-software.com/plcopenxml/interfaceasplaintext" handleUnknown="implementation">
+              <InterfaceAsPlainText><xhtml xmlns="http://www.w3.org/1999/xhtml">{attribute 'enable_dynamic_creation'}
+FUNCTION_BLOCK FB_CycleLogger
+VAR_INPUT
+	bLog : BOOL;
+	sLine : STRING(80);
+END_VAR
+VAR
+	hFile : FILE.CAA.HANDLE;
+	fbOpen : FILE.Open;
+	fbWrite : FILE.Write;
+	pBuffer : POINTER TO BYTE;
+	udiLen : UDINT;
+	dtNow : DT;
+	rtLog : R_TRIG;
+END_VAR
+</xhtml></InterfaceAsPlainText>
+            </data>
+          </addData>
+        </interface>
+        <body><ST><xhtml xmlns="http://www.w3.org/1999/xhtml">rtLog(CLK := bLog);
+IF rtLog.Q THEN
+	dtNow := SysTimeRtcGet(udiLen);
+	__TRY
+		pBuffer := __NEW(BYTE, 128);
+		udiLen := TO_UDINT(LEN(sLine));
+		SysMemCpy(pBuffer, ADR(sLine), udiLen);
+		fbWrite(hFile := hFile, pBuffer := pBuffer, szSize := udiLen, xExecute := TRUE);
+	__CATCH
+		udiLen := 0;
+	__ENDTRY
+	__DELETE(pBuffer);
+END_IF
+fbOpen(sFileName := '/data/cycles.csv', eFileMode := FILE.MODE.MAPPD, xExecute := NOT fbOpen.xDone);
+hFile := fbOpen.hFile;</xhtml></ST></body>
+      </pou>
+      <pou name="FB_LayerCounter" pouType="functionBlock">
+        <interface>
+          <inputVars>
+            <variable name="bBoxPlaced"><type><BOOL /></type><documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">Pulse when a box is released</xhtml></documentation></variable>
+            <variable name="iBoxesPerLayer"><type><INT /></type></variable>
+            <variable name="iLayers"><type><INT /></type></variable>
+            <variable name="bReset"><type><BOOL /></type></variable>
+          </inputVars>
+          <outputVars>
+            <variable name="iBox"><type><INT /></type></variable>
+            <variable name="iLayer"><type><INT /></type></variable>
+            <variable name="bPalletFull"><type><BOOL /></type></variable>
+          </outputVars>
+          <localVars>
+            <variable name="rtBox"><type><derived name="R_TRIG" /></type></variable>
+          </localVars>
+        </interface>
+        <body><ST><xhtml xmlns="http://www.w3.org/1999/xhtml">(* Counts boxes per layer and layers per pallet *)
+rtBox(CLK := bBoxPlaced);
+IF bReset THEN
+	iBox := 0;
+	iLayer := 0;
+ELSIF rtBox.Q AND NOT bPalletFull THEN
+	iBox := iBox + 1;
+	IF iBox >= iBoxesPerLayer THEN
+		iBox := 0;
+		iLayer := iLayer + 1;
+	END_IF
+END_IF
+bPalletFull := iLayer >= iLayers;</xhtml></ST></body>
+      </pou>
+      <pou name="PLC_PRG" pouType="program">
+        <interface>
+          <localVars>
+            <variable name="eState"><type><derived name="E_CellState" /></type></variable>
+            <variable name="fbInfeed"><type><derived name="FB_Conveyor" /></type></variable>
+            <variable name="fbAxisZ"><type><derived name="FB_PickAxis" /></type></variable>
+            <variable name="fbLog"><type><derived name="FB_CycleLogger" /></type></variable>
+            <variable name="itfStations"><type><array><dimension lower="0" upper="1" /><baseType><derived name="I_Station" /></baseType></array></type></variable>
+            <variable name="iLayer"><type><INT /></type></variable>
+            <variable name="iBox"><type><INT /></type></variable>
+            <variable name="i"><type><INT /></type></variable>
+          </localVars>
+        </interface>
+        <body><ST><xhtml xmlns="http://www.w3.org/1999/xhtml">itfStations[0] := fbInfeed;
+itfStations[1] := fbAxisZ;
+
+fbInfeed(bEnable := GVL_IO.bAutoMode, bBoxAtEnd := GVL_IO.bPE_Infeed, bRunReq := eState = E_CellState.Picking);
+fbAxisZ(bEnable := GVL_IO.bAutoMode, Axis := AxisZ, lrTargetPos := GVL_Recipe.stActive.lrLayerHeight * iLayer);
+GVL_IO.bConveyorMotor := fbInfeed.bMotorOn;
+
+CASE eState OF
+E_CellState.Idle:
+	IF GVL_IO.bStartPB AND GVL_IO.bAutoMode THEN
+		eState := E_CellState.Homing;
+	END_IF
+E_CellState.Homing:
+	IF fbAxisZ.bReady THEN
+		eState := E_CellState.Picking;
+	END_IF
+E_CellState.Picking:
+	IF GVL_IO.bPE_Infeed THEN
+		fbAxisZ.bMove := TRUE;
+		eState := E_CellState.Placing;
+	END_IF
+E_CellState.Placing:
+	IF fbAxisZ.bInPos THEN
+		fbAxisZ.bMove := FALSE;
+		iBox := iBox + 1;
+		IF iBox >= GVL_Recipe.stActive.iBoxesPerLayer THEN
+			iBox := 0;
+			iLayer := iLayer + 1;
+		END_IF
+		fbLog(bLog := TRUE, sLine := CONCAT('box placed, layer ', INT_TO_STRING(iLayer)));
+		eState := E_CellState.Picking;
+	END_IF
+E_CellState.Faulted:
+	IF GVL_IO.bResetPB THEN
+		FOR i := 0 TO 1 DO
+			itfStations[i].Reset();
+		END_FOR
+		eState := E_CellState.Idle;
+	END_IF
+END_CASE
+
+IF fbInfeed.IsFaulted OR fbAxisZ.IsFaulted THEN
+	eState := E_CellState.Faulted;
+END_IF
+GVL_IO.bFaultLamp := eState = E_CellState.Faulted;</xhtml></ST></body>
+      </pou>
+      <pou name="PRG_Lamps" pouType="program">
+        <interface>
+          <localVars>
+            <variable name="fbFlash"><type><derived name="Util.BLINK" /></type></variable>
+          </localVars>
+        </interface>
+        <body>
+          <addData>
+            <data name="http://www.3s-software.com/plcopenxml/cfc" handleUnknown="implementation">
+              <CFC>
+                <inVariable localId="1"><position x="2" y="2" /><connectionPointOut /><expression>GVL_IO.bFaultLamp</expression></inVariable>
+                <block localId="2" typeName="Util.BLINK" instanceName="fbFlash"><position x="8" y="2" />
+                  <inputVariables><variable formalParameter="ENABLE"><connectionPointIn><connection refLocalId="1" /></connectionPointIn></variable></inputVariables>
+                  <outputVariables><variable formalParameter="OUT"><connectionPointOut /></variable></outputVariables>
+                </block>
+                <outVariable localId="3"><position x="16" y="2" /><connectionPointIn><connection refLocalId="2" formalParameter="OUT" /></connectionPointIn><expression>GVL_IO.bBeacon</expression></outVariable>
+              </CFC>
+            </data>
+          </addData>
+        </body>
+      </pou>
+      <pou name="PRG_SafetyMonitor" pouType="program">
+        <interface>
+          <localVars>
+            <variable name="fbEStop"><type><derived name="SF_EmergencyStop" /></type></variable>
+          </localVars>
+        </interface>
+        <body><ST><xhtml xmlns="http://www.w3.org/1999/xhtml">fbEStop(Activate := TRUE, S_EStopIn := GVL_IO.bEStopChannelA, S_StartReset := FALSE, Reset := GVL_IO.bResetPB);
+GVL_IO.bSafeToRun := fbEStop.S_EStopOut;</xhtml></ST></body>
+      </pou>
+    </pous>
+  </types>
+  <instances>
+    <configurations>
+      <configuration name="Device">
+        <resource name="Application">
+          <task name="EtherCAT_Task" interval="PT0.002S" priority="0"><pouInstance name="PRG_Motion" typeName="PRG_Motion" /></task>
+          <task name="MainTask" interval="PT0.01S" priority="1"><pouInstance name="PLC_PRG" typeName="PLC_PRG" /><pouInstance name="PRG_Lamps" typeName="PRG_Lamps" /></task>
+          <task name="LogTask" interval="PT0.2S" priority="20"><pouInstance name="PRG_SafetyMonitor" typeName="PRG_SafetyMonitor" /></task>
+          <globalVars name="GVL_IO">
+            <variable name="bStartPB" address="%IX0.0"><type><BOOL /></type><documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">Start pushbutton</xhtml></documentation></variable>
+            <variable name="bResetPB" address="%IX0.1"><type><BOOL /></type><documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">Fault reset pushbutton</xhtml></documentation></variable>
+            <variable name="bAutoMode" address="%IX0.2"><type><BOOL /></type><documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">Auto/manual selector, auto</xhtml></documentation></variable>
+            <variable name="bPE_Infeed" address="%IX0.3"><type><BOOL /></type><documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">Infeed photo-eye</xhtml></documentation></variable>
+            <variable name="bEStopChannelA" address="%IX1.0"><type><BOOL /></type><documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">E-stop channel A</xhtml></documentation></variable>
+            <variable name="bConveyorMotor" address="%QX0.0"><type><BOOL /></type><documentation><xhtml xmlns="http://www.w3.org/1999/xhtml">Infeed conveyor contactor</xhtml></documentation></variable>
+            <variable name="bFaultLamp" address="%QX0.1"><type><BOOL /></type></variable>
+            <variable name="bBeacon" address="%QX0.2"><type><BOOL /></type></variable>
+            <variable name="bSafeToRun"><type><BOOL /></type></variable>
+            <addData><data name="http://www.3s-software.com/plcopenxml/attributes" handleUnknown="implementation"><Attributes><Attribute Name="qualified_only" Value="" /></Attributes></data></addData>
+          </globalVars>
+          <globalVars name="GVL_Recipe" persistent="true">
+            <variable name="stActive"><type><derived name="ST_Recipe" /></type></variable>
+            <variable name="udiPalletsDone"><type><UDINT /></type></variable>
+            <addData><data name="http://www.3s-software.com/plcopenxml/attributes" handleUnknown="implementation"><Attributes><Attribute Name="qualified_only" Value="" /></Attributes></data></addData>
+          </globalVars>
+        </resource>
+      </configuration>
+    </configurations>
+  </instances>
+  <addData>
+    <data name="http://www.3s-software.com/plcopenxml/interface" handleUnknown="implementation">
+      <Interface name="I_Station" ObjectId="5d0b9e3c-2a41-4b8f-9c6d-1e2f3a4b5c6d">
+        <addData>
+          <data name="http://www.3s-software.com/plcopenxml/method" handleUnknown="implementation">
+            <Method name="Reset" ObjectId="9f8e7d6c-5b4a-4392-8170-6f5e4d3c2b1a"><interface><returnType><BOOL /></returnType></interface><addData /></Method>
+          </data>
+        </addData>
+      </Interface>
+    </data>
+  </addData>
+</project>
