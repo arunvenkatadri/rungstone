@@ -102,10 +102,10 @@ var S = null, LIVE = BOOT && BOOT.mode === "live", CSRF = BOOT && BOOT.csrf;
 // Which assistant hosts the skills: "claude" (Claude Code, /rungstone: commands) or "codex" (plain prompts).
 var APP = (BOOT && BOOT.app) || "claude";
 var HOST = APP === "codex" ? "Codex" : "Claude Code", ASSIST = APP === "codex" ? "Codex" : "Claude";
-var SKILL_OF = {understand:"rungstone-plc",translate:"rungstone-plc",verify:"rungstone-plc",dependencies:"rungstone-plc",portability:"rungstone-plc",
+var SKILL_OF = {understand:"rungstone-plc",translate:"rungstone-plc",verify:"rungstone-plc",dependencies:"rungstone-plc",portability:"rungstone-plc",check:"rungstone-plc",tests:"rungstone-plc",
   hmi:"rungstone-hmi-scada",alarms:"rungstone-hmi-scada",troubleshoot:"rungstone-ops",report:"rungstone-ops"};
 var VERB = {understand:"explain what %s does",translate:"translate %s",verify:"verify the translation of %s",
-  dependencies:"map the readers, writers and conflicts in %s",portability:"write a lock-in report for %s",hmi:"explain %s",alarms:"run alarm cleanup on %s",
+  dependencies:"map the readers, writers and conflicts in %s",portability:"write a lock-in report for %s",check:"run a static analysis of %s",tests:"generate unit tests for a function block in %s",hmi:"explain %s",alarms:"run alarm cleanup on %s",
   troubleshoot:"find why the equipment stopped, using %s",report:"build a shift and downtime report from %s"};
 function commandFor(wf, file, extra){
   if(APP !== "codex") return "/rungstone:"+wf+" "+file+(extra||"");
@@ -486,9 +486,9 @@ function renderMain(){
   if(current==="files"&&LIVE) wireFiles();
 }
 var WORKFLOWS={understand:"Understand: explain what it does",translate:"Translate to another platform",verify:"Verify the translation (simulator)",
-  dependencies:"Dependency map (PLC + HMI readers and writers)",portability:"Lock-in report (what ties it to its platform)",hmi:"HMI/SCADA: explain or rebind",alarms:"Alarm cleanup (ISA-18.2 style)",
+  dependencies:"Dependency map (PLC + HMI readers and writers)",portability:"Lock-in report (what ties it to its platform)",check:"Check: static analysis (likely bugs)",tests:"Unit tests for a function block",hmi:"HMI/SCADA: explain or rebind",alarms:"Alarm cleanup (ISA-18.2 style)",
   troubleshoot:"Troubleshoot a stop",report:"Shift / downtime report"};
-var KIND_WORKFLOWS={plc:["understand","translate","verify","dependencies","portability"],hmi:["hmi","dependencies"],
+var KIND_WORKFLOWS={plc:["understand","check","translate","verify","dependencies","portability","tests"],hmi:["hmi","dependencies"],
   alarms:["alarms","troubleshoot","report"],historian:["troubleshoot","report"]};
 var KIND_NAMES={plc:"PLC program",hmi:"HMI/SCADA export",alarms:"alarm/event log",historian:"historian data"};
 function kindOf(path){var k=((S.sniffed||{})[path]||{}).kind;return k||null;}

@@ -89,6 +89,8 @@ FORBIDDEN = [
     (re.compile(r"\b(LTIME|LDATE|LTOD|LDT)\b|\bLTIME#", re.I), "type", "LTIME/LDATE/LTOD/LDT: use TIME/DATE/TOD/DT."),
     (re.compile(r"\bUNION\b", re.I), "type", "UNION: not supported."),
     (re.compile(r"\bCONTINUE\b", re.I), "statement", "CONTINUE: not in MatIEC; restructure the loop."),
+    (re.compile(r"\bEND_(IF|CASE|FOR|WHILE|REPEAT)\b(?!\s*;)", re.I), "semicolon",
+     "END_IF/END_CASE/END_FOR/END_WHILE/END_REPEAT needs a ';' after it in MatIEC (CODESYS lets you leave it out)."),
 ]
 
 

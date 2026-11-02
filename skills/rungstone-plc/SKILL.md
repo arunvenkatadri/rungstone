@@ -32,6 +32,9 @@ Scripts live in `${CLAUDE_SKILL_DIR}/scripts/` (when not running as a plugin, us
 | `simulate.py run|compare ...` | pure-Python scan-cycle simulator; compares source vs target scan by scan |
 | `openplc_check.py FILE.st` | checks an OpenPLC/Beremiz translation against what MatIEC and the OpenPLC runtime accept (structure, syntax, located addresses, Modbus registers) |
 | `st_to_plcopen.py FILE.st -o plc.xml` | wraps generated ST as PLCopen XML for OpenPLC Editor / Beremiz |
+| `lint.py FILES --md out.md -o out.json` | static analysis: likely bugs and risky patterns (ST and ladder), each with where, why and a fix |
+| `diff_exports.py OLD NEW --md out.md -o out.json` | what changed between two exports, the tags each change writes, and where else those tags are read |
+| `make_tests.py --program F --entry FB --scenarios S.json --framework cfunit\|tcunit\|plain` | unit tests for a function block, expected values from the simulator |
 | `portability.py FILES [--targets ...] --md out.md -o out.json` | lock-in report for CODESYS, TwinCAT and IEC ST sources: what ties the code to its platform, rated per target with rough hours |
 | `_shared/state.py` | `.rungstone/` project state: init, review queue (add/approve/edit/reject), export gate, decision log |
 | `_shared/export.py FILES` | package approved deliverables + MANIFEST; refuses while high-risk items are open |
@@ -97,12 +100,33 @@ Goal: the engineer (or their manager) sees what ties a CODESYS, TwinCAT or IEC S
 4. Libraries: every namespace the report lists is code that isn't in the export. Say that each needs an equivalent on the target, or a license that allows using it there; don't guess what the library does beyond its name.
 5. Don't recommend a platform. The report shows the cost of each; the choice is the engineer's. If they ask which is cheapest, point to the hours and the blockers, and say what the hours leave out.
 
+## Workflow 6 — Check (static analysis)
+
+1. `lint.py <files or .rungstone/parsed.json> --md .rungstone/reports/check-<source name>.md -o .rungstone/check.json`.
+2. Present in the Check format from `references/output-formats.md`: high findings first, each with the location, one sentence on what goes wrong on the machine, and the fix. Read the code around each high and medium finding before presenting it; drop or downgrade one you can show is fine (say why), and add anything serious you notice that the rules missed, labelled as your reading.
+3. Findings are things to check, not proof. Say what static analysis can't see (HMI and comms writes, indirect addressing).
+
+## Workflow 7 — Diff (what changed between two exports)
+
+1. `diff_exports.py <old> <new> --md .rungstone/reports/diff-<new name>.md -o .rungstone/diff.json`. Both files must be the same project exported at two times (rename the old one if needed).
+2. Start with a plain-English summary of each change: what it does on the machine, the outputs it writes, and what else reads them (the "affects" table). Then the per-routine diffs.
+3. Call out anything that changes behaviour in a way the change description may not mention: an output now written from two places, a removed interlock, a timer or task rate change, a type change that can overflow. Run `lint.py` on the new version if the changes are substantial.
+4. Safety logic is never compared. If the diff lists safety items, say the safety team must review any change there.
+
+## Workflow 8 — Unit tests (CfUnit, TcUnit, plain IEC)
+
+1. Pick a function block (tests call their own instance; a PROGRAM must be moved into an FB first). Write scenarios as in Verify (`scenarios.json`): set only its VAR_INPUTs, observe its VAR_OUTPUTs.
+2. `make_tests.py --program <file> --entry <FB> --scenarios <file> --framework cfunit|tcunit|plain -o out/tests`. Expected values are what the code does today, from the simulator: these are characterisation tests that catch any change in behaviour during a refactor or migration. If a scenario's result looks wrong to you, say so: the test would lock in a bug. Quote test and assertion counts from the script's JSON output; don't count them yourself.
+3. CfUnit/TcUnit: tell the engineer to add the library, paste or add the generated objects, and run PRG_TEST in a task with the cycle time in the header. Generated code is a draft: it has not been compiled in CODESYS or TwinCAT here.
+4. Plain IEC (`--openplc --with-source` for OpenPLC): runs anywhere; pass/fail counters on %MW0-%MW2 (holding registers 1024-1026).
+5. Results are "simulated, not hardware-tested" until the engineer runs the tests on their runtime.
+
 For deeper HMI/SCADA work (screens, scripts, alarms, rebinding), the `rungstone-hmi-scada` skill takes over using the same `.rungstone/` state; for "why did it stop" questions with historian data, `rungstone-ops`.
 
 ## Results for the workbench
 
 The workbench is **beta**: say so when you open it, and treat chat as the reliable path for approvals if it misbehaves. It (`/rungstone:workbench`) shows whatever is in `.rungstone/` and refreshes itself, so save every result there as you finish it:
-- the full answer you showed, as Markdown: `.rungstone/reports/understand-<source name>.md`, `translate-<source name>.md`, `verify-<source name>.md` or `portability-<source name>.md` (overwrite on a rerun);
+- the full answer you showed, as Markdown: `.rungstone/reports/understand-<source name>.md`, `translate-<source name>.md`, `verify-<source name>.md`, `portability-<source name>.md`, `check-<source name>.md` or `diff-<new name>.md` (overwrite on a rerun);
 - every translated file you wrote: `state.py output out/<file> [...] --workflow translate` (the Translate tab shows the code);
 - the queue, mapping, verify results and dependency map through the scripts as above.
 

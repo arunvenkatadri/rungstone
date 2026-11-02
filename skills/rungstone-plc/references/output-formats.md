@@ -165,6 +165,38 @@ Use `portability.py --md` output as the base, then put your reading on top:
 Ratings are `as-is`, `rework` or `no equivalent`. Hours are always a range ("40-150 h") and
 never a single number. Don't add a recommendation row.
 
+## 6. Check (static analysis)
+
+```
+# Static analysis: <files>
+<Safety notice>
+> Findings are things to check, not proof of a bug; nothing was run.
+Summary line: n high, n medium, n low.
+
+## Fix first          (high findings: location, what goes wrong on the machine, the fix)
+## All findings       | # | Severity | Finding | Where | Detail | Fix |
+## Limits
+```
+
+## 7. Diff
+
+```
+# Changes: <old> -> <new>
+<Safety line: safety logic is not compared>
+## In plain English   (one bullet per change: what it does on the machine)
+## What the changes reach   | Tag | Changed in | Also read by |
+## Logic changes      (per routine: ```diff blocks with the old and new rung/line)
+## Tags / Data types / Tasks / Library code
+## Not compared
+```
+
+## 8. Unit tests
+
+List the files written, the FB under test, per scenario the number of assertions and what it
+checks, any notes from `make_tests.py` (signals not observable, values still changing at a
+checkpoint), how to add and run the tests, and the "simulated, not hardware-tested" label for the
+expected values.
+
 ## Export
 
 `/rungstone:export` (or `export.py`) copies approved deliverables to `export/<timestamp>/`

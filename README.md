@@ -19,7 +19,7 @@ flowchart LR
     end
 
     subgraph RS["Rungstone"]
-        P["rungstone-plc<br/>understand · translate<br/>verify · dependencies · lock-in"]
+        P["rungstone-plc<br/>understand · translate · verify<br/>dependencies · lock-in<br/>check · diff · unit tests"]
         H["rungstone-hmi-scada<br/>rebind · migrate · alarms"]
         O["rungstone-ops<br/>why did it stop? · reports"]
         Q{{"Review queue<br/>engineer approves"}}
@@ -94,10 +94,10 @@ The software is provided under the MIT license, "as is", without warranty of any
 
 | Component | What it does |
 |---|---|
-| `skills/rungstone-plc` | **Phases 1–2: PLC.** Understand (summary, machine sequence by rung, signal table with evidence, open questions). Translate to S7-1500 SCL, Rockwell Logix L5X, IEC Structured Text, or OpenPLC Runtime / Beremiz (checked against what the OpenPLC compiler accepts, with a Modbus register table for the HMI), with `mapping.csv` and a ranked review queue. Verify with scenario plans plus a pure-Python scan-cycle simulator that compares source and target scan by scan. Dependency map of readers, writers and conflicts across PLC + HMI + SCADA. Lock-in report for CODESYS, TwinCAT and IEC ST projects: what ties the code to its platform, rated per target (OpenPLC/Beremiz, plain IEC ST, S7-1500, Logix) with rough hours. |
+| `skills/rungstone-plc` | **Phases 1–2: PLC.** Understand (summary, machine sequence by rung, signal table with evidence, open questions). Translate to S7-1500 SCL, Rockwell Logix L5X, IEC Structured Text, or OpenPLC Runtime / Beremiz (checked against what the OpenPLC compiler accepts, with a Modbus register table for the HMI), with `mapping.csv` and a ranked review queue. Verify with scenario plans plus a pure-Python scan-cycle simulator that compares source and target scan by scan. Dependency map of readers, writers and conflicts across PLC + HMI + SCADA. Check (static analysis of ST and ladder: timers called conditionally, double writers, unguarded division, latches never cleared...). Diff two exports of the same project in plain English, with what each change reaches. Unit tests for function blocks (CfUnit, TcUnit or plain IEC) with expected values from the simulator. Lock-in report for CODESYS, TwinCAT and IEC ST projects: what ties the code to its platform, rated per target (OpenPLC/Beremiz, plain IEC ST, S7-1500, Logix) with rough hours. |
 | `skills/rungstone-hmi-scada` | **Phase 3: HMI/SCADA.** Explain screens, buttons, indicators and scripts. Retarget bindings with `mapping.csv`. Migrate tag databases, scripts and alarms (screens as draft layouts only). Verify bindings. Check consistency across PLC + HMI + SCADA. Clean up alarms from alarm history (ISA-18.2 style: floods, chattering, standing alarms, priorities, response text). |
 | `skills/rungstone-ops` | **Phase 4: operations, offline.** Find why a line stopped from historian/alarm exports plus the PLC logic (cause, evidence, logic cited, what to check first, what wasn't checked). Answer plant questions with a chart. Build shift and downtime reports. |
-| `commands/` | `/rungstone:understand` `/rungstone:translate` `/rungstone:verify` `/rungstone:dependencies` `/rungstone:portability` `/rungstone:hmi` `/rungstone:alarms` `/rungstone:troubleshoot` `/rungstone:report` `/rungstone:workbench` (beta) `/rungstone:export` |
+| `commands/` | `/rungstone:understand` `/rungstone:translate` `/rungstone:verify` `/rungstone:dependencies` `/rungstone:portability` `/rungstone:check` `/rungstone:diff` `/rungstone:tests` `/rungstone:hmi` `/rungstone:alarms` `/rungstone:troubleshoot` `/rungstone:report` `/rungstone:workbench` (beta) `/rungstone:export` |
 | `hooks/` | Guardrails: block `/rungstone:export` while high-risk items are open; block device/network write actions; warn when a file read or written looks like safety logic. |
 | `shared/` | Safe XML parsing, `.rungstone/` state, export, workbench UI, JSON schemas. Vendored into each skill's `scripts/_shared/` so every skill also works standalone. |
 | `mcp/historian` | **Optional** read-only historian connector (SQLite, CSV, ODBC, OPC UA). **Off until you configure it** in the plugin settings. See below. |
@@ -111,7 +111,8 @@ The software is provided under the MIT license, "as is", without warranty of any
 | RSLogix 500 / PLC-5 ladder text (ASCII export `SOR … EOR`, or neutral text) | Rockwell Logix partial-export `.L5X` |
 | Siemens TIA Portal SimaticML `.xml` (SCL, LAD/FBD summarized, STL, DBs, tag tables, UDTs) and SCL source `.scl` | IEC 61131-3 Structured Text (`.st`, or PLCopen XML) |
 | PLCopen XML (CODESYS, Beckhoff, Beremiz), TwinCAT `.TcPOU/.TcGVL/.TcDUT`, IEC ST source | OpenPLC Runtime `.st` (Config0/Res0) and PLCopen `plc.xml` for OpenPLC Editor / Beremiz, with a Modbus register table |
-| | `mapping.csv`, review queue, verification results, lock-in report |
+| | `mapping.csv`, review queue, verification results, lock-in report, static analysis, diffs |
+| | Unit tests: CfUnit (CODESYS), TcUnit `.TcPOU` (TwinCAT), plain IEC ST |
 | I/O lists (CSV; XLSX when `openpyxl` is installed) | HMI/SCADA rebind reports, draft tag/alarm databases |
 | HMI/SCADA: FactoryTalk View exports, Ignition JSON/XML, WinCC exports, tag CSVs, scripts (read as text) | Dependency maps, alarm reports, troubleshooting and downtime reports |
 | Historian and alarm/event CSV exports | Charts (PNG with matplotlib, otherwise SVG) |
@@ -236,7 +237,7 @@ project, and all are released under this repository's MIT license:
 | `fixtures/plc/timers_hmi` | Fill-station L5X, FactoryTalk-style tag CSV, IEC ST translation for simulation | authored for Rungstone |
 | `fixtures/plc/estop` | GuardLogix-style conveyor cell L5X with a safety program and an e-stop routine | authored for Rungstone |
 | `fixtures/plc/unwritten_bit` | CODESYS-style PLCopen XML mixer program | authored for Rungstone |
-| `fixtures/plc/codesys_palletizer` | CODESYS-style PLCopen XML palletizer cell (inheritance, interfaces, motion, file logging, CFC, a safety POU) | authored for Rungstone |
+| `fixtures/plc/codesys_palletizer` | CODESYS-style PLCopen XML palletizer cell (inheritance, interfaces, motion, file logging, CFC, a safety POU) and unit-test scenarios for its layer counter | authored for Rungstone |
 | `fixtures/plc/twincat_gripper` | TwinCAT-style `.TcPOU` gripper block | authored for Rungstone |
 | `fixtures/plc/two_tank/openplc` | OpenPLC Runtime translation of the two-tank ladder, mapping for the simulator | authored for Rungstone |
 | `fixtures/plc/two_tank` | SLC 500 two-tank ladder (RSLogix 500 ASCII style), SCL translation, scenarios | authored for Rungstone |

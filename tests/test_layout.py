@@ -44,7 +44,7 @@ class LayoutTests(unittest.TestCase):
     def test_commands_frontmatter(self):
         cdir = os.path.join(ROOT, "commands")
         names = sorted(f[:-3] for f in os.listdir(cdir) if f.endswith(".md"))
-        self.assertEqual(names, sorted(["understand", "translate", "verify", "dependencies", "portability", "hmi", "alarms",
+        self.assertEqual(names, sorted(["understand", "translate", "verify", "dependencies", "portability", "check", "diff", "tests", "hmi", "alarms",
                                         "troubleshoot", "report", "workbench", "export"]))
         for n in names:
             t = open(os.path.join(cdir, n + ".md"), encoding="utf-8").read()
