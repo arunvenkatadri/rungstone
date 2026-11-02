@@ -2,7 +2,7 @@
   "name": "rungstone",
   "displayName": "Rungstone",
   "version": "0.1.7",
-  "description": "Offline, read-only toolkit for controls engineers: understand, translate, verify and dependency-map PLC code across Rockwell, Siemens, CODESYS and Beckhoff; extend to HMI/SCADA screens, tags and alarms; troubleshoot stops from exported historian data. Safety-rated logic is always excluded; simulation results are labelled simulated, not hardware-tested.",
+  "description": "Offline, read-only toolkit for controls engineers: understand, check, diff, translate, verify and dependency-map PLC code across Rockwell, Siemens, CODESYS, Beckhoff, OpenPLC and IEC 61499 (4diac); lock-in reports for CODESYS/TwinCAT projects; unit tests for function blocks; extend to HMI/SCADA screens, tags and alarms; troubleshoot stops from exported historian data. Safety-rated logic is always excluded; simulation results are labelled simulated, not hardware-tested.",
   "author": {
     "name": "Arun Venkatadri"
   },
@@ -23,7 +23,7 @@
     "hmi",
     "industrial-automation",
     "migration",
-    "alarm-management"
+    "alarm-management", "openplc", "iec-61499", "4diac", "static-analysis", "unit-testing"
   ],
   "userConfig": {
     "historian_config": {
