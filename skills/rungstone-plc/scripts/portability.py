@@ -34,9 +34,10 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import parse_project as pp  # noqa: E402
 
-TARGETS = ("openplc", "iec-st", "siemens-scl", "rockwell")
+TARGETS = ("openplc", "iec-st", "siemens-scl", "rockwell", "iec61499")
 TARGET_NAMES = {"openplc": "OpenPLC / Beremiz", "iec-st": "Plain IEC 61131-3 ST",
-                "siemens-scl": "Siemens S7-1500 SCL", "rockwell": "Rockwell Logix 5000"}
+                "siemens-scl": "Siemens S7-1500 SCL", "rockwell": "Rockwell Logix 5000",
+                "iec61499": "IEC 61499 (4diac)"}
 PLATFORM_NAMES = {"codesys": "CODESYS", "twincat": "Beckhoff TwinCAT", "rockwell": "Rockwell Logix",
                   "siemens": "Siemens TIA Portal", "iec": "IEC 61131-3 ST"}
 # A target is the source's own platform when ...
@@ -45,8 +46,10 @@ SAME_PLATFORM = {"rockwell": "rockwell", "siemens": "siemens-scl", "iec": "iec-s
 P, R, N = "portable", "rework", "no_equivalent"
 
 
-def rate(openplc, iec, siemens, rockwell):
-    return {"openplc": openplc, "iec-st": iec, "siemens-scl": siemens, "rockwell": rockwell}
+def rate(openplc, iec, siemens, rockwell, iec61499=None):
+    """iec61499 defaults to the plain IEC rating: 4diac ST is IEC 61131-3 ST without vendor extensions."""
+    return {"openplc": openplc, "iec-st": iec, "siemens-scl": siemens, "rockwell": rockwell,
+            "iec61499": iec61499 or iec}
 
 
 # --------------------------------------------------------------------------
@@ -95,8 +98,9 @@ RULES = [
     # --- pointers and memory -----------------------------------------------------------
     dict(id="pointers", title="Pointers (POINTER TO, ADR, ^)", category="pointers and memory", where="code+type",
          per="unit", hours=(2, 6), pattern=rx(r"\bPOINTER\s+TO\b|\bADR\s*\(|[\w\]\)](?<!THIS)(?<!SUPER)\^"),
-         ratings=rate(R, R, R, N),
-         advice={"openplc": "Replace with array indexing, or REF_TO/REF() if your MatIEC build supports them; test.",
+         ratings=rate(R, R, R, N, R),
+         advice={"iec61499": "Replace with array indexing or REF_TO.",
+                 "openplc": "Replace with array indexing, or REF_TO/REF() if your MatIEC build supports them; test.",
                  "iec-st": "Replace with array indexing (REF_TO exists only in edition 3 runtimes).",
                  "siemens-scl": "Replace with array indexing, VARIANT or REF_TO (S7-1500, optimized access).",
                  "rockwell": "No pointers in Logix: use array indexing or indirect addressing with a DINT index."}),
@@ -130,23 +134,26 @@ RULES = [
          where="code+type", per="unit", hours=(4, 16),
          pattern=rx(r"\bFILE\.\w+|\bCAA_?File\w*|\bSysFile\w*|\bFB_File\w+|\bFB_CsvMem\w*"),
          ratings=rate(N, N, R, N),
-         advice={"openplc": "No file access from the PLC program: log through the HMI/SCADA or a historian.",
+         advice={"iec61499": "Move logging to the HMI/SCADA or a historian, fed through a communication FB.",
+                 "openplc": "No file access from the PLC program: log through the HMI/SCADA or a historian.",
                  "iec-st": "Outside the standard: move logging to the HMI/SCADA or a historian.",
                  "siemens-scl": "DataLogCreate / DataLogWrite to the memory card, or log in the HMI/historian.",
                  "rockwell": "Controllers have no file system for this: log in FactoryTalk/HMI or a historian."}),
     dict(id="comms", title="Sockets, serial and ADS (SysSock*, NBS, SysCom, ADS*)", category="runtime libraries",
          where="code+type", per="unit", hours=(4, 16),
          pattern=rx(r"\bSysSock\w*|\bNBS\.\w+|\bSysCom\w*|\bCOM\.\w+|\bADS(READ|WRITE|RDSTATE|WRTCTL|LOG\w*)\b|\bFB_Socket\w*"),
-         ratings=rate(N, N, R, R),
-         advice={"openplc": "No socket/serial blocks; use OpenPLC's Modbus server or an external gateway.",
+         ratings=rate(N, N, R, R, R),
+         advice={"iec61499": "Use 4diac communication FBs (CLIENT/SERVER, PUBLISH/SUBSCRIBE incl. MQTT, OPC UA).",
+                 "openplc": "No socket/serial blocks; use OpenPLC's Modbus server or an external gateway.",
                  "iec-st": "Outside the standard: needs the target runtime's own communication library.",
                  "siemens-scl": "TCON / TSEND / TRCV (Open User Communication) or PtP blocks.",
                  "rockwell": "MSG instruction (socket object or CIP), or a gateway module."}),
     dict(id="clock", title="Real-time clock (SysTimeRtc*, SysTime*, NT_GetTime, GETSYSTEMTIME)",
          category="runtime libraries", where="code+type", per="unit", hours=(0.5, 2),
          pattern=rx(r"\bSysTime\w*\s*\(|\bSysTimeRtc\w*|\bNT_GetTime\b|\bGETSYSTEMTIME\b|\bF_GetSystemTime\b|\bFB_LocalSystemTime\b"),
-         ratings=rate(R, N, R, R),
-         advice={"openplc": "Use the runtime's RTC block if your build provides one; otherwise take time from the HMI.",
+         ratings=rate(R, N, R, R, R),
+         advice={"iec61499": "Use the runtime's time function or FB from the 4diac library.",
+                 "openplc": "Use the runtime's RTC block if your build provides one; otherwise take time from the HMI.",
                  "iec-st": "No clock function in the standard: needs the runtime's own block.",
                  "siemens-scl": "RD_SYS_T / RD_LOC_T.",
                  "rockwell": "GSV WallClockTime (LocalDateTime)."}),
@@ -154,7 +161,8 @@ RULES = [
          where="code+type", per="unit", hours=(8, 40),
          pattern=rx(r"\bMC_\w+|\bAXIS_REF\w*|\bSMC_\w+|\bSM3_\w+|\bTc2_MC2\b"),
          ratings=rate(N, N, R, R),
-         advice={"openplc": "No motion control: move the axes to a drive or motion controller with its own program.",
+         advice={"iec61499": "No motion library in the standard: the axes go to a drive or motion controller.",
+                 "openplc": "No motion control: move the axes to a drive or motion controller with its own program.",
                  "iec-st": "Motion is not in IEC 61131-3: needs the target's motion library.",
                  "siemens-scl": "S7-1500 technology objects with the PLCopen-style MC_ blocks; axes are re-configured "
                                 "and re-commissioned.",
@@ -195,7 +203,7 @@ RULES = [
          advice="Rewrite as IF cond THEN x := TRUE; END_IF (or FALSE)."),
     dict(id="bit_access", title="Bit access on integers (x.3)", category="language extensions", where="code",
          per="occurrence", hours=(0.1, 0.25), pattern=rx(r"(?<![\w.#])[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*\.\d+\b(?!\.\d)"),
-         ratings=rate(R, R, R, P),
+         ratings=rate(R, R, R, P, P),
          advice={"openplc": "Use masks and shifts, or .%X3 if your MatIEC build accepts it.",
                  "iec-st": "Use masks and shifts (edition 3 has .%X3).",
                  "siemens-scl": "Same idea, different syntax: x.%X3.",
@@ -246,33 +254,36 @@ RULES = [
                 "(numbered); keep it."),
     dict(id="sfc", title="SFC bodies", category="languages", where="lang", per="unit", hours=(2, 8),
          test=lambda r: (r.get("language") or "").upper() == "SFC",
-         ratings=rate(P, R, R, R),
+         ratings=rate(P, R, R, R, R),
          advice={"openplc": "OpenPLC has SFC; check action qualifiers and timing.",
                  "iec-st": "Rewrite as a CASE state machine for ST-only runtimes.",
                  "siemens-scl": "S7-GRAPH, or a CASE state machine in SCL.",
                  "rockwell": "Logix SFC (semantics differ: check step timing and action qualifiers), or a state machine."}),
     dict(id="il", title="IL bodies (Instruction List)", category="languages", where="lang", per="unit",
          hours=(1, 4), test=lambda r: (r.get("language") or "").upper() == "IL",
-         ratings=rate(P, R, R, R),
+         ratings=rate(P, R, R, R, R),
          advice="IL is deprecated in IEC 61131-3 edition 3: rewrite as ST."),
 
     # --- runtime behaviour and hardware -------------------------------------------------
     dict(id="persistent", title="PERSISTENT variables", category="runtime behaviour", where="persistent",
          per="project", hours=(1, 3), ratings=rate(R, R, R, R),
-         advice={"openplc": "Map to OpenPLC persistent storage and test what survives a restart and a download.",
+         advice={"iec61499": "No RETAIN/PERSISTENT in IEC 61499: store the values explicitly.",
+                 "openplc": "Map to OpenPLC persistent storage and test what survives a restart and a download.",
                  "iec-st": "PERSISTENT is not portable: decide RETAIN vs. recipe storage on the target.",
                  "siemens-scl": "Retentive DB variables; a download can reset them unless snapshots are used.",
                  "rockwell": "All tags keep their values through power loss, but a download overwrites them."}),
     dict(id="tasks", title="Multiple tasks (intervals, priorities)", category="runtime behaviour", where="task",
-         per="occurrence", hours=(0.5, 2), ratings=rate(R, P, R, R),
-         advice={"openplc": "OpenPLC runs one scan cycle: check whether the fast tasks' timing still holds.",
+         per="occurrence", hours=(0.5, 2), ratings=rate(R, P, R, R, R),
+         advice={"iec61499": "Tasks become event sources: one E_CYCLE per rate driving the FBs that ran in that task.",
+                 "openplc": "OpenPLC runs one scan cycle: check whether the fast tasks' timing still holds.",
                  "iec-st": "TASK / PROGRAM WITH is standard; the target runtime decides how priorities work.",
                  "siemens-scl": "Cyclic interrupt OBs (OB30-38) with matching intervals; data shared between "
                                 "OBs needs consistency handling.",
                  "rockwell": "Periodic tasks; data shared between tasks needs buffering (UID/UIE or copies)."}),
     dict(id="io_addresses", title="Direct I/O addresses (%IX, %QX, AT %I*)", category="hardware", where="address",
          per="occurrence", hours=(0.05, 0.2), blocks_as_is=False, ratings=rate(R, R, R, R),
-         advice={"openplc": "Re-map to OpenPLC's %IX0.0 / %QX0.0 layout for the new hardware.",
+         advice={"iec61499": "No addresses: wire the FB's data inputs/outputs to the device's I/O FBs.",
+                 "openplc": "Re-map to OpenPLC's %IX0.0 / %QX0.0 layout for the new hardware.",
                  "iec-st": "Re-map to the target hardware's addresses.",
                  "siemens-scl": "Re-map to the new %I / %Q byte.bit addresses in the tag table.",
                  "rockwell": "No direct addresses: alias tags to the module tags (Local:1:I.Data.0)."}),

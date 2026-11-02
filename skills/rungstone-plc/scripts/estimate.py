@@ -60,7 +60,8 @@ FORMAT_REF = {"rockwell-l5x": "references/rockwell-l5x.md", "ladder-text": "refe
               "plcopen-xml": "references/plcopen-xml.md", "beckhoff-twincat": "references/plcopen-xml.md",
               "iec-st": "references/plcopen-xml.md"}
 TARGET_REF = {"siemens-scl": "references/siemens-scl.md", "rockwell": "references/rockwell-l5x.md",
-              "iec-st": "references/plcopen-xml.md", "openplc": "references/openplc.md"}
+              "iec-st": "references/plcopen-xml.md", "openplc": "references/openplc.md",
+              "iec61499": "references/iec61499.md"}
 
 RISKY = ("TON", "TOF", "RTO", "CTU", "CTD", "ONS", "OSR", "OSF", "PID", "PIDE", "MSG", "SCP", "SCL", "IOT", "IIN",
          "MAJ", "MAM", "MAS", "MSO", "MAH", "FFL", "FFU", "BSL", "BSR", "SQO", "COP", "CPS", "GSV", "SSV", "JMP",
@@ -158,7 +159,7 @@ def main(argv=None):
     ap.add_argument("--model", default="claude-opus-5-5", help="one of: " + ", ".join(PRICES))
     ap.add_argument("--price-in", type=float, help="override USD per million input tokens")
     ap.add_argument("--price-out", type=float, help="override USD per million output tokens")
-    ap.add_argument("--target", choices=["siemens-scl", "iec-st", "rockwell", "openplc"])
+    ap.add_argument("--target", choices=["siemens-scl", "iec-st", "rockwell", "openplc", "iec61499"])
     ap.add_argument("--json", action="store_true", help="print JSON instead of a table")
     ap.add_argument("--tokens-only", action="store_true",
                     help="report tokens and scope without dollar prices (for hosts whose pricing this script doesn't know)")

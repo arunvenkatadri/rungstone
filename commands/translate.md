@@ -1,11 +1,11 @@
 ---
-description: Translate PLC code to S7-1500 SCL, Rockwell Logix L5X, IEC Structured Text or OpenPLC/Beremiz with a mapping table and a ranked review queue
-argument-hint: "<files> [from <source platform>] to <siemens-scl | rockwell | iec-st | openplc>"
+description: Translate PLC code to S7-1500 SCL, Rockwell Logix L5X, IEC Structured Text, OpenPLC/Beremiz or IEC 61499 (4diac) with a mapping table and a ranked review queue
+argument-hint: "<files> [from <source platform>] to <siemens-scl | rockwell | iec-st | openplc | iec61499>"
 ---
 Use the **rungstone-plc** skill, Workflow 2 (Translate), on: $ARGUMENTS
 
 If no files were named, use the source marked in use in the workbench (`state.py status` → `selected`); if none is chosen, ask which file to use.
 
-If the target platform is not stated, ask (S7-1500 SCL, Rockwell Logix L5X, IEC 61131-3 ST, or OpenPLC/Beremiz). Show the scope/cost estimate first for anything large. Work routine by routine against the shared tag map, write the target files with the DRAFT header, write .rungstone/mapping.csv, and add every translation risk to the review queue (high/medium/low, each with a proposed fix). End with the review queue and how to approve. Nothing is final until the engineer approves; nothing is ever downloaded to a controller.
+If the target platform is not stated, ask (S7-1500 SCL, Rockwell Logix L5X, IEC 61131-3 ST, OpenPLC/Beremiz, or IEC 61499 / Eclipse 4diac). Show the scope/cost estimate first for anything large. Work routine by routine against the shared tag map, write the target files with the DRAFT header, write .rungstone/mapping.csv, and add every translation risk to the review queue (high/medium/low, each with a proposed fix). End with the review queue and how to approve. Nothing is final until the engineer approves; nothing is ever downloaded to a controller.
 
 When done, save the full answer as `.rungstone/reports/translate-<source name>.md` and record every translated file with `state.py output <files> --workflow translate`, so the workbench shows them.

@@ -232,7 +232,7 @@ function viewFiles(){
        '<div class="jobrow"><span class="muted">File</span><span><code id="jobfile">'+(pend?esc(pend):'(pick a file above)')+'</code> <span class="muted" id="jobkind"></span></span></div>'+
        '<div class="jobrow"><span class="muted">Workflow</span><select id="jobwf"></select></div>'+
        '<div class="jobrow" id="tgtrow"><span class="muted">Target</span><select id="jobtgt">'+
-         [["siemens-scl","Siemens S7-1500 SCL"],["rockwell","Rockwell Logix (L5X)"],["iec-st","IEC 61131-3 Structured Text"],["openplc","OpenPLC / Beremiz"]]
+         [["siemens-scl","Siemens S7-1500 SCL"],["rockwell","Rockwell Logix (L5X)"],["iec-st","IEC 61131-3 Structured Text"],["openplc","OpenPLC / Beremiz"],["iec61499","IEC 61499 (Eclipse 4diac)"]]
          .map(function(o){return '<option value="'+o[0]+'"'+((window.__tgt||(S.project||{}).target||"siemens-scl")===o[0]?' selected':'')+'>'+esc(o[1])+'</option>';}).join("")+'</select></div>'+
        '<div class="jobrow"><span></span><div><button class="act primary" id="jobgo">Use this file</button> <span class="err" id="joberr"></span></div></div>'+
        '<div id="jobout">'+(window.__jobHTML||"")+'</div></div>';
@@ -260,18 +260,18 @@ function viewEstimate(){
   return h;
 }
 
-var TARGETS=[["siemens-scl","Siemens S7-1500 SCL (TIA Portal)"],["rockwell","Rockwell Logix L5X (Studio 5000)"],["iec-st","IEC 61131-3 Structured Text (CODESYS, TwinCAT, PLCopen)"],["openplc","OpenPLC Runtime / Beremiz (MatIEC)"]];
+var TARGETS=[["siemens-scl","Siemens S7-1500 SCL (TIA Portal)"],["rockwell","Rockwell Logix L5X (Studio 5000)"],["iec-st","IEC 61131-3 Structured Text (CODESYS, TwinCAT, PLCopen)"],["openplc","OpenPLC Runtime / Beremiz (MatIEC)"],["iec61499","IEC 61499 function blocks (Eclipse 4diac)"]];
 var FORMAT_NAMES={"rockwell-l5x":"Rockwell Logix (Studio 5000 L5X)","l5x":"Rockwell Logix (Studio 5000 L5X)","l5k":"Rockwell Logix (L5K)",
   "ladder-text":"Rockwell ladder text (RSLogix 500 / PLC-5 ASCII, or neutral rung text)","text":"Text (ladder or ST; confirmed when parsed)",
   "siemens-scl":"Siemens S7 SCL source","simaticml":"Siemens TIA Portal (SimaticML XML)","siemens-stl":"Siemens STL/AWL source",
   "plcopen":"PLCopen XML (CODESYS, Beckhoff, Beremiz)","plcopen-xml":"PLCopen XML (CODESYS, Beckhoff, Beremiz)","twincat":"Beckhoff TwinCAT (TcPOU/TcGVL)",
-  "iec-st":"IEC 61131-3 Structured Text","codesys-export":"CODESYS export","xml":"XML (vendor confirmed when parsed)"};
+  "iec-st":"IEC 61131-3 Structured Text","codesys-export":"CODESYS export","iec61499":"IEC 61499 function block type (4diac .fbt)","xml":"XML (vendor confirmed when parsed)"};
 function targetName(t){var m=TARGETS.filter(function(x){return x[0]===t;})[0];return m?m[1]:(t||"");}
 function inUse(){var p=S.project||{},sel=p.selected||(p.sources||[]).map(function(s){return s.path;});
   return (p.sources||[]).filter(function(s){return s.path===sel[0];})[0]||null;}
 var PLATFORMS=[["rockwell-logix","Rockwell ControlLogix / CompactLogix (Studio 5000)"],["rockwell-slc500","Rockwell SLC 500 (RSLogix 500)"],
   ["rockwell-plc5","Rockwell PLC-5 (RSLogix 5)"],["rockwell-micrologix","Rockwell MicroLogix (RSLogix 500)"],["siemens-tia","Siemens S7-1200/1500 (TIA Portal)"],
-  ["siemens-step7","Siemens S7-300/400 (STEP 7 classic)"],["codesys","CODESYS"],["beckhoff-twincat","Beckhoff TwinCAT"],["iec-st","IEC 61131-3 (generic)"],["other","Other"]];
+  ["siemens-step7","Siemens S7-300/400 (STEP 7 classic)"],["codesys","CODESYS"],["beckhoff-twincat","Beckhoff TwinCAT"],["iec-st","IEC 61131-3 (generic)"],["iec61499","IEC 61499 (4diac)"],["other","Other"]];
 function platformName(k){var m=PLATFORMS.filter(function(x){return x[0]===k;})[0];return m?m[1]:(k||"unknown");}
 function platformOf(src){
   if(!src) return null;

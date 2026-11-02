@@ -62,7 +62,9 @@ Deliverables (write files; do not paste huge code blocks into chat — show a sh
 1. Target code file(s): `.scl` (S7-1500), `.L5X` partial export (Logix), `.st` (IEC), or for
    OpenPLC/Beremiz one `.st` file with `CONFIGURATION Config0` plus `plc.xml` (from
    `st_to_plcopen.py`) and a Modbus register table, each with the DRAFT header from the platform
-   reference. OpenPLC output must pass `openplc_check.py` before you present it.
+   reference. OpenPLC output must pass `openplc_check.py` before you present it. IEC 61499: the
+   scan-body `.st`, `<Name>.fbt` and `<Name>_App.fbt` from `st_to_61499.py`, passing
+   `iec61499_check.py`, plus the list of HMI tags that need communication FBs.
 2. `mapping.csv` in `.rungstone/` (and a copy next to the code) with columns:
    `old_address,old_symbol,old_description,old_type,new_symbol,new_address,new_type,basis,notes`
    — one row per source signal, including internal bits/registers, timers, counters.

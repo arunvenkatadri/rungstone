@@ -1,0 +1,5 @@
+old_address,old_symbol,old_description,old_type,new_symbol,new_address,new_type,basis,notes
+,Start_PB,,BOOL,Start_PB,,BOOL,confirmed,
+,Level_High,,BOOL,Level_High,,BOOL,confirmed,
+,Fill_Valve,,BOOL,Fill_Valve,,BOOL,confirmed,
+,Done_Lamp,,BOOL,Done_Lamp,,BOOL,confirmed,

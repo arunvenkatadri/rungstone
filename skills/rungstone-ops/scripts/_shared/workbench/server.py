@@ -18,7 +18,7 @@ default and prints {"url": ...} as JSON.  It serves one self-contained page
                          file (and, with "use", make it the one the workflow runs on)
   POST /api/source/remove {"path": "..."}
   POST /api/source/select {"path": "..."}  the one source the workflows run on
-  POST /api/project/target {"target": "siemens-scl|rockwell|iec-st|openplc"}
+  POST /api/project/target {"target": "siemens-scl|rockwell|iec-st|openplc|iec61499"}
   POST /api/source/platform {"path": "...", "platform": "..."|""}  engineer's
                          override of the detected source platform ("" = use detection)
                          (all POSTs need the token)
@@ -58,16 +58,16 @@ DEFAULT_APP = "claude"  # which assistant hosts the skills: "claude" or "codex" 
 APPS = ("claude", "codex")
 SOURCE_FORMATS = {".l5x": "l5x", ".l5k": "l5k", ".scl": "siemens-scl", ".st": "iec-st", ".xml": "xml",
                   ".tcpou": "twincat", ".tcgvl": "twincat", ".tcdut": "twincat", ".txt": "text",
-                  ".csv": "csv", ".xlsx": "xlsx", ".json": "json", ".awl": "siemens-stl", ".exp": "codesys-export"}
+                  ".csv": "csv", ".xlsx": "xlsx", ".json": "json", ".awl": "siemens-stl", ".exp": "codesys-export", ".fbt": "iec61499"}
 SKIP_DIRS = {".rungstone", ".git", "node_modules", "__pycache__", "export", ".venv", "venv"}
 MAX_CANDIDATES = 500
-TARGETS = ("siemens-scl", "rockwell", "iec-st", "openplc")
+TARGETS = ("siemens-scl", "rockwell", "iec-st", "openplc", "iec61499")
 PARSED_MAX = 64 * 1024 * 1024
 
 
 SNIFF_BYTES = 16 * 1024
 SOURCE_PLATFORMS = ("rockwell-logix", "rockwell-slc500", "rockwell-plc5", "rockwell-micrologix", "siemens-tia",
-                    "siemens-step7", "codesys", "beckhoff-twincat", "iec-st", "other")
+                    "siemens-step7", "codesys", "beckhoff-twincat", "iec-st", "iec61499", "other")
 _RX = re.compile
 
 
@@ -80,6 +80,9 @@ def _sniff_plc(path, head, ext):
         return {"platform": "rockwell-logix", "confidence": "detected",
                 "detail": ", ".join(x for x in (proc, "exported from Studio 5000 v" + rev if rev else None) if x),
                 "evidence": "RSLogix5000Content header" + (" with ProcessorType" if proc else "")}
+    if "<FBType" in head:
+        return {"platform": "iec61499", "confidence": "detected", "detail": "IEC 61499 function block type (4diac)",
+                "evidence": "FBType root element"}
     if "<TcPlcObject" in head:
         return {"platform": "beckhoff-twincat", "confidence": "detected", "evidence": "TcPlcObject header"}
     if "plcopen.org" in head:

@@ -791,6 +791,11 @@ class Program(object):
                     for sv in v.iter():
                         if pp.lname(sv) == "simpleValue" and sv.attrib.get("value") is not None:
                             self.set_init(v.attrib["name"], sv.attrib["value"])
+            elif self.fmt == "iec61499-fbt":
+                root = safe_xml.fromstring(pp.read_text(self.path))
+                for v in root.iter():
+                    if pp.lname(v) == "VarDeclaration" and v.attrib.get("Name") and v.attrib.get("InitialValue"):
+                        self.set_init(v.attrib["Name"], v.attrib["InitialValue"])
             elif self.fmt in ("siemens-scl", "iec-st", "beckhoff-twincat"):
                 text = pp.read_text(self.path)
                 for m in re.finditer(r'(?im)^\s*("[^"]+"|[A-Za-z_]\w*)\s*(?:\{[^}]*\})?\s*(?:AT\s+%\S+\s*)?:\s*[^;:=]+?:=\s*([^;]+);', text):

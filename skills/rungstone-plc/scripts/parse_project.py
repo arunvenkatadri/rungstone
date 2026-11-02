@@ -1241,6 +1241,87 @@ def parse_plcopen(path_, root, ctx):
 
 
 # --------------------------------------------------------------------------
+# IEC 61499 function block types (.fbt: Eclipse 4diac, IEC 61499-2 XML)
+# --------------------------------------------------------------------------
+
+def st61499_lines(st_el):
+    """ST algorithm text without the ALGORITHM name ... END_ALGORITHM wrapper, with original line numbers."""
+    txt = (text_of(st_el) if st_el is not None else None) or (st_el.attrib.get("Text") if st_el is not None else "") or ""
+    raw = txt.splitlines()
+    out = []
+    for i, l in enumerate(raw, 1):
+        if re.match(r"^\s*(ALGORITHM\s+\w+|END_ALGORITHM)\s*$", l, re.I):
+            continue
+        out.append({"number": i, "text": l.rstrip()})
+    while out and not out[0]["text"].strip():
+        out.pop(0)
+    while out and not out[-1]["text"].strip():
+        out.pop()
+    return out
+
+
+def parse_61499(path_, root, ctx):
+    project = new_project(path_, "iec61499-fbt")
+    name = root.attrib.get("Name")
+    iface = kid(root, "InterfaceList")
+    events, sections = [], []
+    for kind, tag in (("event_input", "EventInputs"), ("event_output", "EventOutputs")):
+        el = kid(iface, tag) if iface is not None else None
+        for e in kids(el, "Event") if el is not None else []:
+            events.append(compact({"name": e.attrib.get("Name"), "kind": kind, "type": e.attrib.get("Type"),
+                                   "with": [w.attrib.get("Var") for w in kids(e, "With")]}))
+    for sec_name, tag in (("VAR_INPUT", "InputVars"), ("VAR_OUTPUT", "OutputVars"), ("VAR_IN_OUT", "InOutVars")):
+        el = kid(iface, tag) if iface is not None else None
+        ms = [compact({"name": v.attrib.get("Name"), "data_type": v.attrib.get("Type"), "description": v.attrib.get("Comment")})
+              for v in kids(el, "VarDeclaration")] if el is not None else []
+        if ms:
+            sections.append({"section": sec_name, "members": ms})
+    body = kid(root, "BasicFB") or kid(root, "SimpleFB")
+    raw = ET.tostring(root, encoding="unicode")
+    if text_block_safety(project, ctx, "fbtype", name, raw):
+        return project
+    if body is not None:
+        iv = kid(body, "InternalVars")
+        if iv is not None:
+            sections.append({"section": "VAR", "members": [
+                compact({"name": v.attrib.get("Name"), "data_type": v.attrib.get("Type"), "description": v.attrib.get("Comment")})
+                for v in kids(iv, "VarDeclaration")]})
+        ecc = kid(body, "ECC")
+        states = []
+        if ecc is not None:
+            for st in kids(ecc, "ECState"):
+                states.append(compact({"name": st.attrib.get("Name"), "actions": [
+                    compact({"algorithm": a.attrib.get("Algorithm"), "output": a.attrib.get("Output")}) for a in kids(st, "ECAction")]}))
+            trans = [compact({"source": t.attrib.get("Source"), "destination": t.attrib.get("Destination"),
+                              "condition": t.attrib.get("Condition")}) for t in kids(ecc, "ECTransition")]
+        else:
+            trans = []
+        project["routines"].append(compact({"id": name, "program": None, "name": name,
+                                            "kind": "function_block", "language": "61499-" + lname(body),
+                                            "interface": sections, "events": events,
+                                            "ecc": compact({"states": states, "transitions": trans})}))
+        for alg in kids(body, "Algorithm"):
+            project["routines"].append(compact({"id": "%s.%s" % (name, alg.attrib.get("Name")), "program": name,
+                                                "name": alg.attrib.get("Name"), "kind": "algorithm", "language": "ST",
+                                                "lines": st61499_lines(kid(alg, "ST"))}))
+    else:
+        net = kid(root, "FBNetwork")
+        entry = {"id": name, "program": None, "name": name, "kind": "composite" if net is not None else "service",
+                 "language": "61499-FBNetwork" if net is not None else None, "interface": sections, "events": events}
+        if net is not None:
+            fbs = ["%s : %s" % (f.attrib.get("Name"), f.attrib.get("Type")) for f in kids(net, "FB")]
+            conns = []
+            for grp in ("EventConnections", "DataConnections"):
+                el = kid(net, grp)
+                for c in kids(el, "Connection") if el is not None else []:
+                    conns.append("%s -> %s" % (c.attrib.get("Source"), c.attrib.get("Destination")))
+            entry["networks"] = [{"number": 1, "text": "FBs: %s. Connections: %s" % ("; ".join(fbs), "; ".join(conns)),
+                                  "summarized": True}]
+        project["routines"].append(compact(entry))
+    return project
+
+
+# --------------------------------------------------------------------------
 # Beckhoff TwinCAT native (.TcPOU / .TcGVL / .TcDUT)
 # --------------------------------------------------------------------------
 
@@ -1489,6 +1570,8 @@ def parse_file(p, ctx):
             return parse_simaticml(p, root, ctx)
         if rn == "project" and "plcopen" in (root.tag + text[:500]).lower():
             return parse_plcopen(p, root, ctx)
+        if rn == "FBType":
+            return parse_61499(p, root, ctx)
         if rn == "TcPlcObject":
             return parse_twincat(p, root, ctx)
         pr = new_project(p, "unknown-xml")

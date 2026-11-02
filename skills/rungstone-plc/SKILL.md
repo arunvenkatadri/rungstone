@@ -1,6 +1,6 @@
 ---
 name: rungstone-plc
-description: Understand, translate, verify, and dependency-map industrial PLC code across vendors (Rockwell/Allen-Bradley Studio 5000, RSLogix 5000/500, L5X, SLC 500, PLC-5, Siemens TIA Portal SCL/S7/SimaticML, CODESYS, Beckhoff TwinCAT, PLCopen XML, IEC 61131-3 Structured Text, ladder logic). Use this skill whenever the user mentions PLC code, ladder logic, rungs, Structured Text, Rockwell, Allen-Bradley, Studio 5000, RSLogix, L5X, Siemens, TIA Portal, SCL, S7, CODESYS, Beckhoff, TwinCAT, PLCopen, PLC migration, legacy controls code, I/O lists, vendor lock-in, portability, moving off CODESYS or TwinCAT, OpenPLC, or wants to understand, explain, document, convert, migrate, test, or verify control logic, even if they never say "translate" and even if they just paste a few rungs.
+description: Understand, translate, verify, and dependency-map industrial PLC code across vendors (Rockwell/Allen-Bradley Studio 5000, RSLogix 5000/500, L5X, SLC 500, PLC-5, Siemens TIA Portal SCL/S7/SimaticML, CODESYS, Beckhoff TwinCAT, PLCopen XML, IEC 61131-3 Structured Text, IEC 61499 / Eclipse 4diac, ladder logic). Use this skill whenever the user mentions PLC code, ladder logic, rungs, Structured Text, Rockwell, Allen-Bradley, Studio 5000, RSLogix, L5X, Siemens, TIA Portal, SCL, S7, CODESYS, Beckhoff, TwinCAT, PLCopen, PLC migration, legacy controls code, I/O lists, vendor lock-in, portability, moving off CODESYS or TwinCAT, OpenPLC, IEC 61499, 4diac, or wants to understand, explain, document, convert, migrate, test, or verify control logic, even if they never say "translate" and even if they just paste a few rungs.
 license: MIT
 ---
 
@@ -26,12 +26,13 @@ Scripts live in `${CLAUDE_SKILL_DIR}/scripts/` (when not running as a plugin, us
 
 | Script | Purpose |
 |---|---|
-| `parse_project.py FILES -o parsed.json` | L5X, SimaticML, SCL, ST, PLCopen, TwinCAT, ladder text, I/O CSV → routines, rungs/lines/networks, tags (no data values), comments, I/O, `excluded_safety` |
+| `parse_project.py FILES -o parsed.json` | L5X, SimaticML, SCL, ST, PLCopen, TwinCAT, 4diac .fbt, ladder text, I/O CSV → routines, rungs/lines/networks, tags (no data values), comments, I/O, `excluded_safety` |
 | `estimate.py FILES [--target ...]` | tokens and cost per job, CONFIRM flag for large jobs |
 | `dependency_map.py --plc FILES [--hmi FILES] [--target T] [--mapping M] --md out.md -o deps.json` | every tag: readers, writers, conflicts, open questions |
 | `simulate.py run|compare ...` | pure-Python scan-cycle simulator; compares source vs target scan by scan |
 | `openplc_check.py FILE.st` | checks an OpenPLC/Beremiz translation against what MatIEC and the OpenPLC runtime accept (structure, syntax, located addresses, Modbus registers) |
 | `st_to_plcopen.py FILE.st -o plc.xml` | wraps generated ST as PLCopen XML for OpenPLC Editor / Beremiz |
+| `st_to_61499.py FILE.st -o DIR` / `iec61499_check.py FILES.fbt` | IEC 61499 / 4diac: wraps a scan body as a Basic FB plus an E_CYCLE composite, and checks .fbt types (structure, ECC, With sampling, ST) |
 | `lint.py FILES --md out.md -o out.json` | static analysis: likely bugs and risky patterns (ST and ladder), each with where, why and a fix |
 | `diff_exports.py OLD NEW --md out.md -o out.json` | what changed between two exports, the tags each change writes, and where else those tags are read |
 | `make_tests.py --program F --entry FB --scenarios S.json --framework cfunit\|tcunit\|plain` | unit tests for a function block, expected values from the simulator |
@@ -49,7 +50,7 @@ Large exports (tens of MB) are streamed and their tag data dropped while parsing
 3. **Parse:** `parse_project.py <files> -o .rungstone/parsed.json`. Check `warnings` (source-protected routines, unknown formats) and `excluded_safety`.
 4. **Safety notice:** if anything was excluded, show the notice block now — before any other output. If a name-based exclusion looks wrong (e.g. "SafetyMat_Count" is an inventory counter), the engineer may release it; see `references/safety-exclusion.md`.
 5. **Estimate:** `estimate.py .rungstone/parsed.json --target <t> --json > .rungstone/estimate.json`. If `confirm_before_running` is true (or more than ~20 routines), show the table and ask whether to proceed or narrow scope. Small jobs: one line with the estimate is enough.
-6. **Read the right reference** for the source/target platform: `references/rockwell-l5x.md`, `references/siemens-scl.md`, `references/plcopen-xml.md`, `references/openplc.md`. For Translate and Verify, also `references/translation-pitfalls.md`. Output layout is in `references/output-formats.md` — follow it exactly.
+6. **Read the right reference** for the source/target platform: `references/rockwell-l5x.md`, `references/siemens-scl.md`, `references/plcopen-xml.md`, `references/openplc.md`, `references/iec61499.md`. For Translate and Verify, also `references/translation-pitfalls.md`. Output layout is in `references/output-formats.md` — follow it exactly.
 
 ## Workflow 1 — Understand
 
@@ -64,7 +65,7 @@ Goal: the engineer can explain the machine to someone else after reading your an
 
 ## Workflow 2 — Translate
 
-Targets: S7-1500 SCL, Rockwell Logix (L5X partial export), IEC 61131-3 ST, OpenPLC Runtime / Beremiz (`openplc`: IEC ST for the MatIEC compiler). Work **routine by routine against the shared tag map** so names stay consistent across routines and with HMI/SCADA.
+Targets: S7-1500 SCL, Rockwell Logix (L5X partial export), IEC 61131-3 ST, OpenPLC Runtime / Beremiz (`openplc`: IEC ST for the MatIEC compiler), IEC 61499 / Eclipse 4diac (`iec61499`: function block types, `.fbt`). Work **routine by routine against the shared tag map** so names stay consistent across routines and with HMI/SCADA.
 
 1. Make sure Understand has been done at least for the routines in scope (signal meanings drive symbol names). If the user only wants code, still build the signal table internally.
 2. **Mapping first**: one row per source signal in `.rungstone/mapping.csv` (columns in output-formats.md) — old address/symbol, meaning (basis), new symbol, new address, type old→new. Meaningful names (`Start_PB`, not `I_1_14`); old address in every comment.
@@ -75,7 +76,8 @@ Targets: S7-1500 SCL, Rockwell Logix (L5X partial export), IEC 61131-3 ST, OpenP
    Analog scaling is always a high item asking the engineer to confirm module and range.
 6. **Cross-check**: run `dependency_map.py` again with `--target <t> --mapping .rungstone/mapping.csv` plus any HMI/SCADA files — anything it reports as `translation_break` (e.g. HMI reads `Timer.ACC`, which has no IEC equivalent; propose an explicit DINT elapsed tag and an HMI rebind) or `broken_link` becomes a review item too.
 7. **OpenPLC target:** run `openplc_check.py out/<name>.st` and fix every error before presenting (a file with errors won't upload). Its warnings (RETAIN, several tasks) become review items. Then `st_to_plcopen.py out/<name>.st -o out/plc.xml` for OpenPLC Editor / Beremiz, and put the `located` list from the check (address → Modbus register) in the answer as the HMI rebind table. Run `dependency_map.py ... --target openplc --mapping .rungstone/mapping.csv` with the HMI files: every HMI tag without a Modbus-visible address is a high item.
-8. Present the summary in the Translate format: files, mapping, ranked review queue, how to approve. **Nothing is final** until the engineer approves; say so.
+8. **IEC 61499 target:** follow `references/iec61499.md`: write the scan body as plain ST with timers/edges/counters as CYCLE arithmetic, then `st_to_61499.py` and `iec61499_check.py` (zero errors, no `[sampling]` warnings). Say that the types haven't been opened in 4diac or run on FORTE here, and that this keeps the scan model as a first step. HMI tags: `dependency_map.py ... --target iec61499`.
+9. Present the summary in the Translate format: files, mapping, ranked review queue, how to approve. **Nothing is final** until the engineer approves; say so.
 
 ## Workflow 3 — Verify
 

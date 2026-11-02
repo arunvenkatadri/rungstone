@@ -1,0 +1,160 @@
+{
+ "scenarios": [
+  {
+   "id": "S1",
+   "name": "Six fills by timeout",
+   "scan_ms": 10,
+   "duration_ms": 21100,
+   "initial": {
+    "Start_PB": 0,
+    "Level_High": 0
+   },
+   "events": [
+    {
+     "at_ms": 100,
+     "set": {
+      "Start_PB": 1
+     }
+    },
+    {
+     "at_ms": 150,
+     "set": {
+      "Start_PB": 0
+     }
+    },
+    {
+     "at_ms": 3600,
+     "set": {
+      "Start_PB": 1
+     }
+    },
+    {
+     "at_ms": 3650,
+     "set": {
+      "Start_PB": 0
+     }
+    },
+    {
+     "at_ms": 7100,
+     "set": {
+      "Start_PB": 1
+     }
+    },
+    {
+     "at_ms": 7150,
+     "set": {
+      "Start_PB": 0
+     }
+    },
+    {
+     "at_ms": 10600,
+     "set": {
+      "Start_PB": 1
+     }
+    },
+    {
+     "at_ms": 10650,
+     "set": {
+      "Start_PB": 0
+     }
+    },
+    {
+     "at_ms": 14100,
+     "set": {
+      "Start_PB": 1
+     }
+    },
+    {
+     "at_ms": 14150,
+     "set": {
+      "Start_PB": 0
+     }
+    },
+    {
+     "at_ms": 17600,
+     "set": {
+      "Start_PB": 1
+     }
+    },
+    {
+     "at_ms": 17650,
+     "set": {
+      "Start_PB": 0
+     }
+    }
+   ],
+   "observe": [
+    "Fill_Valve",
+    "Done_Lamp"
+   ]
+  },
+  {
+   "id": "S2",
+   "name": "Level switch ends the fill",
+   "scan_ms": 10,
+   "duration_ms": 3000,
+   "initial": {
+    "Start_PB": 0,
+    "Level_High": 0
+   },
+   "events": [
+    {
+     "at_ms": 100,
+     "set": {
+      "Start_PB": 1
+     }
+    },
+    {
+     "at_ms": 200,
+     "set": {
+      "Start_PB": 0
+     }
+    },
+    {
+     "at_ms": 1200,
+     "set": {
+      "Level_High": 1
+     }
+    },
+    {
+     "at_ms": 1500,
+     "set": {
+      "Level_High": 0
+     }
+    },
+    {
+     "at_ms": 2000,
+     "set": {
+      "Start_PB": 1
+     }
+    }
+   ],
+   "observe": [
+    "Fill_Valve",
+    "Done_Lamp"
+   ]
+  },
+  {
+   "id": "S3",
+   "name": "Start held: one fill only",
+   "scan_ms": 10,
+   "duration_ms": 8000,
+   "initial": {
+    "Start_PB": 0,
+    "Level_High": 0
+   },
+   "events": [
+    {
+     "at_ms": 100,
+     "set": {
+      "Start_PB": 1
+     }
+    }
+   ],
+   "observe": [
+    "Fill_Valve",
+    "Done_Lamp"
+   ]
+  }
+ ]
+}

@@ -27,7 +27,7 @@ Conflicts reported:
 
 Usage:
   python3 dependency_map.py --plc FILE... [--hmi FILE...]
-         [--target siemens-scl|iec-st|rockwell|openplc] [--mapping map.csv]
+         [--target siemens-scl|iec-st|rockwell|openplc|iec61499] [--mapping map.csv]
          [-o map.json] [--md map.md]
 """
 
@@ -1018,6 +1018,16 @@ def analyse(projects, hmi_refs, target=None, mapping=None, new_addresses=None):
                     "register.%s" % (" The mapped address %s is not reachable over Modbus." % new_addr if new_addr else ""),
                     [r["where"] for r in hmi])
 
+    # IEC 61499 has no tag addresses: HMI/SCADA data goes through communication FBs
+    if target == "iec61499":
+        for base, rs in by_base.items():
+            hmi = [r for r in rs if r["system"] == "hmi"]
+            if hmi:
+                disp = (idx.sym.get(base) or {}).get("display") or rs[0]["display"]
+                add("translation_break", "high", disp, "IEC 61499 has no tag addresses for an HMI to read. Make this a data "
+                    "input or output of the FB and connect it to a communication FB (OPC UA, MQTT/PUBLISH-SUBSCRIBE, "
+                    "SERVER), then rebind the HMI to that.", [r["where"] for r in hmi])
+
     # tag table
     table = []
     for base, rs in sorted(by_base.items(), key=lambda kv: kv[0]):
@@ -1132,7 +1142,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--plc", nargs="+", required=True, help="PLC exports or parse_project.py JSON")
     ap.add_argument("--hmi", nargs="*", default=[], help="HMI/SCADA files: tag CSV, display XML, Ignition JSON, scripts")
-    ap.add_argument("--target", choices=["siemens-scl", "iec-st", "rockwell", "openplc"], help="planned translation target")
+    ap.add_argument("--target", choices=["siemens-scl", "iec-st", "rockwell", "openplc", "iec61499"], help="planned translation target")
     ap.add_argument("--mapping", help="CSV with old,new columns (address mapping table from a translation)")
     ap.add_argument("--allow-suspected", action="append", default=[], metavar="NAME")
     ap.add_argument("-o", "--output", help="write JSON here (default stdout)")

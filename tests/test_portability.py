@@ -61,7 +61,7 @@ class PortabilityTests(unittest.TestCase):
         res = report(PALLETIZER)
         self.assertTrue(res["supported"])
         self.assertEqual(res["source_platform"], "codesys")
-        self.assertEqual(res["targets"], ["openplc", "iec-st", "siemens-scl", "rockwell"])
+        self.assertEqual(res["targets"], ["openplc", "iec-st", "siemens-scl", "rockwell", "iec61499"])
         for rule in ("oop_extends", "oop_interface", "oop_method", "oop_property", "interface_vars", "motion",
                      "file_io", "dynamic_memory", "pointers", "clock", "try_catch", "union", "enum", "cfc",
                      "persistent", "tasks", "set_reset_ops", "bit_access", "util_lib", "attributes", "io_addresses"):
