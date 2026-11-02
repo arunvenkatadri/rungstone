@@ -1,0 +1,12 @@
+old_address,old_symbol,old_description,old_type,new_symbol,new_address,new_type,basis,notes
+I:1/14,,Start pushbutton,BOOL,Start_PB,%IX0.0,BOOL,confirmed,
+I:1/15,,Stop pushbutton normally closed,BOOL,Stop_PB,%IX0.1,BOOL,confirmed,
+I:1/0,,Tank 1 low level switch,BOOL,Tank1_LLS,%IX0.2,BOOL,confirmed,
+I:1/1,,Tank 2 low level switch,BOOL,Tank2_LLS,%IX0.3,BOOL,confirmed,
+N7:0,,Scaled level 0..1000,INT,Level_Pct,,INT,inferred,
+N7:1,,Drain cutoff,INT,Level_Cutoff,%MW0,INT,inferred,
+N7:2,,Drain valve command,INT,Drain_Cmd,%MW1,UINT,inferred,
+O:2/15,,Master coil,BOOL,Master_Run,%QX0.0,BOOL,confirmed,
+O:4.0,,Tank 1 drain valve AO,INT,Valve1_AO,%QW0,UINT,confirmed,output raw range not converted - review queue
+O:6.0,,Tank 2 drain valve AO,INT,Valve2_AO,%QW1,UINT,confirmed,output raw range not converted - review queue
+I:3.0,,Level transmitter raw,INT,Level_Raw,%IW0,UINT,confirmed,raw:3277..16384->0..65535 (1746-NI4 4-20 mA counts to a 0..65535 board input)

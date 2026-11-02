@@ -27,7 +27,7 @@ Conflicts reported:
 
 Usage:
   python3 dependency_map.py --plc FILE... [--hmi FILE...]
-         [--target siemens-scl|iec-st|rockwell] [--mapping map.csv]
+         [--target siemens-scl|iec-st|rockwell|openplc] [--mapping map.csv]
          [-o map.json] [--md map.md]
 """
 
@@ -41,6 +41,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import parse_project as pp  # noqa: E402
+import openplc_check  # noqa: E402
 from _shared import safe_xml  # noqa: E402
 
 # --------------------------------------------------------------------------
@@ -821,19 +822,36 @@ def load_mapping(path_):
     rows = list(csv.reader(io.StringIO(pp.read_text(path_))))
     if not rows:
         return {}
-    head = [c.strip().lower() for c in rows[0]]
-    oi = next((i for i, h in enumerate(head) if h in ("old", "source", "from", "old address", "old tag", "legacy")), 0)
+    head = [c.strip().lower().replace("_", " ") for c in rows[0]]
+    old_names = ("old", "source", "from", "old address", "old tag", "legacy", "old symbol")
+    # every "old" column is a key: Logix tags have a symbol but no address, SLC data has an address
+    ois = [i for i, h in enumerate(head) if h in old_names] or [0]
     ni = next((i for i, h in enumerate(head) if h in ("new", "target", "to", "new address", "new tag")), 1)
-    start = 1 if any(h in ("old", "source", "from", "old address", "old tag", "legacy") for h in head) else 0
+    start = 1 if any(h in old_names for h in head) else 0
     out = {}
     for r in rows[start:]:
-        if len(r) > max(oi, ni) and r[oi].strip():
-            k = r[oi].strip()
-            out[norm_slc(k) if SLC_RE.fullmatch(k) else norm_path(k)] = r[ni].strip()
+        if len(r) <= ni:
+            continue
+        for oi in ois:
+            k = r[oi].strip() if len(r) > oi else ""
+            if k:
+                out[norm_slc(k) if SLC_RE.fullmatch(k) else norm_path(k)] = r[ni].strip()
     return out
 
 
-def analyse(projects, hmi_refs, target=None, mapping=None):
+def load_new_addresses(path_):
+    """old address/symbol -> new_address column of a Rungstone mapping.csv (for the OpenPLC Modbus check)."""
+    out = {}
+    for r in csv.DictReader(io.StringIO(pp.read_text(path_))):
+        r = {(k or "").strip().lower(): (v or "").strip() for k, v in r.items()}
+        new = r.get("new_address")
+        for k in (r.get("old_address"), r.get("old_symbol")):
+            if k and new:
+                out[norm_slc(k) if SLC_RE.fullmatch(k) else norm_path(k)] = new
+    return out
+
+
+def analyse(projects, hmi_refs, target=None, mapping=None, new_addresses=None):
     idx = build_index(projects)
     refs = []
     for c in code_refs(projects):
@@ -982,6 +1000,24 @@ def analyse(projects, hmi_refs, target=None, mapping=None):
                     add("translation_break", "high", r["display"], "Referenced by HMI/SCADA but missing from the old->new mapping table.",
                         [r["where"]])
 
+    # OpenPLC serves HMI/SCADA over Modbus only: every HMI-referenced tag needs a Modbus-visible address
+    if target == "openplc":
+        for base, rs in by_base.items():
+            hmi = [r for r in rs if r["system"] == "hmi"]
+            if not hmi:
+                continue
+            disp = (idx.sym.get(base) or {}).get("display") or rs[0]["display"]
+            new_addr = (new_addresses or {}).get(base)
+            mb = openplc_check.modbus_of(new_addr)
+            if mb:
+                add("translation_break", "medium", disp, "OpenPLC serves HMI/SCADA over Modbus only: rebind the HMI "
+                    "object to %s (%s, zero-based; many HMIs number from 1)." % (mb, new_addr), [r["where"] for r in hmi])
+            else:
+                add("translation_break", "high", disp, "OpenPLC serves HMI/SCADA over Modbus only. Give the new tag a "
+                    "Modbus-visible address (%%QX/%%IX bit, %%IW, %%QW, %%MW, %%MD or %%ML) and rebind the HMI to that "
+                    "register.%s" % (" The mapped address %s is not reachable over Modbus." % new_addr if new_addr else ""),
+                    [r["where"] for r in hmi])
+
     # tag table
     table = []
     for base, rs in sorted(by_base.items(), key=lambda kv: kv[0]):
@@ -1096,7 +1132,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--plc", nargs="+", required=True, help="PLC exports or parse_project.py JSON")
     ap.add_argument("--hmi", nargs="*", default=[], help="HMI/SCADA files: tag CSV, display XML, Ignition JSON, scripts")
-    ap.add_argument("--target", choices=["siemens-scl", "iec-st", "rockwell"], help="planned translation target")
+    ap.add_argument("--target", choices=["siemens-scl", "iec-st", "rockwell", "openplc"], help="planned translation target")
     ap.add_argument("--mapping", help="CSV with old,new columns (address mapping table from a translation)")
     ap.add_argument("--allow-suspected", action="append", default=[], metavar="NAME")
     ap.add_argument("-o", "--output", help="write JSON here (default stdout)")
@@ -1108,7 +1144,8 @@ def main(argv=None):
     known = set(k for k in idx.sym).union(k.split(".")[-1] for k in idx.sym)
     hmi_refs, errors = scan_hmi_files(args.hmi, known)
     mapping = load_mapping(args.mapping) if args.mapping else None
-    res = analyse(projects, hmi_refs, args.target, mapping)
+    new_addresses = load_new_addresses(args.mapping) if args.mapping and args.target == "openplc" else None
+    res = analyse(projects, hmi_refs, args.target, mapping, new_addresses)
     if errors:
         res["warnings"] = errors
     for pr in projects:

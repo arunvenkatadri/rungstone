@@ -1790,6 +1790,17 @@ def to_target(v, conv):
     return (float(v) - a) * (d - c) / (b - a) + c
 
 
+def to_target_input(sim, k, v, conv):
+    """Scenario value -> target input. A converted analog reading is clamped to the target type's
+    range, like an input card that cannot report below 0 or above full scale (no wrap-around)."""
+    x = to_target(v, conv)
+    t = (sim.p.types.get(k) or "").upper()
+    if conv is not None and t in INT_RANGES:
+        lo, hi = INT_RANGES[t]
+        x = min(max(x, lo), hi)
+    return x
+
+
 def to_source_scale(v, conv):
     if conv is None:
         return v
@@ -1822,7 +1833,7 @@ def run_scenario(prog, sc, rename=None):
             if name.lower().endswith(".pre") or name.lower().endswith(".pt"):
                 sim.set(k, to_target(v, r[1] if r else None))
             else:
-                sim.set_input(k, to_target(v, r[1] if r else None))
+                sim.set_input(k, to_target_input(sim, k, v, r[1] if r else None))
         events = sorted(sc.get("events", []), key=lambda e: e["at_ms"])
         ei = 0
         steps = int(sc["duration_ms"] // sc["scan_ms"]) + 1
@@ -1834,7 +1845,8 @@ def run_scenario(prog, sc, rename=None):
                     sim.power_cycle()
                 for name, v in (ev.get("set") or {}).items():
                     r = rename.get(name)
-                    sim.set_input(r[0] if r else norm(name), to_target(v, r[1] if r else None))
+                    sim.set_input(r[0] if r else norm(name), to_target_input(sim, r[0] if r else norm(name), v,
+                                                                             r[1] if r else None))
                 ei += 1
             sim.scan()
             for name, k, conv in keys:

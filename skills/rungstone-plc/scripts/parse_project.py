@@ -881,8 +881,41 @@ def text_block_safety(project, ctx, kind, name, body):
     return False
 
 
+CONFIG_RE = re.compile(r"^[ \t]*CONFIGURATION\b.*?^[ \t]*END_CONFIGURATION\b[^\n]*", re.I | re.M | re.S)
+TASK_DECL_RE = re.compile(r"^\s*TASK\s+(\w+)\s*\(([^)]*)\)", re.I | re.M)
+TASK_PROG_RE = re.compile(r"^\s*PROGRAM\s+(?:RETAIN\s+|NON_RETAIN\s+)?(\w+)\s*(?:WITH\s+(\w+)\s*)?:\s*(\w+)", re.I | re.M)
+
+
+def parse_configuration(project, text):
+    """IEC CONFIGURATION / RESOURCE / TASK blocks: tasks and program instances, plus globals.
+
+    Returns the text with each configuration blanked out (newlines kept, so line numbers stay right),
+    so 'PROGRAM inst WITH task : type;' isn't mistaken for a program body.
+    """
+    def take(m):
+        block = m.group(0)
+        tasks = {}
+        for tm in TASK_DECL_RE.finditer(block):
+            args = dict((k.strip().upper(), v.strip()) for k, v in
+                        (a.split(":=", 1) for a in tm.group(2).split(",") if ":=" in a))
+            tasks[tm.group(1)] = {"name": tm.group(1), "interval": args.get("INTERVAL"),
+                                  "priority": args.get("PRIORITY"), "programs": []}
+        for pm in TASK_PROG_RE.finditer(block):
+            t = tasks.setdefault(pm.group(2) or "(default)", {"name": pm.group(2) or "(default)", "programs": []})
+            t["programs"].append(pm.group(3))
+        project["tasks"].extend(compact(t) for t in tasks.values())
+        cname = re.match(r"\s*CONFIGURATION\s+(\w+)", block, re.I)
+        for _, d in parse_decls(block):
+            t = dict(d)
+            t["scope"] = "global:" + (cname.group(1) if cname else "CONFIGURATION")
+            project["tags"].append(t)
+        return re.sub(r"[^\n]", " ", block)
+    return CONFIG_RE.sub(take, text)
+
+
 def parse_iec_text(path_, text, ctx, fmt):
     project = new_project(path_, fmt)
+    text = parse_configuration(project, text)
     starts = list(BLOCK_START_RE.finditer(text))
     if not starts:
         project["warnings"].append("No FUNCTION_BLOCK/FUNCTION/PROGRAM/... header found; treated as one body.")

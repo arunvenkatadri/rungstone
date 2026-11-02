@@ -30,6 +30,8 @@ Scripts live in `${CLAUDE_SKILL_DIR}/scripts/` (when not running as a plugin, us
 | `estimate.py FILES [--target ...]` | tokens and cost per job, CONFIRM flag for large jobs |
 | `dependency_map.py --plc FILES [--hmi FILES] [--target T] [--mapping M] --md out.md -o deps.json` | every tag: readers, writers, conflicts, open questions |
 | `simulate.py run|compare ...` | pure-Python scan-cycle simulator; compares source vs target scan by scan |
+| `openplc_check.py FILE.st` | checks an OpenPLC/Beremiz translation against what MatIEC and the OpenPLC runtime accept (structure, syntax, located addresses, Modbus registers) |
+| `st_to_plcopen.py FILE.st -o plc.xml` | wraps generated ST as PLCopen XML for OpenPLC Editor / Beremiz |
 | `portability.py FILES [--targets ...] --md out.md -o out.json` | lock-in report for CODESYS, TwinCAT and IEC ST sources: what ties the code to its platform, rated per target with rough hours |
 | `_shared/state.py` | `.rungstone/` project state: init, review queue (add/approve/edit/reject), export gate, decision log |
 | `_shared/export.py FILES` | package approved deliverables + MANIFEST; refuses while high-risk items are open |
@@ -44,7 +46,7 @@ Large exports (tens of MB) are streamed and their tag data dropped while parsing
 3. **Parse:** `parse_project.py <files> -o .rungstone/parsed.json`. Check `warnings` (source-protected routines, unknown formats) and `excluded_safety`.
 4. **Safety notice:** if anything was excluded, show the notice block now — before any other output. If a name-based exclusion looks wrong (e.g. "SafetyMat_Count" is an inventory counter), the engineer may release it; see `references/safety-exclusion.md`.
 5. **Estimate:** `estimate.py .rungstone/parsed.json --target <t> --json > .rungstone/estimate.json`. If `confirm_before_running` is true (or more than ~20 routines), show the table and ask whether to proceed or narrow scope. Small jobs: one line with the estimate is enough.
-6. **Read the right reference** for the source/target platform: `references/rockwell-l5x.md`, `references/siemens-scl.md`, `references/plcopen-xml.md`. For Translate and Verify, also `references/translation-pitfalls.md`. Output layout is in `references/output-formats.md` — follow it exactly.
+6. **Read the right reference** for the source/target platform: `references/rockwell-l5x.md`, `references/siemens-scl.md`, `references/plcopen-xml.md`, `references/openplc.md`. For Translate and Verify, also `references/translation-pitfalls.md`. Output layout is in `references/output-formats.md` — follow it exactly.
 
 ## Workflow 1 — Understand
 
@@ -59,7 +61,7 @@ Goal: the engineer can explain the machine to someone else after reading your an
 
 ## Workflow 2 — Translate
 
-Targets: S7-1500 SCL, Rockwell Logix (L5X partial export), IEC 61131-3 ST. Work **routine by routine against the shared tag map** so names stay consistent across routines and with HMI/SCADA.
+Targets: S7-1500 SCL, Rockwell Logix (L5X partial export), IEC 61131-3 ST, OpenPLC Runtime / Beremiz (`openplc`: IEC ST for the MatIEC compiler). Work **routine by routine against the shared tag map** so names stay consistent across routines and with HMI/SCADA.
 
 1. Make sure Understand has been done at least for the routines in scope (signal meanings drive symbol names). If the user only wants code, still build the signal table internally.
 2. **Mapping first**: one row per source signal in `.rungstone/mapping.csv` (columns in output-formats.md) — old address/symbol, meaning (basis), new symbol, new address, type old→new. Meaningful names (`Start_PB`, not `I_1_14`); old address in every comment.
@@ -69,7 +71,8 @@ Targets: S7-1500 SCL, Rockwell Logix (L5X partial export), IEC 61131-3 ST. Work 
    `state.py queue add --risk high --location "rung 1" --issue "..." --fix "..."`.
    Analog scaling is always a high item asking the engineer to confirm module and range.
 6. **Cross-check**: run `dependency_map.py` again with `--target <t> --mapping .rungstone/mapping.csv` plus any HMI/SCADA files — anything it reports as `translation_break` (e.g. HMI reads `Timer.ACC`, which has no IEC equivalent; propose an explicit DINT elapsed tag and an HMI rebind) or `broken_link` becomes a review item too.
-7. Present the summary in the Translate format: files, mapping, ranked review queue, how to approve. **Nothing is final** until the engineer approves; say so.
+7. **OpenPLC target:** run `openplc_check.py out/<name>.st` and fix every error before presenting (a file with errors won't upload). Its warnings (RETAIN, several tasks) become review items. Then `st_to_plcopen.py out/<name>.st -o out/plc.xml` for OpenPLC Editor / Beremiz, and put the `located` list from the check (address → Modbus register) in the answer as the HMI rebind table. Run `dependency_map.py ... --target openplc --mapping .rungstone/mapping.csv` with the HMI files: every HMI tag without a Modbus-visible address is a high item.
+8. Present the summary in the Translate format: files, mapping, ranked review queue, how to approve. **Nothing is final** until the engineer approves; say so.
 
 ## Workflow 3 — Verify
 

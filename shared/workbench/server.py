@@ -18,7 +18,7 @@ default and prints {"url": ...} as JSON.  It serves one self-contained page
                          file (and, with "use", make it the one the workflow runs on)
   POST /api/source/remove {"path": "..."}
   POST /api/source/select {"path": "..."}  the one source the workflows run on
-  POST /api/project/target {"target": "siemens-scl|rockwell|iec-st"}
+  POST /api/project/target {"target": "siemens-scl|rockwell|iec-st|openplc"}
   POST /api/source/platform {"path": "...", "platform": "..."|""}  engineer's
                          override of the detected source platform ("" = use detection)
                          (all POSTs need the token)
@@ -61,7 +61,7 @@ SOURCE_FORMATS = {".l5x": "l5x", ".l5k": "l5k", ".scl": "siemens-scl", ".st": "i
                   ".csv": "csv", ".xlsx": "xlsx", ".json": "json", ".awl": "siemens-stl", ".exp": "codesys-export"}
 SKIP_DIRS = {".rungstone", ".git", "node_modules", "__pycache__", "export", ".venv", "venv"}
 MAX_CANDIDATES = 500
-TARGETS = ("siemens-scl", "rockwell", "iec-st")
+TARGETS = ("siemens-scl", "rockwell", "iec-st", "openplc")
 PARSED_MAX = 64 * 1024 * 1024
 
 

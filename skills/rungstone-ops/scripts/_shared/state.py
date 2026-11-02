@@ -239,7 +239,7 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd")
     p = sub.add_parser("init")
     p.add_argument("--name")
-    p.add_argument("--target", help="target platform, e.g. siemens-scl, rockwell-l5x, iec-st")
+    p.add_argument("--target", help="target platform, e.g. siemens-scl, rockwell, iec-st, openplc")
     p = sub.add_parser("source", help="record input files (path + sha256) in project.json")
     p.add_argument("files", nargs="+")
     p.add_argument("--format", help="format as reported by parse_project.py, e.g. l5x, ladder-text, siemens-scl")
