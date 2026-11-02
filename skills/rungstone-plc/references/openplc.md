@@ -1,5 +1,9 @@
 # OpenPLC Runtime / Beremiz (target `openplc`)
 
+Checked against OpenPLC_v3 commit b5d4135 (April 2026): its MatIEC compiler, compile script and
+Modbus server (a translation compiled, ran, and its coils and holding registers read and wrote as
+listed in section 5). Newer runtime versions may differ.
+
 Read when translating to OpenPLC or Beremiz. Both compile IEC 61131-3 with MatIEC. OpenPLC Runtime
 takes one `.st` file uploaded on its Programs page; OpenPLC Editor and Beremiz keep projects as
 PLCopen XML (`plc.xml`).
