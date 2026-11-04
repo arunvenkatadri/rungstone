@@ -134,6 +134,12 @@ Binary projects (`.ACD`, `.RSS`, `.ap1x`, `.project`) can't be read. Rungstone e
 Outside Claude Code the workbench (beta) is generated as a single self-contained HTML page, and approvals
 happen in chat ("approve R1, R3; reject R2: reason").
 
+**Codex:** the Codex plugin zip from the releases (`rungstone-codex-<version>.zip`).
+
+**Grok Build:** unzip `rungstone-grok-<version>.zip` from the releases and copy `rungstone/skills/*` into
+`~/.grok/skills/`. **Grok Bot:** see [docs/grok-bot.md](docs/grok-bot.md) (a brief and skills to paste in;
+Grok Bot doesn't load the hooks, so the setup there matters).
+
 Requirements: Python 3.9+ (standard library only). Optional: `defusedxml`, `openpyxl` (XLSX), `matplotlib` (PNG charts).
 
 ## How a project works

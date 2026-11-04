@@ -54,8 +54,8 @@ LOOPBACK = ("127.0.0.1",)
 MAX_BODY = 64 * 1024
 REPORT_MAX = 400 * 1024
 LABEL = "simulated, not hardware-tested"
-DEFAULT_APP = "claude"  # which assistant hosts the skills: "claude" or "codex" (the Codex build sets this)
-APPS = ("claude", "codex")
+DEFAULT_APP = "claude"  # which assistant hosts the skills: "claude", "codex" or "grok" (those builds set this)
+APPS = ("claude", "codex", "grok")
 SOURCE_FORMATS = {".l5x": "l5x", ".l5k": "l5k", ".scl": "siemens-scl", ".st": "iec-st", ".xml": "xml",
                   ".tcpou": "twincat", ".tcgvl": "twincat", ".tcdut": "twincat", ".txt": "text",
                   ".csv": "csv", ".xlsx": "xlsx", ".json": "json", ".awl": "siemens-stl", ".exp": "codesys-export", ".fbt": "iec61499"}

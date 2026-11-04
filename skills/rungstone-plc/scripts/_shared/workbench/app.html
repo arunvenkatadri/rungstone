@@ -104,16 +104,16 @@ var REPORT_TAB = [
   [/^(dep|conflict)/i,"deps"],[/^(hmi|scada|alarm|retarget|binding)/i,"hmi"],
   [/^(ops|operation|troubleshoot|report|shift|downtime|trend)/i,"ops"]];
 var S = null, LIVE = BOOT && BOOT.mode === "live", CSRF = BOOT && BOOT.csrf;
-// Which assistant hosts the skills: "claude" (Claude Code, /rungstone: commands) or "codex" (plain prompts).
+// Which assistant hosts the skills: "claude" (Claude Code, /rungstone: commands), "codex" or "grok" (plain prompts).
 var APP = (BOOT && BOOT.app) || "claude";
-var HOST = APP === "codex" ? "Codex" : "Claude Code", ASSIST = APP === "codex" ? "Codex" : "Claude";
+var HOST = {codex:"Codex",grok:"Grok Build"}[APP] || "Claude Code", ASSIST = {codex:"Codex",grok:"Grok"}[APP] || "Claude";
 var SKILL_OF = {understand:"rungstone-plc",translate:"rungstone-plc",verify:"rungstone-plc",dependencies:"rungstone-plc",portability:"rungstone-plc",check:"rungstone-plc",tests:"rungstone-plc",diff:"rungstone-plc",
   hmi:"rungstone-hmi-scada",alarms:"rungstone-hmi-scada",troubleshoot:"rungstone-ops",report:"rungstone-ops"};
 var VERB = {understand:"explain what %s does",translate:"translate %s",verify:"verify the translation of %s",
   dependencies:"map the readers, writers and conflicts in %s",portability:"write a lock-in report for %s",check:"run a static analysis of %s",tests:"generate unit tests for a function block in %s",diff:"compare two versions of the same project, old then new: %s",hmi:"explain %s",alarms:"run alarm cleanup on %s",
   troubleshoot:"find why the equipment stopped, using %s",report:"build a shift and downtime report from %s"};
 function commandFor(wf, file, extra){
-  if(APP !== "codex") return "/rungstone:"+wf+" "+file+(extra||"");
+  if(APP === "claude") return "/rungstone:"+wf+" "+file+(extra||"");
   return "Use the "+SKILL_OF[wf]+" skill to "+VERB[wf].replace("%s",file)+(extra||"")+".";
 }
 var current = "files", staticDecisions = {};

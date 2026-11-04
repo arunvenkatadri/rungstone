@@ -74,7 +74,7 @@ LISTING = {
 }
 
 
-def adapt_skill_md(text):
+def adapt_skill_md(text, host="Codex"):
     text = text.replace("${CLAUDE_SKILL_DIR}", "<skill-dir>")
     text = text.replace("(when not running as a plugin, use the directory this SKILL.md is in)", "")
     text = text.replace("local workbench UI (beta) (Claude Code) or one self-contained HTML page (elsewhere)",
@@ -83,14 +83,15 @@ def adapt_skill_md(text):
     text = text.replace("It (`/rungstone:workbench`) shows", "It shows")
     text = text.replace("(created by the PLC skill or `/workbench`)", "(created by the PLC skill or the workbench)")
     text = re.sub(r"(estimate\.py [^`\n]*?)--json", r"\1--tokens-only --json", text)
-    text = text.replace("Claude Code", "Codex").replace("Claude", "Codex")
+    text = text.replace("Claude Code", host).replace("Claude", host)
     m = re.match(r"^(---\n.*?\n---\n)", text, re.S)
     return m.group(1) + "\n" + SKILL_DIR_NOTE + text[m.end():].lstrip("\n")
 
 
-def copy_skill(name):
+def copy_skill(name, dst=None, host="Codex", app="codex"):
+    """Copy one skill, adapted for a host other than Claude Code (dst defaults to the Codex plugin)."""
     src = os.path.join(ROOT, "skills", name)
-    dst = os.path.join(PLUGIN, "skills", name)
+    dst = dst or os.path.join(PLUGIN, "skills", name)
     for dp, dns, fns in os.walk(src):
         dns[:] = [d for d in dns if d not in EXCLUDE_DIRS]
         rel = os.path.relpath(dp, src)
@@ -101,7 +102,7 @@ def copy_skill(name):
             s, d = os.path.join(dp, fn), os.path.join(dst, rel, fn)
             if fn == "SKILL.md" and rel == ".":
                 with open(s, encoding="utf-8") as f:
-                    text = adapt_skill_md(f.read())
+                    text = adapt_skill_md(f.read(), host)
                 with open(d, "w", encoding="utf-8") as f:
                     f.write(text)
             elif fn == "server.py" and rel.endswith(os.path.join("_shared", "workbench")):
@@ -109,7 +110,7 @@ def copy_skill(name):
                     text = f.read()
                 assert 'DEFAULT_APP = "claude"' in text
                 with open(d, "w", encoding="utf-8") as f:
-                    f.write(text.replace('DEFAULT_APP = "claude"', 'DEFAULT_APP = "codex"', 1))
+                    f.write(text.replace('DEFAULT_APP = "claude"', 'DEFAULT_APP = "%s"' % app, 1))
             else:
                 shutil.copy2(s, d)
 
