@@ -98,6 +98,16 @@ class CheckTests(unittest.TestCase):
             self.assertIn("name_clash", {e["rule"] for e in openplc_check.check(st)["errors"]}, (prog, var))
         ok = "PROGRAM prog0\n  VAR\n    P : INT;\n  END_VAR\n  P := 1;\nEND_PROGRAM" + cfg % "prog0"
         self.assertTrue(openplc_check.check(ok)["ok"])
+        # IEC keywords as names (an SCL "Step" output, found in a Grok translation) and SCL leftovers
+        for var in ("Step", "FROM", "ON", "RETAIN", "END_TRANSITION"):
+            st = ok.replace(" P ", " %s " % var).replace("P :=", "%s :=" % var)
+            self.assertIn("reserved_name", {e["rule"] for e in openplc_check.check(st)["errors"]}, var)
+        for body in ("BEGIN\n  P := 1;", "  REGION Outputs\n  P := 1;\n  END_REGION", "  #P := 1;"):
+            st = ok.replace("  P := 1;", body)
+            self.assertIn("scl", {e["rule"] for e in openplc_check.check(st)["errors"]}, body)
+        for var in ("Region", "Steps", "INTERVAL", "BEGIN"):
+            st = ok.replace(" P ", " %s " % var).replace("P :=", "%s := 16#1 + INT#0;\n  %s :=" % (var, var))
+            self.assertTrue(openplc_check.check(st)["ok"], (var, openplc_check.check(st)["errors"]))
 
     def test_strings_and_comments_not_flagged(self):
         with open(OPENPLC_ST) as f:

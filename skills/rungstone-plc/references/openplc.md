@@ -58,6 +58,10 @@ MatIEC generates from them. Every PROGRAM needs an instance in the resource or i
   `INT_TO_REAL`...); `TON` as a program name crashes the compiler. Don't name a POU or type like
   their parameters (`IN`, `P`, `L`, `N`, `K`, `Q`, `G`, `MN`, `MX`, `CLK`): use `prog_...` /
   `FB_...` names.
+- Don't name anything like an IEC keyword. `Step` is the usual one in SCL sequences: rename it
+  (`StepNo`). Others: `ACTION`, `TRANSITION`, `FROM`, `ON`, `WITH`, `TASK`, `RETAIN`, `AT`, `OF`,
+  `TO`, `BY`, `EN`/`ENO`, `R_EDGE`, `REF`, type names.
+- From Siemens SCL: drop `BEGIN`, write `REGION` names as comments, drop the `#` on locals.
 - No `{...}` anywhere. MatIEC treats braces as pragmas and passes their contents into the
   generated C code.
 - Edition 2 ST plus references: `REF_TO`, `REF()`, `^` and `NULL` are accepted (OpenPLC compiles

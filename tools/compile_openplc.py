@@ -19,6 +19,8 @@ IMAGE = os.environ.get("RUNGSTONE_MATIEC_IMAGE", "rungstone-matiec")
 SCRIPT = r"""
 cd /tmp && mkdir out && cd out
 iec2c -f -l -p -r -R -a -I /matiec_lib -T /tmp/out /work/in.st > /tmp/iec2c.log 2>&1; rc=$?
+# iec2c can exit 0 after "Bailing out!" on a syntax error
+grep -qi error /tmp/iec2c.log && rc=1
 echo "IEC2C_RC=$rc"; grep -i error /tmp/iec2c.log | head -20
 if [ $rc -eq 0 ]; then
   gcc -c -w -I /matiec_lib/C Config0.c -o Config0.o > /tmp/gcc.log 2>&1 && gcc -c -w -I /matiec_lib/C Res0.c -o Res0.o >> /tmp/gcc.log 2>&1

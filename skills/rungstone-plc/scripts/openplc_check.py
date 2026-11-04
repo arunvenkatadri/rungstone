@@ -12,8 +12,10 @@ Checks:
   syntax       only (* *) comments; no {...} pragmas (MatIEC passes them through as C code); no
                CODESYS/TwinCAT extensions (OOP, POINTER TO/ADR, __NEW, __TRY, S=/R=, bit access x.3,
                __XWORD, LTIME...). REF_TO / REF() are accepted: OpenPLC compiles with references on.
-  names        no POU, type or variable named like a standard function/block (TON, MID, INT_TO_REAL...);
-               no POU or type named like their parameters (IN, P, L, N, K, Q...)
+  names        no POU, type or variable named like a standard function/block (TON, MID, INT_TO_REAL...)
+               or an IEC keyword (STEP, ACTION, FROM, ON, TASK, RETAIN...); no POU or type named
+               like the standard blocks' parameters (IN, P, L, N, K, Q...)
+  leftovers    Siemens SCL syntax: BEGIN, REGION/END_REGION, #local
   located vars located (AT %...) and plain variables in separate VAR blocks;
                %IX/%QX a.b (b 0-7), %IB/%IW/%ID/%IL, %QB/%QW/%QD/%QL, %MW/%MD/%ML, index 0-1023; no
                %MX/%MB; type width matches the size letter; no duplicates; only in PROGRAM or
@@ -64,11 +66,24 @@ STD_VARIANT_RE = re.compile(r"^(%s_TO_%s|(BYTE|WORD|DWORD|LWORD)_BCD_TO_\w+|\w+_
                                                         "|".join(sorted(STD_NAMES))), re.I)
 # Parameter names of the standard functions: a POU or type with one of these names breaks the library.
 STD_PARAMS = set("CLK G IN IN0 IN1 IN2 K L MN MX N P Q".split())
+# IEC keywords MatIEC won't take as a name, checked against OpenPLC's MatIEC build. STEP is the common
+# one: SCL sequences often have a variable called Step. END_ACTION and END_TRANSITION hang iec2c.
+RESERVED = set("""ACTION AND ARRAY AT BY CASE CONFIGURATION CONSTANT DO ELSE ELSIF EN END_ACTION END_CASE END_FOR
+END_IF END_REPEAT END_STEP END_TRANSITION END_WHILE ENO EXIT FALSE FOR FROM FUNCTION FUNCTION_BLOCK F_EDGE IF
+INITIAL_STEP MOD NON_RETAIN NOT NULL OF ON OR PROGRAM READ_ONLY READ_WRITE REF REF_TO REPEAT RESOURCE RETAIN RETURN
+R_EDGE STEP STRUCT TASK THEN TO TRANSITION TRUE TYPE UNTIL VAR VAR_ACCESS VAR_CONFIG VAR_EXTERNAL VAR_GLOBAL
+VAR_INPUT VAR_IN_OUT VAR_OUTPUT VAR_TEMP WHILE WITH XOR""".split())
+RESERVED_RE = re.compile(r"^%s$" % ELEMENTARY_RE, re.I)
 
 
 def std_clash(name):
     u = name.upper()
     return u in STD_NAMES or bool(STD_VARIANT_RE.match(u))
+
+
+def reserved(name):
+    u = name.upper()
+    return u in RESERVED or bool(RESERVED_RE.match(u))
 
 
 # Syntax MatIEC doesn't take, with the reason. Comments and strings are blanked before matching.
@@ -89,6 +104,9 @@ FORBIDDEN = [
     (re.compile(r"\b(LTIME|LDATE|LTOD|LDT)\b|\bLTIME#", re.I), "type", "LTIME/LDATE/LTOD/LDT: use TIME/DATE/TOD/DT."),
     (re.compile(r"\bUNION\b", re.I), "type", "UNION: not supported."),
     (re.compile(r"\bCONTINUE\b", re.I), "statement", "CONTINUE: not in MatIEC; restructure the loop."),
+    (re.compile(r"^\s*BEGIN\s*$", re.I), "scl", "BEGIN: Siemens SCL; IEC ST has no BEGIN between the declarations and the code. Remove it."),
+    (re.compile(r"^\s*(END_)?REGION\b(?!\s*[:.\[(,])", re.I), "scl", "REGION/END_REGION: Siemens SCL; write the region name as a (* comment *)."),
+    (re.compile(r"(?<![\w#])#[A-Za-z_]"), "scl", "#name: Siemens SCL local-variable prefix; drop the #."),
     (re.compile(r"\bEND_(IF|CASE|FOR|WHILE|REPEAT)\b(?!\s*;)", re.I), "semicolon",
      "END_IF/END_CASE/END_FOR/END_WHILE/END_REPEAT needs a ';' after it in MatIEC (CODESYS lets you leave it out)."),
 ]
@@ -268,6 +286,10 @@ def check(text):
                         errors.append({"line": no, "rule": "name_clash",
                                        "message": "Variable %s has the name of a standard function or block; MatIEC "
                                                   "rejects it. Rename it." % n})
+                    elif reserved(n):
+                        errors.append({"line": no, "rule": "reserved_name",
+                                       "message": "Variable %s is an IEC keyword; MatIEC rejects it. Rename it (e.g. "
+                                                  "%sNo) everywhere it is used." % (n, n)})
         lm = LOCATED_RE.match(ln)
         if lm and var_section:
             owner = stack[-1][0] if stack else None
@@ -289,15 +311,16 @@ def check(text):
 
     for b in blocks:
         if b["kind"] in ("PROGRAM", "FUNCTION_BLOCK", "FUNCTION") and b["name"] and \
-                (std_clash(b["name"]) or b["name"].upper() in STD_PARAMS):
+                (std_clash(b["name"]) or reserved(b["name"]) or b["name"].upper() in STD_PARAMS):
             errors.append({"line": b["line"], "rule": "name_clash",
-                           "message": "%s %s clashes with a name in the standard library (a function, block or one of "
-                                      "their parameters: %s). Rename it, e.g. prog_%s / FB_%s."
+                           "message": "%s %s clashes with an IEC keyword or a name in the standard library (a function, "
+                                      "block or one of their parameters: %s). Rename it, e.g. prog_%s / FB_%s."
                                       % (b["kind"], b["name"], " ".join(sorted(STD_PARAMS)), b["name"], b["name"])})
     for no, ln in enumerate(lines, 1):
         tm = re.match(r"^\s*(\w+)\s*:\s*(STRUCT\b|\()", ln)
-        if tm and (std_clash(tm.group(1)) or tm.group(1).upper() in STD_PARAMS):
-            errors.append({"line": no, "rule": "name_clash", "message": "Type %s clashes with a standard library name." % tm.group(1)})
+        if tm and (std_clash(tm.group(1)) or reserved(tm.group(1)) or tm.group(1).upper() in STD_PARAMS):
+            errors.append({"line": no, "rule": "name_clash",
+                           "message": "Type %s clashes with an IEC keyword or a standard library name." % tm.group(1)})
     programs = {b["name"].lower() for b in blocks if b["kind"] == "PROGRAM" and b["name"]}
     configs = [b for b in blocks if b["kind"] == "CONFIGURATION"]
     resources = [b for b in blocks if b["kind"] == "RESOURCE"]
