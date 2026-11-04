@@ -137,8 +137,10 @@ happen in chat ("approve R1, R3; reject R2: reason").
 **Codex:** the Codex plugin zip from the releases (`rungstone-codex-<version>.zip`).
 
 **Grok Build:** unzip `rungstone-grok-<version>.zip` from the releases and copy `rungstone/skills/*` into
-`~/.grok/skills/`. **Grok Bot:** see [docs/grok-bot.md](docs/grok-bot.md) (a brief and skills to paste in;
-Grok Bot doesn't load the hooks, so the setup there matters).
+`~/.grok/skills/`. **Grok Bot:** [Add Rungstone to Grok Bot](https://x.ai/bot/9bcgXoKQn-IzyhVE_ZrY_)
+(you get your own copy of the bot), then follow step 2 of [docs/grok-bot.md](docs/grok-bot.md) to install
+the package on its computer. To build the bot yourself, the same page has the brief and skills to
+paste in. Grok Bot doesn't load the hooks, so keep the setup in that page.
 
 Requirements: Python 3.9+ (standard library only). Optional: `defusedxml`, `openpyxl` (XLSX), `matplotlib` (PNG charts).
 

@@ -6,6 +6,11 @@ package. This page has everything to paste in. It takes about 15 minutes.
 
 **Not for use on a production system without review and testing by a qualified engineer.**
 
+**Quick start:** open https://x.ai/bot/9bcgXoKQn-IzyhVE_ZrY_ and choose **Add to Grok Bot**. That
+gives you your own copy of the Rungstone bot with its brief and skills. Then do step 2 below (install
+the package on its computer) and step 4 (try it). Follow the rest of this page only to build the bot
+yourself, but read "Read this first" either way.
+
 ## 0. Get Grok Bot
 
 1. You need a plan that includes Grok Bot: SuperGrok, SuperGrok Plus or Heavy, X Premium+, an
