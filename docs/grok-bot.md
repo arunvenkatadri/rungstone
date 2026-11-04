@@ -65,14 +65,21 @@ Rungstone package on this computer. Remember these rules for every task:
 
 ## 2. Install the package on the bot's computer
 
-In the same chat, send this (the bot runs it in its cloud computer's terminal; approve it if asked):
+Either ask the bot to do it, or type it yourself in the bot computer's terminal. Each line is one
+command; paste them one at a time (copying across a wrapped line can drop spaces):
 
 ```
-In the terminal: mkdir -p ~/rungstone ~/rungstone-work && cd ~/rungstone &&
-curl -fL -o rungstone-grok.zip https://github.com/arunvenkatadri/rungstone/releases/download/v0.1.7/rungstone-grok-0.1.7.zip &&
-unzip -o rungstone-grok.zip. Then check which Python 3 version is installed, read
-~/rungstone/rungstone/README.md and tell me which Rungstone version is installed.
+mkdir -p ~/rungstone ~/rungstone-work
+cd ~/rungstone
+curl -fL -o rungstone-grok.zip https://github.com/arunvenkatadri/rungstone/releases/download/v0.1.7/rungstone-grok-0.1.7.zip
+unzip -o rungstone-grok.zip
+ls ~/rungstone/rungstone/skills
 ```
+
+The last line should list `rungstone-hmi-scada`, `rungstone-ops` and `rungstone-plc`. To have the
+bot do it instead, send: "Run the five commands in section 2 of the Rungstone Grok Bot guide, then
+tell me which Python 3 version is installed and which Rungstone version README.md shows", and
+paste the commands after it. The bot will ask before downloading; that's rule 6 of the brief.
 
 The skills need Python 3.9 or later. If it isn't there, ask the bot what's available before
 installing anything. To update later, change the version in the URL.
