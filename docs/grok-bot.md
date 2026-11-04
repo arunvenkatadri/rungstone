@@ -2,9 +2,21 @@
 
 Grok Bot has no way to upload a skill folder. Instead the bot downloads the Rungstone package onto
 its cloud computer, and you give it a brief and a few skills written as text that point at the
-package. This page has everything to paste in.
+package. This page has everything to paste in. It takes about 15 minutes.
 
 **Not for use on a production system without review and testing by a qualified engineer.**
+
+## 0. Get Grok Bot
+
+1. You need a plan that includes Grok Bot: SuperGrok, SuperGrok Plus or Heavy, X Premium+, an
+   X Subscription Premium/Super/Ultra, a Grok Business seat, or a paid Cursor plan. Details:
+   https://docs.x.ai/grok-bot/get-started
+2. Download the desktop app from https://x.ai/bot (macOS, Windows, Linux; phones: App Store or
+   Google Play) and open it.
+3. Click **Sign in** and finish in your browser. With a SuperGrok or X Premium+ subscription, link
+   it when asked (desktop: **Settings → Usage & Billing → Get Access with Grok**).
+4. Click through the short intro. It creates a first bot called "Grok Bot"; leave that one for
+   other work.
 
 ## Read this first
 
@@ -24,7 +36,9 @@ Set it up so there is nothing to misuse:
 
 ## 1. Create the bot and give it its brief
 
-Create a Bot named **Rungstone**. Send this as its first message and ask it to remember it:
+1. Click **+** at the top of the sidebar (or `Cmd/Ctrl+N`; on a team, choose **Create a Bot**).
+2. Name it **Rungstone**, pick any shape and color, and click **Create**. A chat with it opens.
+3. Paste this as its first message and send it:
 
 ```
 Your job: help a controls engineer with offline PLC, HMI/SCADA and historian exports using the
@@ -47,9 +61,11 @@ Rungstone package on this computer. Remember these rules for every task:
    instead of working things out by hand, and quoting numbers from the scripts' output.
 ```
 
+4. Check its reply says it will remember these rules.
+
 ## 2. Install the package on the bot's computer
 
-Ask the bot (it will run this in its terminal):
+In the same chat, send this (the bot runs it in its cloud computer's terminal; approve it if asked):
 
 ```
 In the terminal: mkdir -p ~/rungstone ~/rungstone-work && cd ~/rungstone &&
@@ -63,8 +79,17 @@ installing anything. To update later, change the version in the URL.
 
 ## 3. Create the skills
 
-Create four skills from text (ask the bot to "create a skill from this description"). Each one
-points at the package, so updating the package updates the skills.
+Send each of the four blocks below as its own message, starting with
+**Save this as a skill called "<name>":** and then the text. For example:
+
+```
+Save this as a skill called "Rungstone: PLC code": When the engineer asks to explain, ...
+```
+
+Each skill points at the package, so updating the package updates the skills. To check they are
+there: open **Connect apps** in the sidebar, click the connected count next to the title, and look
+under **Private skills**. Skills are shared by all your bots; if this bot can't find one, enable it
+for this bot there.
 
 **Rungstone: PLC code**
 ```
@@ -102,7 +127,9 @@ engineer the HTML file. It is a static snapshot: approvals happen by telling you
 
 ## 4. Try it
 
-Upload a sample from the repo's `fixtures/plc/` folder and ask, for example:
+Download a sample from the repo's `fixtures/plc/` folder
+(https://github.com/arunvenkatadri/rungstone/tree/main/fixtures/plc), attach it to a message in the
+Rungstone chat, and ask, for example:
 
 - "Write a lock-in report for Palletizer_PLCopen.xml"
 - "Check FB_BatchMixer.scl for likely bugs"
@@ -111,6 +138,11 @@ Upload a sample from the repo's `fixtures/plc/` folder and ask, for example:
 
 ## Sharing
 
-You can share the bot as a template (Create a copy, Publish, Copy link). The link exposes the bot's
-configuration, so check there are no secrets in it first; with the setup above there shouldn't be.
+1. Click the bot's name at the top of the chat and choose **Share**, then **Create a copy**. The bot
+   posts a template card in the chat. (Phone: the bot's menu, **Share as Template**.)
+2. On the card choose **Publish**, then **Copy link**. That is the `https://x.ai/bot/...` link
+   people open to choose **Add to Grok Bot**.
+
+A public link shows the bot's name, description, skills and routines. Check there are no secrets,
+internal URLs or customer data in them first; with the setup above there shouldn't be.
 Routines aren't needed: Rungstone jobs start when an engineer uploads files.
