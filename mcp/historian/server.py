@@ -14,9 +14,9 @@ Backends (all read-only):
   odbc     - SQL historian tables via pyodbc (if installed); readonly=True connection
   opcua    - OPC UA values/history via asyncua (if installed); reads only
 
-Credentials: only what the user enters in the plugin settings (Claude Code
-userConfig, sensitive values kept in the secure store), passed to this process
-by Claude Code. The config file must not contain credentials.
+Credentials: none. The connector never reads, stores or sends a login: ODBC goes
+through a system DSN set up in the OS, OPC UA sessions are anonymous, and a
+config file with credential fields is refused.
 
 Tools: list_tags, search_tags, latest, query_range.
 The model never supplies SQL.  Queries are parameterised SELECTs built from
@@ -34,7 +34,7 @@ import sqlite3
 import sys
 
 SERVER_NAME = "rungstone-historian"
-SERVER_VERSION = "0.1.7"
+SERVER_VERSION = "0.1.8"
 PROTOCOLS = ("2025-06-18", "2025-03-26", "2024-11-05")
 IDENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,63}$")
 DEFAULT_LIMITS = {"max_points": 2000, "max_tags": 20, "max_rows_scanned": 1000000, "max_list": 500}
@@ -202,11 +202,8 @@ class SqliteBackend(SqlBackend):
 class OdbcBackend(SqlBackend):
     """Read-only ODBC (SQL historian tables).
 
-    Connection details come only from what the user chose to share: either a
-    system DSN named in the config file, or the ODBC connection string the user
-    entered in the plugin's settings (Claude Code userConfig, stored in the
-    platform's secure store and handed to this process by Claude Code as
-    RUNGSTONE_ODBC_CONNECTION). Credentials are never put in the config file.
+    Connects through a system DSN named in the config file, set up by the site in
+    the OS ODBC manager. The connector itself never handles a login.
     """
 
     def __init__(self, cfg, limits):
@@ -216,14 +213,10 @@ class OdbcBackend(SqlBackend):
             raise ToolError("backend not available: odbc needs the pyodbc package")
         SqlBackend.__init__(self, cfg, limits)
         reject_credentials(cfg, "odbc")
-        shared = SHARED.get("odbc_connection") or ""
         dsn = str(cfg.get("dsn") or "")
-        if shared:
-            conn_str = shared
-        elif re.match(r"^[A-Za-z0-9 _.-]{1,64}$", dsn):
-            conn_str = "DSN=%s" % dsn
-        else:
-            raise ToolError("odbc needs a \"dsn\" in the config or a connection string in the plugin settings")
+        if not re.match(r"^[A-Za-z0-9 _.-]{1,64}$", dsn):
+            raise ToolError("odbc needs a \"dsn\" in the config: the name of a system DSN set up in the OS")
+        conn_str = "DSN=%s" % dsn
         self.conn = pyodbc.connect(conn_str, readonly=True, autocommit=False)  # read-only connection
         # T-SQL has no LIMIT; this backend targets ANSI/Postgres/SQLite-style dialects. Document per site.
 
@@ -231,8 +224,8 @@ class OdbcBackend(SqlBackend):
 class OpcUaBackend(object):
     """Read-only OPC UA: reads current values and raw history. Never writes.
 
-    Anonymous unless the user entered an OPC UA username/password in the plugin
-    settings (Claude Code userConfig). Use an account with read-only rights.
+    Anonymous sessions only: the connector never handles a login. For a server
+    that requires one, export the history to CSV and use csv_dir.
     """
 
     def __init__(self, cfg, limits):
@@ -244,9 +237,6 @@ class OpcUaBackend(object):
         self.limits = limits
         self.nodes = dict(cfg.get("nodes", {}))  # tag name -> NodeId string
         self.client = Client(cfg["endpoint"])
-        if SHARED.get("opcua_username"):
-            self.client.set_user(SHARED["opcua_username"])
-            self.client.set_password(SHARED.get("opcua_password") or "")
         self.client.connect()
 
     def list_tags(self, limit):
@@ -346,33 +336,11 @@ CREDENTIAL_KEYS = {"uid", "user", "username", "pwd", "password", "passwd", "secr
                    "private_key", "certificate"}
 BACKENDS = {"sqlite": SqliteBackend, "csv_dir": CsvDirBackend, "odbc": OdbcBackend, "opcua": OpcUaBackend}
 
-# Values the user chose to share through the plugin settings (Claude Code userConfig).
-# Claude Code substitutes ${user_config.KEY} into this server's environment; nothing
-# else in the environment is read.
-SHARED = {}
-
-
-def load_shared():
-    """Read the three values Claude Code passes from the plugin settings.
-
-    plugin.json maps them explicitly:
-      RUNGSTONE_ODBC_CONNECTION  <- ${user_config.odbc_connection}   (sensitive)
-      RUNGSTONE_OPCUA_USERNAME   <- ${user_config.opcua_username}
-      RUNGSTONE_OPCUA_PASSWORD   <- ${user_config.opcua_password}    (sensitive)
-    Nothing else in the environment is read.
-    """
-    values = {"odbc_connection": os.environ.get("RUNGSTONE_ODBC_CONNECTION", ""),
-              "opcua_username": os.environ.get("RUNGSTONE_OPCUA_USERNAME", ""),
-              "opcua_password": os.environ.get("RUNGSTONE_OPCUA_PASSWORD", "")}
-    for key, v in values.items():
-        if v and not v.startswith("${"):  # unsubstituted placeholder = not provided
-            SHARED[key] = v
-
-
 def reject_credentials(cfg, where):
     bad = [k for k in cfg if k.lower() in CREDENTIAL_KEYS]
     if bad:
-        raise ToolError("%s config must not contain credentials (%s); enter them in the plugin settings instead"
+        raise ToolError("%s config must not contain credentials (%s); the connector doesn't take logins: use a "
+                        "system DSN for odbc, an anonymous session for opcua, or CSV exports"
                         % (where, ", ".join(bad)))
 
 # ---------------------------------------------------------------------------
@@ -517,7 +485,6 @@ def load_config(argv=None):
 
 
 def main():
-    load_shared()
     try:
         cfg, reason = load_config()
         srv = Server(cfg, reason)

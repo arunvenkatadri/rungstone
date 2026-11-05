@@ -40,13 +40,13 @@
       "value": "value"
     },
     "time_format": "iso",
-    "_note": "Or leave dsn empty and enter an ODBC connection string in the plugin settings. Never put credentials here."
+    "_note": "dsn = a system DSN set up by IT in the OS ODBC manager, on a read-only account. Never put credentials here."
   },
   "opcua": {
     "endpoint": "opc.tcp://historian.example.local:4840",
     "nodes": {
       "Pump1_Run": "ns=2;s=Pump1.Run"
     },
-    "_note": "Anonymous unless an OPC UA username/password is entered in the plugin settings."
+    "_note": "Anonymous sessions only. For a server that needs a login, export to CSV and use csv_dir."
   }
 }

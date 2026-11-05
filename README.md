@@ -213,9 +213,9 @@ exports, SQL historian tables over ODBC, or OPC UA values and history. It ships 
 
 - **No write capability of any kind.** There's no raw SQL from the model, only parameterized SELECTs on
   read-only connections, and OPC UA does reads only.
-- **Credentials only from plugin settings.** ODBC connection strings and OPC UA passwords are entered in the
-  plugin settings (Claude Code `userConfig`, kept in your OS secure credential store) and passed only to this
-  connector. Nothing is read from your environment, and credentials never go in the config file.
+- **No logins.** The connector never reads, stores or sends a credential: ODBC goes through a system DSN set up
+  by your IT team, OPC UA sessions are anonymous, and a config file with credential fields is refused. For a
+  historian that needs a login, use CSV exports.
 
 > **Get approval from plant IT/OT before you enable it.** Connecting any tool to plant systems must follow your
 > site's OT security policy. See `mcp/historian/README.md`.

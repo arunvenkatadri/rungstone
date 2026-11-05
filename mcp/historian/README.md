@@ -33,25 +33,22 @@ ODBC and OPC UA have not been tested against a live system in this release.
 - It does not connect to PLCs, controllers or servers. It reads only the files you
   configure.
 - It does not monitor live. Each tool call is a one-off query.
-- It never reads credentials from your machine. The only credentials it uses are the ones
-  you type into the plugin's settings (ODBC connection string, OPC UA username and
-  password). Claude Code keeps the sensitive ones in your OS secure credential store and
-  hands them only to this connector. A config file that contains user, password, token or
-  connection-string fields is refused.
+- It never handles a login. ODBC connects through a system DSN that your IT team sets up in
+  the OS ODBC manager; OPC UA sessions are anonymous. A config file that contains user,
+  password, token or connection-string fields is refused. If your historian needs a login
+  the DSN can't provide, export the data to CSV and use `csv_dir`.
 
 ## Enable it (after approval)
 
 The connector ships with the plugin but stays **off**: until you complete these steps it offers
 no tools and connects to nothing.
 
-1. Get plant IT/OT approval. Use a read-only database account or OPC UA user.
+1. Get plant IT/OT approval. For ODBC, have IT set up a system DSN on a read-only account.
 2. Copy `config.sample.json` somewhere outside the repo. Keep only the backend you use, set
    `"backend"`, and set `"enabled": true`. For SQLite and ODBC, set `time_format` to match the
    stored timestamps (`iso`, `iso_space`, `epoch_s` or `epoch_ms`). Do not put credentials in this file.
-3. In Claude Code, open the Rungstone plugin settings (`/plugin`, select Rungstone, configure) and set:
-   - **Historian connector config**: the path to your config file.
-   - **ODBC connection string** (odbc only, if you don't use a system DSN).
-   - **OPC UA username / password** (opcua only, if the server needs them).
+3. In Claude Code, open the Rungstone plugin settings (`/plugin`, select Rungstone, configure) and set
+   **Historian connector config** to the path of your config file.
 4. Restart the session. `/mcp` shows `rungstone-historian` with four read-only tools.
 
 Clearing the config setting turns it off again.

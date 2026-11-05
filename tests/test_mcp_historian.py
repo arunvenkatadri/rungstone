@@ -176,17 +176,17 @@ class HistorianTest(unittest.TestCase):
         self.assertEqual([t["tag"] for t in res[10]["tags"]], ["Pump1_Amps", "Pump1_Run"])
         self.assertEqual(res[11]["value"], 96.0)
 
-    def test_registered_with_user_config_only(self):
+    def test_registered_without_credentials(self):
         with open(os.path.join(ROOT, ".claude-plugin", "plugin.json")) as f:
             m = json.load(f)
         srv = m["mcpServers"]["rungstone-historian"]
         self.assertIn("${user_config.historian_config}", srv["args"])
-        for var, val in srv["env"].items():
-            self.assertRegex(val, r"^\$\{user_config\.[a-z_]+\}$", var)
+        self.assertNotIn("env", srv)  # no credentials passed to the connector
         uc = m["userConfig"]
-        self.assertTrue(uc["odbc_connection"]["sensitive"])
-        self.assertTrue(uc["opcua_password"]["sensitive"])
+        self.assertEqual(list(uc), ["historian_config"])
         self.assertEqual(uc["historian_config"]["default"], "")  # off unless the user sets it
+        with open(SERVER) as f:
+            self.assertNotIn("os.environ", f.read())
 
 if __name__ == "__main__":
     unittest.main()
