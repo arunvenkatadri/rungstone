@@ -76,7 +76,7 @@ command; paste them one at a time (copying across a wrapped line can drop spaces
 ```
 mkdir -p ~/rungstone ~/rungstone-work
 cd ~/rungstone
-curl -fL -o rungstone-grok.zip https://github.com/arunvenkatadri/rungstone/releases/download/v0.1.7/rungstone-grok-0.1.7.zip
+curl -fL -o rungstone-grok.zip https://github.com/arunvenkatadri/rungstone/releases/download/v0.1.8/rungstone-grok-0.1.8.zip
 unzip -o rungstone-grok.zip
 ls ~/rungstone/rungstone/skills
 ```
