@@ -70,7 +70,6 @@ LISTING = {
     "brandColor": "#F5A524",
     "composerIcon": "./assets/icon.png",
     "logo": "./assets/icon.png",
-    "screenshots": ["./assets/workbench-review.png", "./assets/workbench-verify.png"],
 }
 
 
@@ -148,8 +147,6 @@ def main():
     for name in SKILLS:
         copy_skill(name)
     shutil.copy2(os.path.join(ROOT, ".claude-plugin", "icon.png"), os.path.join(PLUGIN, "assets", "icon.png"))
-    for shot in ("workbench-review.png", "workbench-verify.png"):
-        shutil.copy2(os.path.join(ROOT, "docs", "images", shot), os.path.join(PLUGIN, "assets", shot))
     for fn in ("LICENSE", "PRIVACY.md"):
         shutil.copy2(os.path.join(ROOT, fn), os.path.join(PLUGIN, fn))
     with open(os.path.join(PLUGIN, "README.md"), "w", encoding="utf-8") as f:
