@@ -29,23 +29,5 @@
     "4diac",
     "static-analysis",
     "unit-testing"
-  ],
-  "userConfig": {
-    "historian_config": {
-      "type": "file",
-      "title": "Historian connector config (optional)",
-      "description": "Leave empty to keep the read-only historian connector off. Only set this after plant IT/OT approval: a JSON config with \"enabled\": true and a sqlite, csv_dir, odbc (system DSN) or opcua (anonymous) backend (see mcp/historian/README.md).",
-      "default": ""
-    }
-  },
-  "mcpServers": {
-    "rungstone-historian": {
-      "command": "python3",
-      "args": [
-        "${CLAUDE_PLUGIN_ROOT}/mcp/historian/server.py",
-        "--config",
-        "${user_config.historian_config}"
-      ]
-    }
-  }
+  ]
 }
