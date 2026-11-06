@@ -12,8 +12,8 @@ turned that condition into a stop - from **exported files only**.
 
 1. **Read-only and offline.** Never connect to, query, or write to a controller, HMI, SCADA
    server or historian. Work only on files the user provides. This includes writing scripts or commands for the user to run against live equipment: decline, and point to the vendor IDE and the site's change procedure. **Live monitoring is not part of
-   this version.** The only live-ish path is the optional Rungstone historian MCP server
-   (`mcp/historian`), which is disabled by default, read-only, and must be enabled by the
+   this version.** The only live-ish path is the optional historian MCP server in Rungstone's full edition
+   (not in the directory edition), which is off by default, read-only, and must be enabled by the
    user with plant IT/OT approval - never suggest enabling it as a shortcut.
 2. **Safety logic is excluded.** If a stop traces to an e-stop, safety relay, light curtain,
    guard, safety PLC or GuardLogix/F-system signal, say "**a safety function tripped**", give

@@ -98,9 +98,9 @@ The software is provided under the MIT license, "as is", without warranty of any
 | `skills/rungstone-hmi-scada` | **Phase 3: HMI/SCADA.** Explain screens, buttons, indicators and scripts. Retarget bindings with `mapping.csv`. Migrate tag databases, scripts and alarms (screens as draft layouts only). Verify bindings. Check consistency across PLC + HMI + SCADA. Clean up alarms from alarm history (ISA-18.2 style: floods, chattering, standing alarms, priorities, response text). |
 | `skills/rungstone-ops` | **Phase 4: operations, offline.** Find why a line stopped from historian/alarm exports plus the PLC logic (cause, evidence, logic cited, what to check first, what wasn't checked). Answer plant questions with a chart. Build shift and downtime reports. |
 | `commands/` | `/rungstone:understand` `/rungstone:translate` `/rungstone:verify` `/rungstone:dependencies` `/rungstone:portability` `/rungstone:check` `/rungstone:diff` `/rungstone:tests` `/rungstone:hmi` `/rungstone:alarms` `/rungstone:troubleshoot` `/rungstone:report` `/rungstone:workbench` (beta) `/rungstone:export` |
-| `hooks/` | Guardrails: block `/rungstone:export` while high-risk items are open; block device/network write actions; warn when a file read or written looks like safety logic. |
+| `hooks/` | **Full edition only.** Guardrails: block `/rungstone:export` while high-risk items are open; block device/network write actions; warn when a file read or written looks like safety logic. |
 | `shared/` | Safe XML parsing, `.rungstone/` state, export, workbench UI, JSON schemas. Vendored into each skill's `scripts/_shared/` so every skill also works standalone. |
-| `mcp/historian` | **Optional** read-only historian connector (SQLite, CSV, ODBC, OPC UA). **Off until you configure it** in the plugin settings. See below. |
+| `mcp/historian` | **Full edition only, optional.** Read-only historian connector (SQLite, CSV, ODBC, OPC UA). **Off until you configure it** in the plugin settings. See below. |
 | `evals/`, `fixtures/`, `tests/` | Test cases per skill, small sample files, and the unit tests. |
 
 ## Supported formats
@@ -122,12 +122,26 @@ Binary projects (`.ACD`, `.RSS`, `.ap1x`, `.project`) can't be read. Rungstone e
 
 ## Install
 
-**Claude Code** (this repo is also a plugin marketplace):
+**Claude Code** comes in two editions. Both have the same skills and commands.
 
-```
-/plugin marketplace add arunvenkatadri/rungstone
-/plugin install rungstone@rungstone
-```
+- **Directory edition** (this branch, `main`; also in the Claude plugin directory):
+
+  ```
+  /plugin marketplace add arunvenkatadri/rungstone
+  /plugin install rungstone@rungstone
+  ```
+
+- **Full edition** (branch `full`): adds the guardrail hooks (a network guard that blocks PLC/fieldbus
+  connections and device writes, the export gate, and the safety-logic warning) and the optional read-only
+  historian connector. Recommended if you install from GitHub anyway:
+
+  ```
+  /plugin marketplace add arunvenkatadri/rungstone#full
+  /plugin install rungstone@rungstone
+  ```
+
+  Install one edition or the other, not both. Without the hooks, the same rules still apply through the
+  skills' instructions, and `/rungstone:export` still checks the review queue before writing anything.
 
 **claude.ai / Cowork:** download a standalone skill package from the releases (`rungstone-plc.skill`,
 `rungstone-hmi-scada.skill`, `rungstone-ops.skill`) and upload it in Settings > Capabilities > Skills.
@@ -192,22 +206,22 @@ rungs/lines side by side with what else reads the changed tags):
 - **The scripts run locally.** The Python scripts in `skills/*/scripts/` run on your machine on files you
   provide. They write results to `.rungstone/`, `out/` and `export/` in your project folder and print compact
   JSON, so Claude reads summaries rather than whole projects where it can.
-- **The scripts make no network connections**, with one opt-in exception. No script opens an outbound connection, sends telemetry or fetches
+- **The scripts make no network connections**, with one opt-in exception in the full edition. No script opens an outbound connection, sends telemetry or fetches
   anything. The exception is the historian connector, and only after you enable it in the plugin settings: it then makes read-only
   queries to the historian you configured, and to nothing else.
 - **The workbench** (`shared/workbench/server.py`) binds to `127.0.0.1` only (any other address is refused),
   uses a per-session CSRF token, and serves only the local state files.
-- **Hooks** (`hooks/scripts/*.py`) read the hook event JSON and local `.rungstone/review_queue.json`, and
+- **Hooks** (full edition, `hooks/scripts/*.py`) read the hook event JSON and local `.rungstone/review_queue.json`, and
   return allow/deny decisions or a warning. They send nothing anywhere. The network guard always blocks
   PLC/fieldbus client libraries, device-write calls, and write-type MCP tools on plant-system servers. Inside an Rungstone project
   (a folder containing `.rungstone/`), it also blocks remote shells, HTTP uploads,
   raw sockets and Windows script hosts. It doesn't change permission settings.
 - **Customer files are never executed.** HMI/SCADA scripts are parsed as text.
 
-## Optional historian connector (read-only MCP server)
+## Optional historian connector (full edition, read-only MCP server)
 
 `mcp/historian/` is a small, read-only MCP server for querying historian data: a SQLite file, a folder of CSV
-exports, SQL historian tables over ODBC, or OPC UA values and history. It ships with the plugin but is
+exports, SQL historian tables over ODBC, or OPC UA values and history. It ships with the full edition but is
 **off by default**. Until you set **Historian connector config** in the plugin settings to a config file with
 `"enabled": true`, it offers no tools and connects to nothing.
 

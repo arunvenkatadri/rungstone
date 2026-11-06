@@ -29,6 +29,7 @@ def make_db(path):
     con.close()
 
 
+@unittest.skipUnless(os.path.isfile(SERVER), "full edition only")
 class HistorianTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp(prefix="rungstone-hist-")

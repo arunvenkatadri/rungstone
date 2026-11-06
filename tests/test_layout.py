@@ -24,8 +24,11 @@ class LayoutTests(unittest.TestCase):
         self.assertEqual(m["displayName"], "Rungstone")
         self.assertRegex(m["version"], r"^\d+\.\d+\.\d+$")
         self.assertTrue(m.get("license"))
-        # historian server is registered but off until the user sets its config in userConfig
-        self.assertEqual(list(m.get("mcpServers", {})), ["rungstone-historian"])
+        # directory edition (main): no hooks or local MCP server. Full edition (branch "full"): the historian
+        # server is registered but off until the user sets its config in userConfig
+        full = os.path.isdir(os.path.join(ROOT, "mcp"))
+        self.assertEqual(list(m.get("mcpServers", {})), ["rungstone-historian"] if full else [])
+        self.assertEqual(os.path.isdir(os.path.join(ROOT, "hooks")), full)
         self.assertFalse(os.path.exists(os.path.join(ROOT, ".mcp.json")))
 
     def test_repo_limits(self):
@@ -70,6 +73,7 @@ class LayoutTests(unittest.TestCase):
                            capture_output=True, text=True)
         self.assertEqual(r.returncode, 0, r.stdout)
 
+    @unittest.skipUnless(os.path.isdir(os.path.join(ROOT, "hooks")), "full edition only")
     def test_hooks_json(self):
         h = json.load(open(os.path.join(ROOT, "hooks", "hooks.json")))
         for ev, groups in h["hooks"].items():

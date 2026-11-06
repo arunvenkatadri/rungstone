@@ -191,6 +191,7 @@ class EstimateStateExportTests(unittest.TestCase):
             self.assertIn("export", log)
 
 
+@unittest.skipUnless(os.path.isdir(HOOKS), "full edition only")
 class HookTests(unittest.TestCase):
     def hook(self, name, payload):
         return run(os.path.join(HOOKS, name), stdin=json.dumps(payload))
